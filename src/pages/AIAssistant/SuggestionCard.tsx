@@ -6,15 +6,12 @@ import {
   TrendingUp, 
   Users, 
   Zap, 
-  FileText,
-  Loader2
+  FileText
 } from "lucide-react";
 import { AIRecommendation } from "@/types";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { motion, AnimatePresence } from "framer-motion";
-import { toast } from "sonner";
 
 interface SuggestionCardProps {
   recommendation: AIRecommendation;

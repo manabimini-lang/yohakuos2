@@ -1,76 +1,21 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import * as React from "react";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { DashboardLayout } from "./components/layout/DashboardLayout";
-import Dashboard from "./pages/Dashboard";
-import ContentManagement from "./pages/ContentManagement";
-import { MemberHome } from "./pages/Member/Home";
+import { AuthProvider } from "./context/AuthContext";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 import AIAssistant from "./pages/AIAssistant";
+import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
-import AuthCallback from "./pages/AuthCallback";
-import { AuthProvider } from "./components/auth/AuthProvider";
-import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import { Toaster } from "sonner";
 
-// Fallback components for other routes
-const Placeholder = ({ title }: { title: string }) => (
-  <div className="flex items-center justify-center h-[50vh] text-muted-foreground">
-    {title} ページは準備中です。
-  </div>
-);
-
-export default function App() {
+function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
         <Routes>
-          {/* Public Routes */}
           <Route path="/login" element={<Login />} />
-          <Route path="/auth/callback" element={<AuthCallback />} />
-
-          {/* Protected Member Routes */}
-          <Route
-            path="/home"
-            element={
-              <ProtectedRoute>
-                <DashboardLayout>
-                  <MemberHome />
-                </DashboardLayout>
-              </ProtectedRoute>
-            }
-          />
-
-          {/* Protected Admin/Staff Routes */}
           <Route
             path="/"
-            element={
-              <ProtectedRoute allowedRoles={['admin', 'staff']}>
-                <DashboardLayout>
-                  <Dashboard />
-                </DashboardLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/content"
-            element={
-              <ProtectedRoute allowedRoles={['admin', 'staff']}>
-                <DashboardLayout>
-                  <ContentManagement />
-                </DashboardLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/members"
-            element={
-              <ProtectedRoute allowedRoles={['admin', 'staff']}>
-                <DashboardLayout>
-                  <Placeholder title="メンバー管理" />
-                </DashboardLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/ai"
             element={
               <ProtectedRoute>
                 <DashboardLayout>
@@ -80,18 +25,21 @@ export default function App() {
             }
           />
           <Route
-            path="/settings"
+            path="/dashboard"
             element={
               <ProtectedRoute>
                 <DashboardLayout>
-                  <Placeholder title="設定" />
+                  <Dashboard />
                 </DashboardLayout>
               </ProtectedRoute>
             }
           />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-        <Toaster position="top-center" richColors />
+        <Toaster position="bottom-right" />
       </AuthProvider>
     </BrowserRouter>
   );
 }
+
+export default App;

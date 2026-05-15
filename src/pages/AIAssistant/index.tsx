@@ -4,7 +4,6 @@ import {
   Sparkles, 
   BrainCircuit, 
   History, 
-  Settings2,
   RefreshCw,
   Wand2,
   Bell
@@ -64,7 +63,6 @@ export default function AIAssistant() {
   const [isSyncing, setIsSyncing] = useState(false);
 
   useEffect(() => {
-    // Simulate initial fetch
     setRecommendations(MOCK_RECS);
   }, []);
 
@@ -88,7 +86,6 @@ export default function AIAssistant() {
 
   return (
     <div className="space-y-8">
-      {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="space-y-1">
           <div className="flex items-center gap-2 text-brand font-black uppercase tracking-[0.2em] text-xs">
@@ -123,7 +120,6 @@ export default function AIAssistant() {
         </div>
       </div>
 
-      {/* Agents Status Overview */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
           { label: "KPI", status: "分析中", color: "text-blue-500" },
@@ -131,14 +127,13 @@ export default function AIAssistant() {
           { label: "Engagement", status: "アラート", color: "text-brand" },
           { label: "Content", status: "良好", color: "text-orange-500" },
         ].map(agent => (
-          <div key={agent.label} className="p-4 rounded-2xl bg-notion-bg/50 border border-border/20 flex flex-col items-center justify-center text-center">
+          <div key={agent.label} className="p-4 rounded-2xl bg-white border border-border/20 flex flex-col items-center justify-center text-center shadow-sm">
             <span className={`text-[10px] font-black uppercase tracking-widest ${agent.color} mb-1`}>{agent.label}</span>
             <span className="text-xs font-bold text-muted-foreground">{agent.status}</span>
           </div>
         ))}
       </div>
 
-      {/* Suggestions Grid */}
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-black flex items-center gap-2">
@@ -194,7 +189,6 @@ export default function AIAssistant() {
         </AnimatePresence>
       </div>
 
-      {/* Bottom Tip */}
       <Card className="bg-brand/5 border-none shadow-none p-6">
         <div className="flex gap-4">
           <div className="h-10 w-10 rounded-full bg-brand flex items-center justify-center text-white shrink-0 shadow-lg shadow-brand/20">

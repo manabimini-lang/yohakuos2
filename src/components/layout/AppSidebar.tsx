@@ -1,139 +1,112 @@
-import {
-  LayoutDashboard,
-  Users,
-  FileText,
-  Settings,
-  Sparkles,
-  Youtube,
-  BookOpen,
-  MessageSquare,
+import * as React from "react";
+import { 
+  LayoutDashboard, 
+  Users, 
+  FileText, 
+  BrainCircuit, 
+  LogOut,
+  ChevronRight,
+  Plus
 } from "lucide-react";
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarFooter,
-} from "@/components/ui/sidebar";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/context/AuthContext";
 import { Link, useLocation } from "react-router-dom";
 
-const items = [
-  {
-    title: "ダッシュボード",
-    url: "/",
-    icon: LayoutDashboard,
-  },
-  {
-    title: "会員ホーム",
-    url: "/home",
-    icon: BookOpen,
-  },
-  {
-    title: "メンバー管理",
-    url: "/members",
-    icon: Users,
-  },
-  {
-    title: "コンテンツ作成",
-    url: "/content",
-    icon: FileText,
-  },
-  {
-    title: "AI アシスタント",
-    url: "/ai",
-    icon: Sparkles,
-  },
-];
+interface SidebarItem {
+  icon: React.ElementType;
+  label: string;
+  href: string;
+}
 
-const externalItems = [
-  {
-    title: "YouTube",
-    url: "#",
-    icon: Youtube,
-  },
-  {
-    title: "note",
-    url: "#",
-    icon: BookOpen,
-  },
-  {
-    title: "Discord",
-    url: "#",
-    icon: MessageSquare,
-  },
+const mainNav: SidebarItem[] = [
+  { icon: LayoutDashboard, label: "ダッシュボード", href: "/dashboard" },
+  { icon: BrainCircuit, label: "AI アシスタント", href: "/" },
+  { icon: Users, label: "メンバー管理", href: "/members" },
+  { icon: FileText, label: "コンテンツ管理", href: "/content" },
 ];
 
 export function AppSidebar() {
+  const { user, signOut } = useAuth();
   const location = useLocation();
 
   return (
-    <Sidebar className="border-r border-border/50 bg-notion-bg">
-      <SidebarHeader className="p-4">
-        <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-lg bg-brand flex items-center justify-center text-white font-bold">
-            Y
-          </div>
-          <span className="text-xl font-bold tracking-tight">YOHAKU OS</span>
+    <div className="w-64 border-r bg-notion-bg flex flex-col h-screen h-svh sticky top-0">
+      <div className="p-6 flex items-center gap-3">
+        <div className="h-8 w-8 rounded-lg bg-brand flex items-center justify-center text-white font-black shadow-lg shadow-brand/20">
+          Y
         </div>
-      </SidebarHeader>
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>メインメニュー</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {items.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={location.pathname === item.url}
-                    tooltip={item.title}
-                  >
-                    <Link to={item.url} className="flex items-center gap-3">
-                      <item.icon className="h-5 w-5" />
-                      <span className="font-medium text-sm">{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        <span className="font-black text-lg tracking-tight">YOHAKU OS</span>
+      </div>
 
-        <SidebarGroup>
-          <SidebarGroupLabel>外部連携</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {externalItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild tooltip={item.title}>
-                    <a href={item.url} target="_blank" rel="noreferrer">
-                      <item.icon className="h-5 w-5" />
-                      <span className="font-medium text-sm">{item.title}</span>
-                    </a>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
-      <SidebarFooter className="p-4">
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild>
-              <Link to="/settings">
-                <Settings className="h-5 w-5" />
-                <span className="font-medium text-sm">設定</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarFooter>
-    </Sidebar>
+      <div className="flex-1 overflow-y-auto px-4 py-2 space-y-6">
+        <div>
+          <p className="px-2 mb-2 text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+            メインメニュー
+          </p>
+          <div className="space-y-1">
+            {mainNav.map((item) => {
+              const isActive = location.pathname === item.href;
+              return (
+                <Link
+                  key={item.label}
+                  to={item.href}
+                  className={cn(
+                    "flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm font-bold transition-colors",
+                    isActive 
+                      ? "bg-brand/5 text-brand" 
+                      : "text-muted-foreground hover:bg-notion-hover hover:text-notion-text"
+                  )}
+                >
+                  <item.icon className="h-4 w-4" />
+                  {item.label}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+
+        <div>
+           <div className="flex items-center justify-between px-2 mb-2">
+            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+              カテゴリ
+            </p>
+            <Button variant="ghost" size="icon" className="h-4 w-4">
+              <Plus className="h-3 w-3" />
+            </Button>
+           </div>
+           <div className="space-y-1">
+             {["探究学習", "ICT活用", "ライフハック"].map(cat => (
+               <div key={cat} className="flex items-center justify-between px-2 py-1.5 rounded-lg text-sm font-bold text-muted-foreground hover:bg-notion-hover hover:text-notion-text cursor-pointer">
+                 <div className="flex items-center gap-2">
+                   <ChevronRight className="h-3 w-3" />
+                   {cat}
+                 </div>
+               </div>
+             ))}
+           </div>
+        </div>
+      </div>
+
+      <div className="p-4 border-t space-y-4">
+        <div className="flex items-center gap-3 px-2">
+          <div className="h-8 w-8 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-bold">
+            {user?.email?.substring(0, 2).toUpperCase()}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-bold truncate">Member</p>
+            <p className="text-[10px] text-muted-foreground truncate">{user?.email}</p>
+          </div>
+        </div>
+        <Button 
+          variant="ghost" 
+          onClick={signOut}
+          className="w-full justify-start text-xs font-bold text-muted-foreground hover:text-destructive"
+        >
+          <LogOut className="h-4 w-4 mr-2" />
+          ログアウト
+        </Button>
+      </div>
+    </div>
   );
 }
