@@ -1,0 +1,175 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+  EDITOR
+  PAID_MEMBER
+  FREE_MEMBER
+}
+
+enum ContentType {
+  ARTICLE
+  VIDEO
+  TASK
+  UPDATE
+}
+
+enum ContentVisibility {
+  PUBLIC
+  FREE
+  PAID
+  ADMIN
+}
+
+enum PublishStatus {
+  DRAFT
+  SCHEDULED
+  PUBLISHED
+}
+
+enum ContentLayer {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum CardStyle {
+  COMPACT
+  DEFAULT
+  COMFORTABLE
+}
+
+model User {
+  id          String         @id @default(cuid())
+  email       String         @unique
+  name        String?
+  image       String?
+  emailVerified DateTime?    @map("email_verified")
+  role        UserRole       @default(FREE_MEMBER)
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @updatedAt @map("updated_at")
+  contents    Content[]
+  progress    UserProgress[]
+  accounts    Account[]
+  sessions    Session[]
+
+  @@map("users")
+}
+
+model Content {
+  id            String          @id @default(cuid())
+  title         String
+  slug          String          @unique
+  description   String?
+  thumbnailUrl  String?         @map("thumbnail_url")
+  content       String?
+  contentType   ContentType     @map("content_type")
+  visibility    ContentVisibility
+  publishStatus PublishStatus   @default(DRAFT) @map("publish_status")
+  layer         ContentLayer
+  releaseDate   DateTime?       @map("release_date")
+  createdBy     String          @map("created_by")
+  createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime        @updatedAt @map("updated_at")
+  author        User            @relation(fields: [createdBy], references: [id], onDelete: Restrict)
+  tags          ContentTag[]
+  progress      UserProgress[]
+
+  @@index([createdBy])
+  @@map("contents")
+}
+
+model Tag {
+  id       String       @id @default(cuid())
+  name     String
+  slug     String       @unique
+  contents ContentTag[]
+
+  @@map("tags")
+}
+
+model ContentTag {
+  contentId String  @map("content_id")
+  tagId     String  @map("tag_id")
+  content   Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  tag       Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([contentId, tagId])
+  @@index([tagId])
+  @@map("content_tags")
+}
+
+model UserProgress {
+  id          String    @id @default(cuid())
+  userId      String    @map("user_id")
+  contentId   String    @map("content_id")
+  completed   Boolean   @default(false)
+  completedAt DateTime? @map("completed_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content     Content   @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, contentId])
+  @@index([contentId])
+  @@map("user_progress")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String  @map("user_id")
+  type              String
+  provider          String
+  providerAccountId String  @map("provider_account_id")
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique @map("session_token")
+  userId       String   @map("user_id")
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+model SiteSettings {
+  id              String    @id @default("global")
+  siteTitle       String    @default("YOHAKU")
+  siteDescription String    @default("学びを、余白のある習慣に。") @map("site_description")
+  logoUrl         String?   @map("logo_url")
+  primaryColor    String    @default("#0f172a") @map("primary_color")
+  cardStyle       CardStyle @default(DEFAULT) @map("card_style")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  @@map("site_settings")
+}
