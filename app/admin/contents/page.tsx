@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+export const dynamic = "force-dynamic";
+
 import { ContentTable } from "@/components/admin/content-table";
 import { FilterBar } from "@/components/shared/filter-bar";
 import { CONTENT_PAGE_SIZE, getContentsList } from "@/lib/content/query";

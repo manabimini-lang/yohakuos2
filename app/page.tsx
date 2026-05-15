@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+export const dynamic = "force-dynamic";
+
 import { CtaSection } from "@/components/public/cta-section";
 import { FeaturedContents } from "@/components/public/featured-contents";
 import { HeroSection } from "@/components/public/hero-section";

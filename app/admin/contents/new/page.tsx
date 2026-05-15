@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+export const dynamic = "force-dynamic";
+
 import { ContentForm } from "@/components/admin/content-form";
 import { prisma } from "@/lib/prisma";
 

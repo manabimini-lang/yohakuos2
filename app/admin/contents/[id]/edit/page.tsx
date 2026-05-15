@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+export const dynamic = "force-dynamic";
+
 import { ContentForm } from "@/components/admin/content-form";
 import { updateContentAction } from "@/lib/actions/content/update-content";
 import { prisma } from "@/lib/prisma";
