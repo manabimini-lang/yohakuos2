@@ -5,6 +5,9 @@ export const authConfig: NextAuthConfig = {
   pages: {
     signIn: "/login",
   },
+  session: {
+    strategy: "jwt",
+  },
   callbacks: {
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
@@ -19,9 +22,25 @@ export const authConfig: NextAuthConfig = {
 
       return true;
     },
-    async session({ session, user }) {
-      if (session.user && user) {
-        session.user.id = user.id;
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id;
+        // admin role check
+        if (
+          user.email === "manabi.mini@gmail.com" ||
+          user.email === "manabi.mini@gmaail.com"
+        ) {
+          token.role = "ADMIN";
+        } else {
+          token.role = "FREE_MEMBER";
+        }
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      if (session.user && token) {
+        session.user.id = token.id as string;
+        session.user.role = token.role as any;
       }
       return session;
     },
