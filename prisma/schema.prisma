@@ -48,21 +48,45 @@ enum CardStyle {
 }
 
 model User {
-  id          String         @id @default(cuid())
-  email       String         @unique
-  password    String?
-  name        String?
-  image       String?
-  emailVerified DateTime?    @map("email_verified")
-  role        UserRole       @default(FREE_MEMBER)
-  createdAt   DateTime       @default(now()) @map("created_at")
-  updatedAt   DateTime       @updatedAt @map("updated_at")
-  contents    Content[]
-  progress    UserProgress[]
-  accounts    Account[]
-  sessions    Session[]
+  id                     String         @id @default(cuid())
+  email                  String         @unique
+  password               String?
+  name                   String?
+  image                  String?
+  emailVerified          DateTime?      @map("email_verified")
+  role                   UserRole       @default(FREE_MEMBER)
+  
+  // Settings & Integrations
+  encryptedGeminiKey     String?        @map("encrypted_gemini_key")
+  
+  // Stripe Subscription
+  stripeCustomerId       String?        @unique @map("stripe_customer_id")
+  stripeSubscriptionId   String?        @unique @map("stripe_subscription_id")
+  stripePriceId          String?        @map("stripe_price_id")
+  stripeCurrentPeriodEnd DateTime?      @map("stripe_current_period_end")
+
+  createdAt              DateTime       @default(now()) @map("created_at")
+  updatedAt              DateTime       @updatedAt @map("updated_at")
+  contents               Content[]
+  progress               UserProgress[]
+  accounts               Account[]
+  sessions               Session[]
+  aiLogs                 AILog[]
 
   @@map("users")
+}
+
+model AILog {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  input     String   @db.Text
+  response  String   @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("ai_logs")
 }
 
 model Content {
