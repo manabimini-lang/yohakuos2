@@ -50,6 +50,7 @@ enum CardStyle {
 model User {
   id          String         @id @default(cuid())
   email       String         @unique
+  password    String?
   name        String?
   image       String?
   emailVerified DateTime?    @map("email_verified")

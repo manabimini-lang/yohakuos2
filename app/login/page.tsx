@@ -1,9 +1,19 @@
 import { signIn } from "@/lib/auth";
-import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
-export default function LoginPage() {
+export default function LoginPage({
+  searchParams,
+}: {
+  searchParams: { error?: string };
+}) {
+  const errorMessage =
+    searchParams.error === "CredentialsSignin"
+      ? "メールアドレスまたはパスワードが間違っています。"
+      : searchParams.error
+      ? "ログインに失敗しました。"
+      : null;
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50">
       <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
@@ -12,6 +22,64 @@ export default function LoginPage() {
           <p className="mt-2 text-sm text-slate-500">
             学びを、余白のある習慣に。
           </p>
+        </div>
+
+        {errorMessage && (
+          <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-600">
+            {errorMessage}
+          </div>
+        )}
+
+        <form
+          action={async (formData) => {
+            "use server";
+            await signIn("credentials", {
+              email: formData.get("email"),
+              password: formData.get("password"),
+              redirectTo: "/redirect",
+            });
+          }}
+          className="space-y-4 mb-6"
+        >
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              メールアドレス
+            </label>
+            <input
+              type="email"
+              name="email"
+              required
+              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm placeholder-slate-400 focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
+              placeholder="manabi.mini@gmail.com"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              パスワード
+            </label>
+            <input
+              type="password"
+              name="password"
+              required
+              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm placeholder-slate-400 focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
+              placeholder="••••••••"
+            />
+          </div>
+          <button
+            type="submit"
+            className="w-full rounded-xl bg-slate-900 px-4 py-3 text-sm font-medium text-white transition hover:bg-slate-800"
+          >
+            ログイン
+          </button>
+        </form>
+
+        <div className="relative mb-6">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-slate-200"></div>
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="bg-white px-2 text-slate-500">または</span>
+          </div>
         </div>
 
         <form
