@@ -2,6 +2,8 @@ import { UserRole } from "@prisma/client";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
+export const dynamic = "force-dynamic";
+
 import { ContentBody } from "@/components/member/content-body";
 import { ContentHeader } from "@/components/member/content-header";
 import { RelatedContents } from "@/components/member/related-contents";

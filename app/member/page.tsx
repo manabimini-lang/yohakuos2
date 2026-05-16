@@ -1,6 +1,8 @@
 import { ContentVisibility, PublishStatus } from "@prisma/client";
 import { redirect } from "next/navigation";
 
+export const dynamic = "force-dynamic";
+
 import { DashboardHero } from "@/components/member/dashboard-hero";
 import { ProgressSummary } from "@/components/member/progress-summary";
 import { RecentContents } from "@/components/member/recent-contents";
