@@ -13,7 +13,7 @@ type AdminHeaderProps = {
 };
 
 export function AdminHeader({ user }: AdminHeaderProps) {
-  const displayName = user.name || user.email || "User";
+  const displayName = user.name || user.email || "ユーザー";
   const initial = displayName.charAt(0).toUpperCase();
 
   return (
@@ -43,7 +43,7 @@ export function AdminHeader({ user }: AdminHeaderProps) {
           <div className="hidden text-right sm:block">
             <p className="text-sm font-medium text-slate-900">{displayName}</p>
             <p className="text-xs uppercase tracking-wide text-slate-500">
-              {user.role ?? "FREE_MEMBER"}
+              {user.role ?? "無料メンバー"}
             </p>
           </div>
           <form
@@ -56,7 +56,7 @@ export function AdminHeader({ user }: AdminHeaderProps) {
               type="submit"
               className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100"
             >
-              Sign out
+              ログアウト
             </button>
           </form>
         </div>

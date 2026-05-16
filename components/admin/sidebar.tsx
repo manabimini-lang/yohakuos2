@@ -18,11 +18,11 @@ type NavEntry = {
 };
 
 export const ADMIN_NAV_ITEMS: NavEntry[] = [
-  { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/admin/contents", label: "Contents", icon: BookOpen },
-  { href: "/admin/tags", label: "Tags", icon: Tags },
-  { href: "/admin/members", label: "Members", icon: Users },
-  { href: "/admin/settings", label: "Settings", icon: Settings },
+  { href: "/admin", label: "ダッシュボード", icon: LayoutDashboard },
+  { href: "/admin/contents", label: "コンテンツ管理", icon: BookOpen },
+  { href: "/admin/tags", label: "タグ管理", icon: Tags },
+  { href: "/admin/members", label: "メンバー管理", icon: Users },
+  { href: "/admin/settings", label: "サイト設定", icon: Settings },
 ];
 
 export function SidebarNav() {
@@ -42,7 +42,7 @@ export function AdminSidebar() {
         <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
           YOHAKU OS
         </p>
-        <p className="mt-1 text-sm font-medium text-slate-800">Admin Console</p>
+        <p className="mt-1 text-sm font-medium text-slate-800">管理画面</p>
       </div>
       <div className="p-4">
         <SidebarNav />

@@ -19,14 +19,14 @@ export default async function NewContentPage() {
     <section className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-semibold text-slate-900">Create Content</h1>
+          <h1 className="text-lg font-semibold text-slate-900">新規コンテンツ作成</h1>
           <p className="text-sm text-slate-600">新しいコンテンツを作成します。</p>
         </div>
         <Link
           href="/admin/contents"
           className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700"
         >
-          Back to list
+          一覧に戻る
         </Link>
       </div>
       <ContentForm tags={tags} />

@@ -44,14 +44,14 @@ export default async function AdminContentsPage({
       <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h1 className="text-lg font-semibold text-slate-900">Contents</h1>
-            <p className="text-sm text-slate-600">Total {result.total} items</p>
+            <h1 className="text-lg font-semibold text-slate-900">コンテンツ管理</h1>
+            <p className="text-sm text-slate-600">全 {result.total} 件</p>
           </div>
           <Link
             href="/admin/contents/new"
             className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white"
           >
-            最初のコンテンツを作成
+            新規作成
           </Link>
         </div>
 
@@ -82,7 +82,7 @@ export default async function AdminContentsPage({
 
       <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
         <p className="text-slate-600">
-          Page {pager.page} / {pager.totalPages}
+          {pager.page} / {pager.totalPages} ページ
         </p>
         <div className="flex gap-2">
           {pager.hasPrev ? (
@@ -90,11 +90,11 @@ export default async function AdminContentsPage({
               href={`/admin/contents${buildSearchQuery({ ...baseQuery, page: pager.prevPage })}`}
               className="rounded-lg border border-slate-200 px-3 py-1.5 text-slate-700"
             >
-              Prev
+              前へ
             </Link>
           ) : (
             <span className="rounded-lg border border-slate-100 px-3 py-1.5 text-slate-300">
-              Prev
+              前へ
             </span>
           )}
           {pager.hasNext ? (
@@ -102,11 +102,11 @@ export default async function AdminContentsPage({
               href={`/admin/contents${buildSearchQuery({ ...baseQuery, page: pager.nextPage })}`}
               className="rounded-lg border border-slate-200 px-3 py-1.5 text-slate-700"
             >
-              Next
+              次へ
             </Link>
           ) : (
             <span className="rounded-lg border border-slate-100 px-3 py-1.5 text-slate-300">
-              Next
+              次へ
             </span>
           )}
         </div>

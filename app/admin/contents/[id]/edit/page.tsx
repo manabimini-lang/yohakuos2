@@ -59,14 +59,14 @@ export default async function EditContentPage({ params }: EditContentPageProps) 
     <section className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-semibold text-slate-900">Edit Content</h1>
+          <h1 className="text-lg font-semibold text-slate-900">コンテンツ編集</h1>
           <p className="text-sm text-slate-600">既存コンテンツを編集します。</p>
         </div>
         <Link
           href="/admin/contents"
           className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700"
         >
-          Back to list
+          一覧に戻る
         </Link>
       </div>
 
@@ -85,7 +85,7 @@ export default async function EditContentPage({ params }: EditContentPageProps) 
           releaseDate: toDateInputValue(content.releaseDate),
           tagIds: content.tags.map((tag) => tag.tagId),
         }}
-        submitLabel="Update Content"
+        submitLabel="保存する"
         onSubmitAction={(values) => updateContentAction(content.id, values)}
       />
     </section>

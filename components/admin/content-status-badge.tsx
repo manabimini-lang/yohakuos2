@@ -1,3 +1,6 @@
+import { PUBLISH_STATUS_LABELS, VISIBILITY_LABELS } from "@/lib/translations";
+import { PublishStatus, ContentVisibility } from "@prisma/client";
+
 type BadgeTone = "neutral" | "info" | "success" | "warning";
 
 const toneClass: Record<BadgeTone, string> = {
@@ -23,14 +26,14 @@ export function ContentStatusBadge({
   );
 }
 
-export function publishStatusTone(status: string): BadgeTone {
+export function publishStatusTone(status: PublishStatus): BadgeTone {
   if (status === "PUBLISHED") return "success";
   if (status === "SCHEDULED") return "info";
   if (status === "DRAFT") return "warning";
   return "neutral";
 }
 
-export function visibilityTone(visibility: string): BadgeTone {
+export function visibilityTone(visibility: ContentVisibility): BadgeTone {
   if (visibility === "PAID") return "success";
   if (visibility === "FREE") return "info";
   if (visibility === "ADMIN") return "warning";

@@ -18,6 +18,12 @@ import {
   createContentSchema,
   type CreateContentInput,
 } from "@/lib/validations/content";
+import {
+  CONTENT_TYPE_LABELS,
+  LAYER_LABELS,
+  PUBLISH_STATUS_LABELS,
+  VISIBILITY_LABELS,
+} from "@/lib/translations";
 
 type TagOption = {
   id: string;
@@ -111,7 +117,7 @@ export function ContentForm({
     <form onSubmit={onSubmit} className="space-y-5 rounded-xl border border-slate-200 bg-white p-5">
       <div className="grid gap-4 md:grid-cols-2">
         <label className="space-y-1.5">
-          <span className="text-sm font-medium text-slate-700">title *</span>
+          <span className="text-sm font-medium text-slate-700">タイトル *</span>
           <input
             {...register("title")}
             className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400"
@@ -123,7 +129,7 @@ export function ContentForm({
         </label>
 
         <label className="space-y-1.5">
-          <span className="text-sm font-medium text-slate-700">slug *</span>
+          <span className="text-sm font-medium text-slate-700">スラッグ *</span>
           <input
             {...register("slug")}
             onChange={(e) => {
@@ -140,7 +146,7 @@ export function ContentForm({
       </div>
 
       <label className="space-y-1.5">
-        <span className="text-sm font-medium text-slate-700">description</span>
+        <span className="text-sm font-medium text-slate-700">概要</span>
         <textarea
           {...register("description")}
           rows={3}
@@ -149,7 +155,7 @@ export function ContentForm({
       </label>
 
       <label className="space-y-1.5">
-        <span className="text-sm font-medium text-slate-700">thumbnail_url</span>
+        <span className="text-sm font-medium text-slate-700">サムネイルURL</span>
         <input
           {...register("thumbnailUrl")}
           className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-slate-400"
@@ -161,7 +167,7 @@ export function ContentForm({
       </label>
 
       <label className="space-y-1.5">
-        <span className="text-sm font-medium text-slate-700">content</span>
+        <span className="text-sm font-medium text-slate-700">コンテンツ</span>
         <textarea
           {...register("content")}
           rows={10}
@@ -172,14 +178,14 @@ export function ContentForm({
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <label className="space-y-1.5">
-          <span className="text-sm font-medium text-slate-700">content_type *</span>
+          <span className="text-sm font-medium text-slate-700">コンテンツタイプ *</span>
           <select
             {...register("contentType")}
             className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
           >
             {Object.values(ContentType).map((value) => (
               <option key={value} value={value}>
-                {value}
+                {CONTENT_TYPE_LABELS[value]}
               </option>
             ))}
           </select>
@@ -189,42 +195,42 @@ export function ContentForm({
         </label>
 
         <label className="space-y-1.5">
-          <span className="text-sm font-medium text-slate-700">visibility</span>
+          <span className="text-sm font-medium text-slate-700">公開範囲</span>
           <select
             {...register("visibility")}
             className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
           >
             {Object.values(ContentVisibility).map((value) => (
               <option key={value} value={value}>
-                {value}
+                {VISIBILITY_LABELS[value]}
               </option>
             ))}
           </select>
         </label>
 
         <label className="space-y-1.5">
-          <span className="text-sm font-medium text-slate-700">publish_status</span>
+          <span className="text-sm font-medium text-slate-700">公開ステータス</span>
           <select
             {...register("publishStatus")}
             className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
           >
             {Object.values(PublishStatus).map((value) => (
               <option key={value} value={value}>
-                {value}
+                {PUBLISH_STATUS_LABELS[value]}
               </option>
             ))}
           </select>
         </label>
 
         <label className="space-y-1.5">
-          <span className="text-sm font-medium text-slate-700">layer</span>
+          <span className="text-sm font-medium text-slate-700">レイヤー</span>
           <select
             {...register("layer")}
             className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
           >
             {Object.values(ContentLayer).map((value) => (
               <option key={value} value={value}>
-                {value}
+                {LAYER_LABELS[value]}
               </option>
             ))}
           </select>
@@ -233,7 +239,7 @@ export function ContentForm({
 
       <div className="grid gap-4 md:grid-cols-2">
         <label className="space-y-1.5">
-          <span className="text-sm font-medium text-slate-700">release_date</span>
+          <span className="text-sm font-medium text-slate-700">公開予定日</span>
           <input
             type="date"
             {...register("releaseDate")}
@@ -242,7 +248,7 @@ export function ContentForm({
         </label>
 
         <label className="space-y-1.5">
-          <span className="text-sm font-medium text-slate-700">tags</span>
+          <span className="text-sm font-medium text-slate-700">タグ</span>
           <select
             multiple
             {...register("tagIds")}
@@ -269,7 +275,7 @@ export function ContentForm({
           disabled={isSubmitting}
           className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
         >
-          {isSubmitting ? "Saving..." : submitLabel}
+          {isSubmitting ? "保存中..." : submitLabel === "Create Content" ? "作成する" : submitLabel === "Save Changes" ? "保存する" : submitLabel}
         </button>
       </div>
     </form>
