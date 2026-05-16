@@ -40,6 +40,15 @@ function slugify(input: string) {
     .replace(/-+/g, "-");
 }
 
+function getYoutubeThumbnail(url: string) {
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+  const match = url.match(regExp);
+  if (match && match[2].length === 11) {
+    return `https://img.youtube.com/vi/${match[2]}/hqdefault.jpg`;
+  }
+  return null;
+}
+
 type ContentFormProps = {
   tags: TagOption[];
   initialValues?: CreateContentInput;
@@ -93,6 +102,30 @@ export function ContentForm({
       setValue("slug", slugify(title), { shouldValidate: true });
     }
   }, [title, slugEdited, setValue]);
+
+  const thumbnailUrl = watch("thumbnailUrl");
+  const content = watch("content");
+  const contentType = watch("contentType");
+
+  // YouTube サムネイルの自動抽出
+  useEffect(() => {
+    if (thumbnailUrl && !thumbnailUrl.endsWith(".jpg") && !thumbnailUrl.endsWith(".png")) {
+      const ytThumb = getYoutubeThumbnail(thumbnailUrl);
+      if (ytThumb) {
+        setValue("thumbnailUrl", ytThumb, { shouldValidate: true });
+      }
+    }
+  }, [thumbnailUrl, setValue]);
+
+  // 動画タイプの場合、コンテンツ欄のURLからも抽出を試みる
+  useEffect(() => {
+    if (contentType === ContentType.VIDEO && content && !thumbnailUrl) {
+      const ytThumb = getYoutubeThumbnail(content);
+      if (ytThumb) {
+        setValue("thumbnailUrl", ytThumb, { shouldValidate: true });
+      }
+    }
+  }, [contentType, content, thumbnailUrl, setValue]);
 
   const onSubmit = handleSubmit(async (values) => {
     setServerError(null);

@@ -2,7 +2,13 @@
 const nextConfig = {
   reactStrictMode: true,
   images: {
-    domains: ['localhost', 'avatars.githubusercontent.com', 'lh3.googleusercontent.com'],
+    domains: [
+      'localhost',
+      'avatars.githubusercontent.com',
+      'lh3.googleusercontent.com',
+      'img.youtube.com',
+      'i.ytimg.com',
+    ],
   },
   // ビルド時に環境変数が未設定でもエラーにならないようフォールバックを設定
   env: {
