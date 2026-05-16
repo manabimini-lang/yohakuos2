@@ -1,4 +1,6 @@
 import { redirect } from "next/navigation";
+
+export const dynamic = "force-dynamic";
 import type { ReactNode } from "react";
 
 import { AdminHeader } from "@/components/admin/header";
