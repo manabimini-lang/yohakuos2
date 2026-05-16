@@ -33,11 +33,18 @@ export default function LoginPage({
         <form
           action={async (formData) => {
             "use server";
-            await signIn("credentials", {
-              email: formData.get("email"),
-              password: formData.get("password"),
-              redirectTo: "/redirect",
-            });
+            try {
+              await signIn("credentials", {
+                email: formData.get("email"),
+                password: formData.get("password"),
+                redirectTo: "/redirect",
+              });
+            } catch (error: any) {
+              if (error.type === "CredentialsSignin") {
+                redirect("/login?error=CredentialsSignin");
+              }
+              throw error; // Rethrow to allow redirect to work (RedirectError)
+            }
           }}
           className="space-y-4 mb-6"
         >
