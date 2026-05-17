@@ -1,4 +1,5 @@
 import ReactMarkdown from "react-markdown";
+import sanitizeHtml from "sanitize-html";
 
 function getYoutubeEmbedUrl(input?: string | null) {
   if (!input) return null;
@@ -60,7 +61,7 @@ export function ContentBody({
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-5">
       <article className="prose prose-slate max-w-none text-sm leading-7">
-        <ReactMarkdown>{content || ""}</ReactMarkdown>
+        <ReactMarkdown>{sanitizeHtml(content || "")}</ReactMarkdown>
       </article>
     </section>
   );

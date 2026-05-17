@@ -15,7 +15,13 @@ export const authConfig: NextAuthConfig = {
       const isOnMember = nextUrl.pathname.startsWith("/member");
       const isOnPremium = nextUrl.pathname.startsWith("/premium");
 
-      if (isOnAdmin || isOnMember || isOnPremium) {
+      if (isOnAdmin) {
+        if (!isLoggedIn) return false;
+        const role = (auth.user as any).role;
+        return role === "ADMIN" || role === "SUPER_ADMIN";
+      }
+
+      if (isOnMember || isOnPremium) {
         if (isLoggedIn) return true;
         return false; // ログインページへリダイレクト
       }

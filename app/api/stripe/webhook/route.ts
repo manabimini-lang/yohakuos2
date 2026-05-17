@@ -2,7 +2,8 @@ import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { getStripe } from "@/lib/stripe";
-import { prisma } from "@/lib/prisma";
+import { subscriptionService } from "@/lib/services/subscription.service";
+import { subscriptionRepository } from "@/lib/repositories/subscription.repository";
 
 export async function POST(req: Request) {
   const stripe = getStripe();
@@ -34,18 +35,14 @@ export async function POST(req: Request) {
     }
 
     const periodEnd = subscription.current_period_end ?? subscription.items?.data?.[0]?.current_period_end;
+    const currentPeriodEnd = periodEnd ? new Date(periodEnd * 1000) : null;
 
-    await prisma.user.update({
-      where: {
-        id: session.metadata.userId,
-      },
-      data: {
-        stripeSubscriptionId: subscription.id,
-        stripeCustomerId: subscription.customer as string,
-        stripePriceId: subscription.items.data[0].price.id,
-        stripeCurrentPeriodEnd: periodEnd ? new Date(periodEnd * 1000) : null,
-        role: "PAID_MEMBER",
-      },
+    await subscriptionService.handleCheckoutCompleted(session.metadata.userId, {
+      stripeSubscriptionId: subscription.id,
+      stripeCustomerId: subscription.customer as string,
+      stripePriceId: subscription.items?.data?.[0]?.price?.id,
+      status: subscription.status,
+      currentPeriodEnd,
     });
   }
 
@@ -56,32 +53,19 @@ export async function POST(req: Request) {
     if (subscriptionId) {
       const subscription = await stripe.subscriptions.retrieve(subscriptionId) as any;
       const periodEnd = subscription.current_period_end ?? subscription.items?.data?.[0]?.current_period_end;
+      const currentPeriodEnd = periodEnd ? new Date(periodEnd * 1000) : null;
 
-      await prisma.user.update({
-        where: {
-          stripeSubscriptionId: subscription.id,
-        },
-        data: {
-          stripePriceId: subscription.items.data[0].price.id,
-          stripeCurrentPeriodEnd: periodEnd ? new Date(periodEnd * 1000) : null,
-        },
+      await subscriptionRepository.update(subscription.id, { 
+        currentPeriodEnd, 
+        status: subscription.status,
+        stripePriceId: subscription.items?.data?.[0]?.price?.id,
       });
     }
   }
   
   if (event.type === "customer.subscription.deleted") {
     const subscription = eventObject as Stripe.Subscription;
-    await prisma.user.update({
-      where: {
-        stripeSubscriptionId: subscription.id,
-      },
-      data: {
-        role: "FREE_MEMBER",
-        stripeSubscriptionId: null,
-        stripePriceId: null,
-        stripeCurrentPeriodEnd: null,
-      },
-    });
+    await subscriptionService.handleSubscriptionDeleted(subscription.id);
   }
 
   return new NextResponse(null, { status: 200 });

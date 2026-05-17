@@ -1,38 +1,49 @@
-import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { AiClient } from "@/components/member/ai-client";
+import { redirect } from "next/navigation";
+import { AiChatClient } from "@/components/member/ai-chat-client";
+import { userRepository } from "@/lib/repositories/user.repository";
+import { subscriptionService } from "@/lib/services/subscription.service";
+import { apiKeyRepository } from "@/lib/repositories/api-key.repository";
 
-export const dynamic = "force-dynamic";
+export const metadata = {
+  title: "思考の整理 - YOHAKU",
+  description: "静かな場所で、絡まった思考を整理します。",
+};
 
-export default async function MemberAiPage() {
+export default async function AiPage() {
   const session = await auth();
 
-  if (!session?.user?.email) {
+  if (!session?.user?.id) {
     redirect("/login");
   }
 
-  const user = await prisma.user.findUnique({
-    where: { email: session.user.email },
-    select: {
-      role: true,
-      encryptedGeminiKey: true,
-    },
-  });
+  const userId = session.user.id;
 
+  // Fetch necessary data
+  const user = await userRepository.findById(userId);
   if (!user) {
     redirect("/login");
   }
 
-  const isPaidMember = user.role === "PAID_MEMBER" || user.role === "ADMIN" || user.role === "SUPER_ADMIN";
-  const hasKey = !!user.encryptedGeminiKey;
+  const isAdmin = user.role === "ADMIN" || user.role === "SUPER_ADMIN";
+  const hasActiveSub = isAdmin || await subscriptionService.hasActiveSubscription(userId);
+  
+  const apiKeyRecord = await apiKeyRepository.findByUserIdAndProvider(userId, "gemini");
+  const hasKey = !!apiKeyRecord?.encryptedKey;
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-xl font-semibold text-slate-900">思考の整理</h1>
+    <div className="space-y-8 max-w-xl mx-auto">
+      <div className="px-1">
+        <h1 className="text-xl font-medium text-slate-800">整理する</h1>
+        <p className="mt-1.5 text-sm text-slate-500 leading-relaxed">
+          今の状態をそのまま書いてみてください。
+        </p>
       </div>
-      <AiClient isPaidMember={isPaidMember} hasKey={hasKey} />
+
+      <AiChatClient 
+        hasKey={hasKey} 
+        hasActiveSub={hasActiveSub} 
+      />
     </div>
   );
 }

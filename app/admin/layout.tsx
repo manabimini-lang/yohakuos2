@@ -18,6 +18,11 @@ export default async function AdminLayout({
     redirect("/login");
   }
 
+  const role = (session.user as any).role;
+  if (role !== "ADMIN" && role !== "SUPER_ADMIN") {
+    redirect("/member");
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <div className="mx-auto flex min-h-screen max-w-[1400px]">

@@ -19,19 +19,13 @@ function PublicHeader({
   return (
     <header className="sticky top-0 z-20 border-b border-slate-200 bg-slate-50/95 backdrop-blur">
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
-        <Link href="/" className="flex items-center gap-2 text-sm font-semibold tracking-wide text-slate-900">
+        <Link href="/" className="flex items-center gap-2 text-sm font-medium tracking-wide text-slate-900">
           {logoUrl ? <img src={logoUrl} alt={siteTitle} className="h-6 w-6 rounded object-cover" /> : null}
           {siteTitle}
         </Link>
         <nav className="hidden items-center gap-5 text-sm text-slate-600 md:flex">
-          <Link href="/member/contents">Contents</Link>
-          <a href="#" aria-disabled="true" className="opacity-70">
-            Pricing
-          </a>
-          <Link href="/login">Login</Link>
-          <Link href="/login" className="rounded-md bg-slate-900 px-3 py-1.5 text-white">
-            Sign up
-          </Link>
+          <Link href="/member/contents" className="transition-colors hover:text-slate-900">記事</Link>
+          <Link href="/login" className="transition-colors hover:text-slate-900">ログイン</Link>
         </nav>
       </div>
     </header>
@@ -41,22 +35,22 @@ function PublicHeader({
 function LearningFlow() {
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-5">
-      <h2 className="text-xl font-semibold text-slate-900">Learning Flow</h2>
+      <h2 className="text-lg font-medium text-slate-900">少しずつ進める</h2>
       <div className="mt-4 grid gap-3 md:grid-cols-3">
-        <article className="rounded-xl border border-slate-200 p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">1</p>
-          <h3 className="mt-1 font-semibold text-slate-900">学ぶ</h3>
-          <p className="mt-2 text-sm text-slate-600">短い記事と動画で要点をつかむ。</p>
+        <article className="rounded-xl border border-slate-100 p-4 shadow-sm">
+          <p className="text-xs font-medium uppercase tracking-wide text-slate-400">1</p>
+          <h3 className="mt-1 font-medium text-slate-800">触れる</h3>
+          <p className="mt-2 text-sm text-slate-600">短い記事や動画で、自分のペースで学ぶ。</p>
         </article>
-        <article className="rounded-xl border border-slate-200 p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">2</p>
-          <h3 className="mt-1 font-semibold text-slate-900">実践する</h3>
-          <p className="mt-2 text-sm text-slate-600">タスクで手を動かして定着させる。</p>
+        <article className="rounded-xl border border-slate-100 p-4 shadow-sm">
+          <p className="text-xs font-medium uppercase tracking-wide text-slate-400">2</p>
+          <h3 className="mt-1 font-medium text-slate-800">試す</h3>
+          <p className="mt-2 text-sm text-slate-600">小さなタスクで、少しだけ手を動かす。</p>
         </article>
-        <article className="rounded-xl border border-slate-200 p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">3</p>
-          <h3 className="mt-1 font-semibold text-slate-900">継続する</h3>
-          <p className="mt-2 text-sm text-slate-600">月次テーマで習慣化して積み上げる。</p>
+        <article className="rounded-xl border border-slate-100 p-4 shadow-sm">
+          <p className="text-xs font-medium uppercase tracking-wide text-slate-400">3</p>
+          <h3 className="mt-1 font-medium text-slate-800">振り返る</h3>
+          <p className="mt-2 text-sm text-slate-600">記録を残し、いつでも戻ってこれるように。</p>
         </article>
       </div>
     </section>
@@ -66,12 +60,12 @@ function LearningFlow() {
 function MonthlyThemePreview() {
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-5">
-      <h2 className="text-xl font-semibold text-slate-900">Monthly Theme Preview</h2>
-      <p className="mt-2 text-sm text-slate-600">今月のテーマ: 学びを習慣化する。</p>
-      <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-slate-600">
-        <li>週3回の学習時間を固定する</li>
-        <li>1つ学んだら1つアウトプットする</li>
-        <li>月末に振り返り、次月へつなげる</li>
+      <h2 className="text-lg font-medium text-slate-900">今月のテーマ</h2>
+      <p className="mt-2 text-sm text-slate-600">余白をつくる。</p>
+      <ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-slate-600 marker:text-slate-300">
+        <li>まずは、立ち止まる時間を作る</li>
+        <li>書けない日は、無理に書かない</li>
+        <li>必要なときに、またここへ戻ってくる</li>
       </ul>
     </section>
   );

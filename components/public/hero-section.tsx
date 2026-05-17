@@ -2,30 +2,21 @@ import Link from "next/link";
 
 export function HeroSection({ primaryColor }: { primaryColor?: string }) {
   return (
-    <section className="rounded-3xl border border-slate-200 bg-white p-8 md:p-12">
-      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-        YOHAKU Learning Platform
-      </p>
-      <h1 className="mt-3 text-3xl font-semibold leading-tight text-slate-900 md:text-4xl">
+    <section className="rounded-3xl border border-slate-100 bg-white p-8 md:p-12 shadow-sm">
+      <h1 className="text-3xl font-medium leading-tight text-slate-800 md:text-4xl tracking-wide">
         学びを、余白のある習慣に。
       </h1>
-      <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-600 md:text-base">
-        読んで終わりではなく、実践して定着させる。YOHAKUは、毎月のテーマと実践タスクで
-        継続できる学びの流れをつくります。
+      <p className="mt-5 max-w-2xl text-sm leading-relaxed text-slate-600 md:text-base">
+        読んで終わりではなく、少しだけ手も動かしてみる。<br className="hidden md:block" />
+        YOHAKUは、毎月の小さなテーマを通して無理なく続く学びのリズムを作ります。
       </p>
-      <div className="mt-6 flex flex-wrap gap-2">
+      <div className="mt-8">
         <Link
           href="/member"
-          className="rounded-lg px-4 py-2 text-sm font-medium text-white"
+          className="inline-flex rounded-xl px-6 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90"
           style={{ backgroundColor: primaryColor ?? "#0f172a" }}
         >
-          無料ではじめる
-        </Link>
-        <Link
-          href="/login"
-          className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700"
-        >
-          ログイン
+          ゆっくり、はじめる
         </Link>
       </div>
     </section>

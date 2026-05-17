@@ -4,11 +4,14 @@ type ProgressSummaryProps = {
   completionRate: number;
 };
 
-function StatCard({ label, value }: { label: string; value: string | number }) {
+function StatCard({ label, value, unit }: { label: string; value: string | number; unit?: string }) {
   return (
-    <article className="rounded-xl border border-slate-200 bg-white p-4">
-      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</p>
-      <p className="mt-2 text-2xl font-semibold text-slate-900">{value}</p>
+    <article className="rounded-xl border border-slate-100 bg-white p-4 shadow-sm">
+      <p className="text-xs font-medium text-slate-400 tracking-wide">{label}</p>
+      <p className="mt-2 text-2xl font-medium text-slate-700">
+        {value}
+        {unit && <span className="text-sm text-slate-400 ml-1">{unit}</span>}
+      </p>
     </article>
   );
 }
@@ -20,11 +23,11 @@ export function ProgressSummary({
 }: ProgressSummaryProps) {
   return (
     <section className="space-y-3">
-      <h2 className="text-base font-semibold text-slate-900">Progress Summary</h2>
+      <h2 className="text-sm font-medium text-slate-500 tracking-wide pl-1">これまでの歩み</h2>
       <div className="grid gap-3 sm:grid-cols-3">
-        <StatCard label="Completed" value={completedCount} />
-        <StatCard label="Tracked" value={totalProgressCount} />
-        <StatCard label="Completion Rate" value={`${completionRate}%`} />
+        <StatCard label="完了したタスク" value={completedCount} unit="件" />
+        <StatCard label="記録したタスク" value={totalProgressCount} unit="件" />
+        <StatCard label="進捗" value={completionRate} unit="%" />
       </div>
     </section>
   );

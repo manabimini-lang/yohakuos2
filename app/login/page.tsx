@@ -1,5 +1,6 @@
 import { signIn } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import { TurnstileWidget } from "@/components/shared/turnstile-widget";
 
 export const dynamic = "force-dynamic";
 
@@ -19,14 +20,14 @@ export default function LoginPage({
     <div className="min-h-screen flex items-center justify-center bg-slate-50">
       <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
         <div className="mb-8 text-center">
-          <h1 className="text-2xl font-bold text-slate-900">YOHAKU</h1>
-          <p className="mt-2 text-sm text-slate-500">
+          <h1 className="text-2xl font-medium tracking-widest text-slate-800">YOHAKU</h1>
+          <p className="mt-3 text-sm text-slate-400">
             学びを、余白のある習慣に。
           </p>
         </div>
 
         {errorMessage && (
-          <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-600">
+          <div className="mb-5 rounded-xl border border-rose-100 bg-rose-50 p-4 text-sm text-rose-600 text-center">
             {errorMessage}
           </div>
         )}
@@ -38,6 +39,7 @@ export default function LoginPage({
               await signIn("credentials", {
                 email: formData.get("email"),
                 password: formData.get("password"),
+                turnstileToken: formData.get("cf-turnstile-response"),
                 redirectTo: "/redirect",
               });
             } catch (error: any) {
@@ -73,9 +75,12 @@ export default function LoginPage({
               placeholder="••••••••"
             />
           </div>
+          
+          <TurnstileWidget />
+
           <button
             type="submit"
-            className="w-full rounded-xl bg-slate-900 px-4 py-3 text-sm font-medium text-white transition hover:bg-slate-800"
+            className="w-full rounded-xl bg-slate-900 px-4 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90 shadow-sm"
           >
             ログイン
           </button>
@@ -98,7 +103,7 @@ export default function LoginPage({
         >
           <button
             type="submit"
-            className="flex w-full items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
+            className="flex w-full items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50"
           >
             <svg className="h-5 w-5" viewBox="0 0 24 24">
               <path

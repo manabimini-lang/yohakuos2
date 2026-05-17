@@ -1,6 +1,9 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { userRepository } from "@/lib/repositories/user.repository";
+import { apiKeyRepository } from "@/lib/repositories/api-key.repository";
+import { subscriptionRepository } from "@/lib/repositories/subscription.repository";
+import { subscriptionService } from "@/lib/services/subscription.service";
 import { SettingsClient } from "@/components/member/settings-client";
 
 export const dynamic = "force-dynamic";
@@ -8,38 +11,37 @@ export const dynamic = "force-dynamic";
 export default async function MemberSettingsPage() {
   const session = await auth();
 
-  if (!session?.user?.email) {
+  if (!session?.user?.id) {
     redirect("/login");
   }
 
-  const user = await prisma.user.findUnique({
-    where: { email: session.user.email },
-    select: {
-      role: true,
-      encryptedGeminiKey: true,
-      stripePriceId: true,
-    },
-  });
+  const userId = session.user.id;
+  const user = await userRepository.findById(userId);
 
   if (!user) {
     redirect("/login");
   }
 
-  const isPaidMember = user.role === "PAID_MEMBER" || user.role === "ADMIN" || user.role === "SUPER_ADMIN";
-  const hasKey = !!user.encryptedGeminiKey;
+  const apiKeyRecord = await apiKeyRepository.findByUserIdAndProvider(userId, "gemini");
+  const subscription = await subscriptionRepository.findByUserId(userId);
+
+  const isAdmin = user.role === "ADMIN" || user.role === "SUPER_ADMIN";
+  const isPaidMember = isAdmin || await subscriptionService.hasActiveSubscription(userId);
+  const hasKey = !!apiKeyRecord?.encryptedKey;
+  const stripePriceId = subscription?.stripePriceId;
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-semibold text-slate-900">設定</h1>
-        <p className="mt-1 text-sm text-slate-600">
-          会員プランとAPIキーの管理を行います。
+        <h1 className="text-xl font-medium text-slate-900">設定</h1>
+        <p className="mt-1 text-sm text-slate-500">
+          あなただけの振り返り空間を整えます。
         </p>
       </div>
       <SettingsClient 
         hasKey={hasKey} 
         isPaidMember={isPaidMember} 
-        stripePriceId={user.stripePriceId || undefined} 
+        stripePriceId={stripePriceId || undefined} 
       />
     </div>
   );

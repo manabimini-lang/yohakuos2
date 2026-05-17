@@ -21,10 +21,30 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
+        turnstileToken: { label: "Turnstile Token", type: "text" },
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
           return null;
+        }
+
+        const secret = process.env.TURNSTILE_SECRET_KEY;
+        const turnstileToken = credentials.turnstileToken;
+
+        if (secret && turnstileToken) {
+          const res = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: `secret=${encodeURIComponent(secret)}&response=${encodeURIComponent(turnstileToken as string)}`,
+          });
+          const outcome = await res.json();
+          if (!outcome.success) {
+            return null; // Turnstile failed
+          }
+        } else if (secret && !turnstileToken) {
+           return null; // Turnstile required but missing
         }
 
         const user = await prisma.user.findUnique({

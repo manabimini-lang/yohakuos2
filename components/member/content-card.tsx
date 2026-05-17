@@ -18,49 +18,47 @@ export function ContentCard({
   primaryColor?: string;
 }) {
   return (
-    <article className={`overflow-hidden border border-slate-200 bg-white ${cardClassName ?? "rounded-2xl p-0"}`}>
-      <div className="relative h-40 bg-slate-100">
+    <article className={`overflow-hidden border border-slate-100 bg-white transition-shadow hover:shadow-md ${cardClassName ?? "rounded-2xl p-0 shadow-sm"}`}>
+      <div className="relative h-40 bg-slate-50">
         {item.thumbnailUrl ? (
           <img src={item.thumbnailUrl} alt={item.title} className="h-full w-full object-cover" />
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-xs font-semibold text-slate-400">
-            NO IMAGE
-          </div>
+          <div className="flex h-full w-full items-center justify-center text-xs text-slate-300"></div>
         )}
-        <div className="absolute left-2 top-2 flex gap-1.5">
+        <div className="absolute left-3 top-3 flex gap-1.5">
           {item.locked ? (
-            <span className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold text-white" style={{ backgroundColor: primaryColor ?? "#f59e0b" }}>
+            <span className="inline-flex items-center gap-1 rounded-md bg-slate-800/80 px-2 py-1 text-[11px] font-medium tracking-wide text-white backdrop-blur">
               <Lock className="h-3 w-3" />
-              Locked
+              会員限定
             </span>
           ) : null}
           {item.isNew ? (
-            <span className="rounded-md bg-emerald-500/95 px-2 py-1 text-xs font-semibold text-white">
-              New
+            <span className="rounded-md bg-white/90 px-2 py-1 text-[11px] font-medium tracking-wide text-slate-700 backdrop-blur border border-slate-200/50">
+              新着
             </span>
           ) : null}
           {item.isRecommended ? (
-            <span className="rounded-md bg-sky-500/95 px-2 py-1 text-xs font-semibold text-white">
-              Recommended
+            <span className="rounded-md bg-white/90 px-2 py-1 text-[11px] font-medium tracking-wide text-slate-700 backdrop-blur border border-slate-200/50">
+              おすすめ
             </span>
           ) : null}
         </div>
       </div>
-      <div className="space-y-3 p-4">
+      <div className="space-y-3 p-5">
         <div>
-          <h3 className="line-clamp-1 text-base font-semibold text-slate-900">{item.title}</h3>
-          <p className="mt-1 line-clamp-2 text-sm text-slate-600">
+          <h3 className="line-clamp-1 text-base font-medium text-slate-800">{item.title}</h3>
+          <p className="mt-1.5 line-clamp-2 text-sm text-slate-500 leading-relaxed">
             {item.description || "説明はまだありません。"}
           </p>
         </div>
         <div className="flex flex-wrap gap-1.5">
           {item.tags.map((tag) => (
-            <span key={tag.id} className="rounded-md bg-slate-100 px-2 py-1 text-xs text-slate-600">
+            <span key={tag.id} className="yohaku-tag">
               #{tag.name}
             </span>
           ))}
         </div>
-        <div className="text-xs text-slate-500">
+        <div className="text-xs text-slate-400 pt-1">
           {item.contentType} / {item.layer} / {dateFmt.format(item.updatedAt)}
         </div>
       </div>

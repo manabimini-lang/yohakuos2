@@ -10,7 +10,7 @@ export function SettingsClient({
 }: { 
   hasKey: boolean;
   isPaidMember: boolean;
-  stripePriceId?: string; // Replace with actual price ID for env if you want dynamic
+  stripePriceId?: string;
 }) {
   const [apiKey, setApiKey] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -26,10 +26,12 @@ export function SettingsClient({
     const result = await updateAiKeyAction(apiKey);
     
     if (result.ok) {
-      setMessage({ text: "APIキーを保存しました。", type: "success" });
+      setMessage({ text: "接続を保存しました。", type: "success" });
       setApiKey(""); // Clear input after save
+      // Force a reload to reflect the 'hasKey' state from server
+      window.location.reload();
     } else {
-      setMessage({ text: result.error ?? "エラーが発生しました。", type: "error" });
+      setMessage({ text: result.error ?? "接続できませんでした。少し時間をおいて再度お試しください。", type: "error" });
     }
     setIsSaving(false);
   };
@@ -37,15 +39,11 @@ export function SettingsClient({
   const handleSubscribe = async () => {
     setIsCheckoutLoading(true);
     try {
-      // For MVP, we pass a hardcoded test price ID or env var
-      // Please set NEXT_PUBLIC_STRIPE_PRICE_ID in your env
       const priceId = process.env.NEXT_PUBLIC_STRIPE_PRICE_ID || "price_placeholder";
       
       const res = await fetch("/api/stripe/checkout", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ priceId }),
       });
 
@@ -53,7 +51,7 @@ export function SettingsClient({
       if (data.url) {
         window.location.href = data.url;
       } else {
-        alert("決済ページへの移動に失敗しました。");
+        alert("ページへの移動に失敗しました。少し時間をおいて再度お試しください。");
       }
     } catch (error) {
       alert("エラーが発生しました。");
@@ -63,68 +61,105 @@ export function SettingsClient({
   };
 
   return (
-    <div className="space-y-8 max-w-2xl">
-      <section className="rounded-2xl border border-slate-200 bg-white p-6">
-        <h2 className="text-lg font-semibold text-slate-900 mb-4">会員プラン</h2>
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm text-slate-700 font-medium">
-              現在のプラン: {isPaidMember ? <span className="text-emerald-600">有料会員 (PAID)</span> : <span className="text-slate-500">無料会員 (FREE)</span>}
+    <div className="space-y-12 max-w-xl">
+      {/* 振り返り空間への接続設定 */}
+      <section className="space-y-6">
+        <div>
+          <h2 className="text-lg font-medium text-slate-900">自分専用の空間をつなぐ</h2>
+          <div className="mt-4 space-y-3 text-sm text-slate-600 leading-relaxed">
+            <p>
+              YOHAKUでは、あなた自身のGemini APIを利用して、自分専用の振り返り空間を作ります。
             </p>
-            <p className="mt-1 text-xs text-slate-500">
-              AI対話機能を利用するには有料会員登録が必要です。
+            <p>
+              AIは答えを押し付けるためではなく、思考整理を静かに支援します。
             </p>
           </div>
+        </div>
+
+        <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-6">
+            <span className="text-sm font-medium text-slate-700">接続状態</span>
+            {hasKey ? (
+              <span className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-md">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                接続済み
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 bg-slate-100 px-2.5 py-1 rounded-md">
+                <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+                未設定
+              </span>
+            )}
+          </div>
+
+          <form onSubmit={handleSaveKey} className="space-y-4">
+            <div className="space-y-1.5">
+              <label htmlFor="apiKey" className="block text-xs font-medium text-slate-500">
+                Gemini API キー
+              </label>
+              <input
+                id="apiKey"
+                type="password"
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                placeholder="AIzaSy..."
+                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-2.5 text-sm transition-colors focus:border-slate-300 focus:bg-white focus:outline-none"
+              />
+            </div>
+
+            {message && (
+              <p className={`text-sm ${message.type === "success" ? "text-emerald-600" : "text-rose-600"}`}>
+                {message.text}
+              </p>
+            )}
+
+            <button
+              type="submit"
+              disabled={isSaving || !apiKey.trim()}
+              className="w-full rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+            >
+              {isSaving ? "接続しています..." : (hasKey ? "キーを更新する" : "接続する")}
+            </button>
+          </form>
+        </div>
+      </section>
+
+      {/* プラン設定 */}
+      <section className="space-y-6">
+        <div>
+          <h2 className="text-lg font-medium text-slate-900">プラン</h2>
+          <div className="mt-4 space-y-3 text-sm text-slate-600 leading-relaxed">
+            <p>
+              YOHAKU AIは、あなたの思考整理を支えるための会員向け機能です。
+            </p>
+            <p>
+              少し疲れた日にも、安心して戻ってこられる場所を目指しています。
+            </p>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm flex items-center justify-between">
+          <div className="space-y-1">
+            <span className="text-xs font-medium text-slate-500">現在のステータス</span>
+            <p className="text-sm font-medium text-slate-800">
+              {isPaidMember ? "会員プラン利用中" : "無料プラン"}
+            </p>
+          </div>
+
           {!isPaidMember ? (
             <button
               onClick={handleSubscribe}
               disabled={isCheckoutLoading}
-              className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
+              className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50"
             >
-              {isCheckoutLoading ? "準備中..." : "有料会員になる"}
+              {isCheckoutLoading ? "準備中..." : "会員プランを見る"}
             </button>
           ) : (
-            <div className="text-sm text-slate-500 bg-slate-50 px-3 py-1.5 rounded-md border border-slate-100">
-              契約中
+            <div className="text-sm text-slate-500">
+              {/* Future: Link to Stripe customer portal */}
             </div>
-            // In a full implementation, you'd link to the Stripe Customer Portal here
           )}
         </div>
-      </section>
-
-      <section className="rounded-2xl border border-slate-200 bg-white p-6">
-        <h2 className="text-lg font-semibold text-slate-900 mb-2">Gemini APIキー</h2>
-        <p className="mb-4 text-sm text-slate-600">
-          あなた自身のGemini APIキーを設定してください。キーは暗号化されて安全に保存されます。<br/>
-          {hasKey && <span className="text-emerald-600 font-medium mt-1 inline-block">✓ 現在APIキーは設定されています。</span>}
-        </p>
-
-        <form onSubmit={handleSaveKey} className="space-y-4">
-          <label className="block">
-            <span className="mb-1 block text-sm font-medium text-slate-700">APIキー</span>
-            <input
-              type="password"
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              placeholder="AIzaSy..."
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-slate-400 outline-none"
-            />
-          </label>
-
-          {message && (
-            <p className={`text-sm ${message.type === "success" ? "text-emerald-600" : "text-rose-600"}`}>
-              {message.text}
-            </p>
-          )}
-
-          <button
-            type="submit"
-            disabled={isSaving || !apiKey.trim()}
-            className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
-          >
-            {isSaving ? "保存中..." : "キーを保存する"}
-          </button>
-        </form>
       </section>
     </div>
   );

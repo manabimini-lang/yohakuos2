@@ -49,10 +49,10 @@ export default async function MemberContentsPage({
 
   return (
     <section className="space-y-4">
-      <header className="rounded-2xl border border-slate-200 bg-white p-5">
-        <h1 className="text-xl font-semibold text-slate-900">Contents</h1>
-        <p className="mt-1 text-sm text-slate-600">
-          {settings.siteTitle} の学びたいテーマを絞り込みながらコンテンツを探せます。
+      <header className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+        <h1 className="text-lg font-medium text-slate-800">記事</h1>
+        <p className="mt-1.5 text-sm text-slate-500">
+          気になるキーワードやタグで、静かに探せます。
         </p>
       </header>
 
@@ -63,14 +63,14 @@ export default async function MemberContentsPage({
       />
 
       {result.items.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center">
-          <p className="text-sm text-slate-500">条件に一致するコンテンツがありません。</p>
-          <p className="mt-1 text-xs text-slate-400">タグ・レイヤー・キーワードを見直してみてください。</p>
+        <div className="rounded-2xl border border-slate-100 bg-slate-50/60 p-10 text-center shadow-sm">
+          <p className="text-sm font-medium text-slate-600">記事が見つかりませんでした。</p>
+          <p className="mt-2 text-xs text-slate-400">別のキーワードを試してみてください。</p>
           <Link
             href="/member/contents"
-            className="mt-4 inline-flex rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-600"
+            className="mt-5 inline-flex rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-slate-500 hover:text-slate-700 transition-colors"
           >
-            フィルタをリセット
+            条件をクリアする
           </Link>
         </div>
       ) : (
@@ -86,33 +86,33 @@ export default async function MemberContentsPage({
         </div>
       )}
 
-      <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
-        <p className="text-slate-600">
-          Page {pager.page} / {pager.totalPages}
+      <div className="flex items-center justify-between rounded-xl border border-slate-100 bg-white px-5 py-3 text-sm shadow-sm">
+        <p className="text-slate-500">
+          {pager.page} / {pager.totalPages}
         </p>
         <div className="flex gap-2">
           {pager.hasPrev ? (
             <Link
               href={`/member/contents${buildSearchQuery({ ...baseQuery, page: pager.prevPage })}`}
-              className="rounded-lg border border-slate-200 px-3 py-1.5 text-slate-700"
+              className="rounded-lg border border-slate-200 px-4 py-1.5 text-slate-600 transition-colors hover:bg-slate-50"
             >
-              Prev
+              前へ
             </Link>
           ) : (
-            <span className="rounded-lg border border-slate-100 px-3 py-1.5 text-slate-300">
-              Prev
+            <span className="rounded-lg border border-slate-100 px-4 py-1.5 text-slate-300 bg-slate-50">
+              前へ
             </span>
           )}
           {pager.hasNext ? (
             <Link
               href={`/member/contents${buildSearchQuery({ ...baseQuery, page: pager.nextPage })}`}
-              className="rounded-lg border border-slate-200 px-3 py-1.5 text-slate-700"
+              className="rounded-lg border border-slate-200 px-4 py-1.5 text-slate-600 transition-colors hover:bg-slate-50"
             >
-              Next
+              次へ
             </Link>
           ) : (
-            <span className="rounded-lg border border-slate-100 px-3 py-1.5 text-slate-300">
-              Next
+            <span className="rounded-lg border border-slate-100 px-4 py-1.5 text-slate-300 bg-slate-50">
+              次へ
             </span>
           )}
         </div>

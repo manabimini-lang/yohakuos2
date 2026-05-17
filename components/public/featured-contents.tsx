@@ -21,34 +21,32 @@ export function FeaturedContents({ items }: { items: FeaturedContent[] }) {
   return (
     <section className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-slate-900">Featured Contents</h2>
-        <Link href="/member/contents" className="text-sm text-slate-600 underline underline-offset-2">
-          もっと見る
+        <h2 className="text-lg font-medium text-slate-900">最近の記事</h2>
+        <Link href="/member/contents" className="text-sm text-slate-500 hover:text-slate-700 transition-colors">
+          すべて見る
         </Link>
       </div>
       {items.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">
-          公開コンテンツは準備中です。
+        <div className="rounded-2xl border border-slate-100 bg-white p-8 text-center text-sm text-slate-400 shadow-sm">
+          記事はまだありません。
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {items.map((item) => (
-            <article key={item.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-              <div className="h-36 bg-slate-100">
+            <article key={item.id} className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm transition-shadow hover:shadow-md">
+              <div className="h-36 bg-slate-50">
                 {item.thumbnailUrl ? (
                   <img src={item.thumbnailUrl} alt={item.title} className="h-full w-full object-cover" />
                 ) : (
-                  <div className="flex h-full items-center justify-center text-xs font-semibold text-slate-400">
-                    NO IMAGE
-                  </div>
+                  <div className="flex h-full items-center justify-center text-xs text-slate-300"></div>
                 )}
               </div>
-              <div className="space-y-2 p-4">
-                <h3 className="line-clamp-1 text-base font-semibold text-slate-900">{item.title}</h3>
-                <p className="line-clamp-2 text-sm text-slate-600">
+              <div className="space-y-2 p-5">
+                <h3 className="line-clamp-1 text-base font-medium text-slate-800">{item.title}</h3>
+                <p className="line-clamp-2 text-sm text-slate-500 leading-relaxed">
                   {item.description || "説明はまだありません。"}
                 </p>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-slate-400 pt-1">
                   {item.contentType} / {item.layer} / {dateFmt.format(item.updatedAt)}
                 </p>
               </div>

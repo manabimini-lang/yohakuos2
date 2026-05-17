@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { getStripe } from "@/lib/stripe";
-import { prisma } from "@/lib/prisma";
+import { userRepository } from "@/lib/repositories/user.repository";
+import { subscriptionRepository } from "@/lib/repositories/subscription.repository";
 
 export async function POST(req: Request) {
   try {
     const session = await auth();
     
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
@@ -19,16 +20,14 @@ export async function POST(req: Request) {
 
     const stripe = getStripe();
 
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
+    const user = await userRepository.findById(session.user.id);
+    const subscription = await subscriptionRepository.findByUserId(session.user.id);
 
     if (!user) {
       return new NextResponse("User not found", { status: 404 });
     }
 
-    // Check if user already has a Stripe customer ID, if not create one
-    let stripeCustomerId = user.stripeCustomerId;
+    let stripeCustomerId = subscription?.stripeCustomerId;
 
     if (!stripeCustomerId) {
       const customer = await stripe.customers.create({
@@ -41,9 +40,9 @@ export async function POST(req: Request) {
 
       stripeCustomerId = customer.id;
 
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { stripeCustomerId },
+      await subscriptionRepository.upsert(user.id, {
+        stripeCustomerId,
+        status: "incomplete",
       });
     }
 

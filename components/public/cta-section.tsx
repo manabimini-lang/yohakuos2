@@ -2,30 +2,19 @@ import Link from "next/link";
 
 export function CtaSection({ primaryColor }: { primaryColor?: string }) {
   return (
-    <section className="rounded-3xl border border-slate-200 bg-slate-900 p-8 text-white md:p-10">
-      <h2 className="text-2xl font-semibold">今日から、学びを積み上げる。</h2>
-      <p className="mt-2 text-sm text-slate-200">
-        無料ではじめて、必要に応じて学習を拡張できます。まずは1つのコンテンツから始めましょう。
+    <section className="rounded-3xl border border-slate-100 bg-white p-8 md:p-10 shadow-sm text-center">
+      <h2 className="text-xl font-medium text-slate-800 tracking-wide">ここは、いつでも戻れる場所です。</h2>
+      <p className="mt-3 text-sm text-slate-600 leading-relaxed">
+        必要なときにだけ、少しページを開いてみる。<br className="hidden md:block" />
+        まずは1つの記事から、静かに始めてみませんか。
       </p>
-      <div className="mt-6 flex flex-wrap gap-2">
+      <div className="mt-8 flex justify-center">
         <Link
-          href="/member"
-          className="rounded-lg px-4 py-2 text-sm font-medium text-white"
+          href="/login"
+          className="inline-flex rounded-xl px-6 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90 shadow-sm"
           style={{ backgroundColor: primaryColor ?? "#0f172a" }}
         >
-          無料ではじめる
-        </Link>
-        <Link
-          href="/login"
-          className="rounded-lg border border-slate-400 px-4 py-2 text-sm font-medium text-white"
-        >
-          ログイン
-        </Link>
-        <Link
-          href="/login"
-          className="rounded-lg border border-slate-400 px-4 py-2 text-sm font-medium text-white"
-        >
-          会員登録
+          ゆっくり、はじめる
         </Link>
       </div>
     </section>
