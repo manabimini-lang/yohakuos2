@@ -5,16 +5,32 @@ import { getSecureApiKeyStatus } from "@/lib/utils/secure-storage";
 
 export function GeminiStatusIndicator() {
   const [connected, setConnected] = useState(false);
+  const [method, setMethod] = useState<"oauth" | "apikey" | null>(null);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
     const checkConnection = async () => {
       try {
+        const res = await fetch("/api/gemini/status");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.connected) {
+            setConnected(true);
+            setMethod(data.method);
+            return;
+          }
+        }
+        
+        // Fallback to local check if API check fails or isn't connected
         const hasKey = await getSecureApiKeyStatus("gemini");
         setConnected(hasKey);
+        if (hasKey) setMethod("apikey");
       } catch (e) {
-        setConnected(false);
+        // Fallback
+        const hasKey = await getSecureApiKeyStatus("gemini");
+        setConnected(hasKey);
+        if (hasKey) setMethod("apikey");
       }
     };
 
@@ -39,7 +55,7 @@ export function GeminiStatusIndicator() {
         <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
       </span>
       <span className="text-[10px] font-semibold tracking-wide text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
-        ● Gemini Connected
+        {method === "oauth" ? "● Google Connected" : "● Gemini Connected"}
       </span>
     </div>
   );

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { GeminiStatusIndicator } from "@/components/member/gemini-status-indicator";
-import { getDecryptedApiKey } from "@/lib/utils/secure-storage";
+// Use server proxy for AI calls
 import { getCurrentRoad } from "@/lib/utils/log-db";
 
 const DEFAULT_ROADS = [
@@ -42,14 +42,6 @@ export function AiOrganizeClient() {
   const handleGenerateShare = async (msgId: string, originalContent: string) => {
     setMessages((prev) => prev.map(m => m.id === msgId ? { ...m, isGeneratingShare: true } : m));
 
-    const apiKey = await getDecryptedApiKey("gemini");
-    if (!apiKey) {
-      setToastMessage("Gemini APIキーが設定されていません。");
-      setTimeout(() => setToastMessage(null), 3000);
-      setMessages((prev) => prev.map(m => m.id === msgId ? { ...m, isGeneratingShare: false } : m));
-      return;
-    }
-
     const shareSystemPrompt = `あなたはYOHAKU共有整理AIです。
 
 目的：
@@ -69,16 +61,21 @@ summary:
 tags:`;
 
     try {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+      const response = await fetch("/api/ai/proxy", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          systemInstruction: { parts: [{ text: shareSystemPrompt }] },
-          contents: [{ role: "user", parts: [{ text: originalContent }] }]
+          input: originalContent,
+          systemPrompt: shareSystemPrompt,
         })
       });
 
-      if (!response.ok) throw new Error("API Error");
+      if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error("unauthorized");
+        }
+        throw new Error("API Error");
+      }
 
       const resData = await response.json();
       const outputText = resData.candidates?.[0]?.content?.parts?.[0]?.text || "";
@@ -103,9 +100,13 @@ tags:`;
         isGeneratingShare: false,
         sharePreview: { title, summary, tags }
       } : m));
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      setToastMessage("知見の生成に失敗しました。");
+      if (e.message === "unauthorized") {
+        setToastMessage("Geminiに接続されていません。設定画面から接続してください。");
+      } else {
+        setToastMessage("知見の生成に失敗しました。");
+      }
       setTimeout(() => setToastMessage(null), 3000);
       setMessages((prev) => prev.map(m => m.id === msgId ? { ...m, isGeneratingShare: false } : m));
     }
@@ -180,47 +181,24 @@ tags:`;
     setInput("");
     setIsProcessing(true);
 
-    const apiKey = await getDecryptedApiKey("gemini");
-    if (!apiKey) {
-      setToastMessage("Gemini APIキーが設定されていません。設定画面から接続してください。");
-      setTimeout(() => setToastMessage(null), 3000);
-      setIsProcessing(false);
-      return;
-    }
-
-    const systemPrompt = `あなたはYOHAKU AIです。
-
-目的：
-ユーザーを導くのではなく、状態を整理する。
-${roadData.context}
-
-出力形式：
-## 状態整理
-現在の状態を短く整理
-
-## 気づき
-行動や感情の意味づけ
-
-## 小さな次の一歩
-負荷の小さい行動
-
-制約：
-- 3〜5行
-- 長文禁止
-- 命令禁止
-- 優しく整理する`;
+    setIsProcessing(true);
 
     try {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+      const response = await fetch("/api/ai/proxy", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          systemInstruction: { parts: [{ text: systemPrompt }] },
-          contents: [{ role: "user", parts: [{ text: input.trim() }] }]
+          input: input.trim(),
+          roadContext: roadData.context,
         })
       });
 
       if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error("unauthorized");
+        } else if (response.status === 403) {
+          throw new Error("forbidden");
+        }
         throw new Error("API Error");
       }
 
@@ -252,8 +230,14 @@ ${roadData.context}
       };
 
       setMessages((prev) => [...prev, aiMessage]);
-    } catch (e) {
-      setToastMessage("Geminiへ接続できませんでした");
+    } catch (e: any) {
+      if (e.message === "unauthorized") {
+        setToastMessage("Geminiに接続されていません。設定画面から接続してください。");
+      } else if (e.message === "forbidden") {
+        setToastMessage("この機能は有料会員限定です。");
+      } else {
+        setToastMessage("Geminiへ接続できませんでした");
+      }
       setTimeout(() => setToastMessage(null), 3000);
     } finally {
       setIsProcessing(false);
