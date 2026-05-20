@@ -3,6 +3,8 @@ import { auth } from "@/lib/auth";
 import { encryptKey } from "@/lib/encryption";
 import { apiKeyRepository } from "@/lib/repositories/api-key.repository";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(req: Request) {
   try {
     const session = await auth();
