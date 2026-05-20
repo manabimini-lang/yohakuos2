@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowRight, ChevronRight, PenLine } from "lucide-react";
+import { ArrowRight, ChevronRight, PenLine, MessageSquare } from "lucide-react";
 
 const MESSAGES = [
   "焦らなくて大丈夫。",
@@ -22,12 +22,33 @@ export function YohakuHomeClient({
   const router = useRouter();
   const [message, setMessage] = useState("");
   const [input, setInput] = useState("");
+  const [discordFeed, setDiscordFeed] = useState<{ id: string; author: string; content: string; created_at: string }[]>([]);
 
   useEffect(() => {
+    const onboardingCompleted = localStorage.getItem("yohaku_onboarding_completed");
+    if (!onboardingCompleted) {
+      router.push("/onboarding");
+      return;
+    }
+
     // Pick a random message
     const randomMessage = MESSAGES[Math.floor(Math.random() * MESSAGES.length)];
     setMessage(randomMessage);
-  }, []);
+
+    // Fetch Discord feed
+    async function fetchFeed() {
+      try {
+        const res = await fetch("/api/discord/feed");
+        if (res.ok) {
+          const data = await res.json();
+          setDiscordFeed(data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch Discord feed", err);
+      }
+    }
+    fetchFeed();
+  }, [router]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -111,6 +132,34 @@ export function YohakuHomeClient({
               )}
             </div>
           </Link>
+        </section>
+      )}
+
+      {/* Discord Feed Section */}
+      {discordFeed.length > 0 && (
+        <section className="px-4 space-y-4 pt-4 border-t border-slate-50">
+          <div className="flex items-center gap-2 mb-2 text-slate-400">
+            <MessageSquare className="w-4 h-4" />
+            <h2 className="text-sm font-semibold tracking-wide">同じ空間の小さな実践</h2>
+          </div>
+          <div className="space-y-3.5">
+            {discordFeed.map((post) => (
+              <div 
+                key={post.id} 
+                className="rounded-3xl border border-slate-100 bg-white p-5 md:p-6 space-y-2.5 shadow-sm"
+              >
+                <div className="flex justify-between items-center text-xs text-slate-400">
+                  <span className="font-medium text-slate-500">@{post.author}</span>
+                  <span className="font-mono">
+                    {new Date(post.created_at).toLocaleDateString("ja-JP", { month: "short", day: "numeric" })} {new Date(post.created_at).toLocaleTimeString("ja-JP", { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </div>
+                <p className="text-xs md:text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
+                  {post.content}
+                </p>
+              </div>
+            ))}
+          </div>
         </section>
       )}
 

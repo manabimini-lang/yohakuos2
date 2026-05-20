@@ -28,6 +28,17 @@ export class ApiKeyRepository {
       },
     });
   }
+
+  async delete(userId: string, apiProvider: string = "gemini") {
+    return prisma.userApiKey.delete({
+      where: {
+        userId_apiProvider: {
+          userId,
+          apiProvider,
+        },
+      },
+    }).catch(() => null);
+  }
 }
 
 export const apiKeyRepository = new ApiKeyRepository();

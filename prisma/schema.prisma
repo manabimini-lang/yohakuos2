@@ -56,6 +56,10 @@ model User {
   emailVerified          DateTime?      @map("email_verified")
   role                   UserRole       @default(FREE_MEMBER)
   planType               String?        @map("plan_type")
+  plan                   String         @default("free") @map("plan")
+  discordId              String?        @map("discord_id")
+  discordName            String?        @map("discord_name")
+  discordAvatar          String?        @map("discord_avatar")
 
   // Settings & Integrations
   userApiKeys            UserApiKey[]
@@ -264,3 +268,72 @@ model AuditLog {
   @@index([createdAt])
   @@map("audit_logs")
 }
+
+model SharedKnowledge {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title     String
+  summary   String
+  tags      Json     @default("[]")
+  road      String
+  createdBy String   @map("created_by") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("shared_knowledge")
+}
+
+model ExternalContent {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title        String
+  url          String
+  thumbnailUrl String?  @map("thumbnail_url")
+  type         String
+  road         String
+  tags         Json     @default("[]")
+  description  String?
+  createdAt    DateTime @default(now()) @map("created_at")
+  createdBy    String   @map("created_by") @db.Uuid
+
+  @@map("external_contents")
+}
+
+model SuggestedContent {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title        String
+  url          String
+  type         String
+  road         String
+  tags         Json     @default("[]")
+  description  String?
+  createdAt    DateTime @default(now()) @map("created_at")
+  createdBy    String   @map("created_by") @db.Uuid
+
+  @@map("suggested_contents")
+}
+
+model Road {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug        String   @unique
+  title       String
+  description String
+  icon        String
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  roadPrompt  RoadPrompt?
+
+  @@map("roads")
+}
+
+model RoadPrompt {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  roadId       String   @unique @map("road_id") @db.Uuid
+  systemPrompt String   @map("system_prompt") @db.Text
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  road Road @relation(fields: [roadId], references: [id], onDelete: Cascade)
+
+  @@map("road_prompts")
+}
+
+

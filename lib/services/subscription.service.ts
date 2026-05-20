@@ -1,5 +1,6 @@
 import { subscriptionRepository } from "@/lib/repositories/subscription.repository";
 import { userRepository } from "@/lib/repositories/user.repository";
+import { ROLE, PLAN } from "@/lib/constants/plan";
 
 export class SubscriptionService {
   /**
@@ -18,7 +19,8 @@ export class SubscriptionService {
   async handleSubscriptionDeleted(stripeSubscriptionId: string) {
     const sub = await subscriptionRepository.findByStripeSubscriptionId(stripeSubscriptionId);
     if (sub) {
-      await userRepository.updateRole(sub.userId, "FREE_MEMBER");
+      await userRepository.updateRole(sub.userId, ROLE.FREE_MEMBER);
+      await userRepository.updatePlan(sub.userId, PLAN.FREE);
       await subscriptionRepository.update(stripeSubscriptionId, { status: "canceled" });
     }
   }
@@ -27,8 +29,12 @@ export class SubscriptionService {
    * Promotes user role and saves subscription
    */
   async handleCheckoutCompleted(userId: string, subscriptionData: any) {
-    await userRepository.updateRole(userId, "PAID_MEMBER");
-    await subscriptionRepository.upsert(userId, subscriptionData);
+    await userRepository.updateRole(userId, ROLE.PAID_MEMBER);
+    await userRepository.updatePlan(userId, PLAN.PREMIUM);
+    await subscriptionRepository.upsert(userId, {
+      ...subscriptionData,
+      status: "active",
+    });
   }
 }
 

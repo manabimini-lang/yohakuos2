@@ -18,8 +18,6 @@ export async function POST(req: Request) {
       return new NextResponse("Price ID is required", { status: 400 });
     }
 
-    const stripe = getStripe();
-
     const user = await userRepository.findById(session.user.id);
     const subscription = await subscriptionRepository.findByUserId(session.user.id);
 
@@ -27,6 +25,14 @@ export async function POST(req: Request) {
       return new NextResponse("User not found", { status: 404 });
     }
 
+    // Check if Stripe is configured
+    const stripeKey = process.env.STRIPE_SECRET_KEY;
+    if (!stripeKey || stripeKey.trim() === "" || stripeKey.startsWith("sk_live_...")) {
+      const mockUrl = `/member/checkout-mock?priceId=${priceId}`;
+      return NextResponse.json({ url: mockUrl });
+    }
+
+    const stripe = getStripe();
     let stripeCustomerId = subscription?.stripeCustomerId;
 
     if (!stripeCustomerId) {

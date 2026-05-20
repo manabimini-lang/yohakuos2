@@ -19,6 +19,13 @@ export class UserRepository {
       data: { role },
     });
   }
+
+  async updatePlan(id: string, plan: string) {
+    return prisma.user.update({
+      where: { id },
+      data: { plan },
+    });
+  }
 }
 
 export const userRepository = new UserRepository();

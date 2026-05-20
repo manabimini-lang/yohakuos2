@@ -8,6 +8,7 @@ import { HeroSection } from "@/components/public/hero-section";
 import { PricingComparison } from "@/components/public/pricing-comparison";
 import { getFeaturedPublicContents } from "@/lib/content/public-query";
 import { getSiteSettings } from "@/lib/settings/get-settings";
+import { LegalFooter } from "@/components/legal/footer";
 
 function PublicHeader({
   siteTitle,
@@ -91,6 +92,7 @@ export default async function LandingPage() {
         <MonthlyThemePreview />
         <CtaSection primaryColor={settings.primaryColor} />
       </main>
+      <LegalFooter />
     </div>
   );
 }

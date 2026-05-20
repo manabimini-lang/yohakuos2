@@ -27,17 +27,10 @@ export async function generateAiResponseAction(input: string, moodTag?: string) 
     }
     const userId = session.user.id;
 
-    // 3. Check Authorization (Admin or Active Subscription)
+    // 3. Verify user exists
     const user = await userRepository.findById(userId);
     if (!user) {
       return { ok: false, error: "ユーザーが見つかりません。" };
-    }
-
-    const isAdmin = user.role === "ADMIN" || user.role === "SUPER_ADMIN";
-    const hasActiveSub = await subscriptionService.hasActiveSubscription(userId);
-
-    if (!isAdmin && !hasActiveSub) {
-      return { ok: false, error: "AI対話機能は有料プランでのみご利用いただけます。" };
     }
 
     // 4. Fetch API Key

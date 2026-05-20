@@ -1,7 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
+import { Sparkles } from "lucide-react";
 import { updateAiKeyAction } from "@/lib/actions/settings/update-ai-key";
+
+import { ROLE, PLAN } from "@/lib/constants/plan";
 
 export function SettingsClient({ 
   hasKey, 
@@ -12,10 +16,42 @@ export function SettingsClient({
   isPaidMember: boolean;
   stripePriceId?: string;
 }) {
+  const { update } = useSession();
   const [apiKey, setApiKey] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
   const [isCheckoutLoading, setIsCheckoutLoading] = useState(false);
+  const [showUpgradeToast, setShowUpgradeToast] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (mounted && typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("success") === "true") {
+        update({
+          role: ROLE.PAID_MEMBER,
+          plan: PLAN.PREMIUM,
+        });
+        
+        const toastShown = sessionStorage.getItem("yohaku_upgrade_toast_shown");
+        if (!toastShown) {
+          setShowUpgradeToast(true);
+          sessionStorage.setItem("yohaku_upgrade_toast_shown", "true");
+          setTimeout(() => {
+            setShowUpgradeToast(false);
+          }, 5000);
+        }
+
+        // Clean up URL query parameter
+        const newUrl = window.location.pathname;
+        window.history.replaceState({}, "", newUrl);
+      }
+    }
+  }, [mounted, update]);
 
   const handleSaveKey = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -161,6 +197,27 @@ export function SettingsClient({
           )}
         </div>
       </section>
+
+      {/* Dynamic Custom Toast */}
+      {showUpgradeToast && (
+        <div className="fixed bottom-6 right-6 z-50 max-w-sm rounded-2xl border border-slate-100 bg-white p-5 shadow-lg animate-in slide-in-from-bottom duration-300 flex items-start gap-4">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-50 border border-slate-200 text-slate-400">
+            <Sparkles className="h-4 w-4 stroke-[1.5] text-yellow-500 fill-yellow-500/10" />
+          </div>
+          <div className="space-y-1">
+            <h3 className="text-sm font-medium text-slate-800">Premiumプランへようこそ</h3>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              AI整理機能が利用可能になりました。
+            </p>
+          </div>
+          <button 
+            onClick={() => setShowUpgradeToast(false)}
+            className="text-slate-400 hover:text-slate-600 transition-colors ml-auto text-xs font-semibold px-1"
+          >
+            閉じる
+          </button>
+        </div>
+      )}
     </div>
   );
 }

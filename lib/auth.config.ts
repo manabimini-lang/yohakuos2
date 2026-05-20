@@ -1,4 +1,6 @@
 import type { NextAuthConfig } from "next-auth";
+import { NextResponse } from "next/server";
+import { ROLE, PLAN, hasAdminAccess } from "@/lib/constants/plan";
 
 // Edge Runtime互換の設定（Prismaを使わない）
 export const authConfig: NextAuthConfig = {
@@ -18,7 +20,12 @@ export const authConfig: NextAuthConfig = {
       if (isOnAdmin) {
         if (!isLoggedIn) return false;
         const role = (auth.user as any).role;
-        return role === "ADMIN" || role === "SUPER_ADMIN";
+        return hasAdminAccess(role);
+      }
+
+      // Premium route protection (handled client-side for friendly UX)
+      if (nextUrl.pathname.startsWith("/member/ai")) {
+        return isLoggedIn;
       }
 
       if (isOnMember || isOnPremium) {
@@ -28,25 +35,27 @@ export const authConfig: NextAuthConfig = {
 
       return true;
     },
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
       if (user) {
         token.id = user.id;
-        // admin role check
-        if (
-          user.email === "manabi.mini@gmail.com" ||
-          user.email === "manabi.mini@gmaail.com"
-        ) {
-          token.role = "ADMIN";
-        } else {
-          token.role = "FREE_MEMBER";
-        }
+        const email = user.email || "";
+        const isAdminEmail = email === "manabi.mini@gmail.com" || email === "manabi.mini@gmaail.com";
+        token.role = isAdminEmail ? ROLE.ADMIN : ((user as any).role || ROLE.FREE_MEMBER);
+        token.plan = (user as any).plan || PLAN.FREE;
       }
+      if (trigger === "update" && session) {
+        token.role = session.role;
+        token.plan = session.plan;
+      }
+      token.role = token.role || ROLE.FREE_MEMBER;
+      token.plan = token.plan || PLAN.FREE;
       return token;
     },
     async session({ session, token }) {
       if (session.user && token) {
         session.user.id = token.id as string;
         session.user.role = token.role as any;
+        session.user.plan = token.plan as string;
       }
       return session;
     },

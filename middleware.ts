@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { authConfig } from "@/lib/auth.config";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
+import { isPremiumRoute, hasPremiumAccess } from "@/lib/constants/plan";
 
 const { auth } = NextAuth(authConfig);
 
@@ -41,6 +42,24 @@ export const middleware = auth(async (req) => {
       }
     } catch (e) {
       console.warn("Rate limit bypass due to Redis request error", e);
+    }
+  }
+
+  // Centralized Premium route protection
+  if (isPremiumRoute(path)) {
+    const isLoggedIn = !!req.auth?.user;
+    if (!isLoggedIn) {
+      const loginUrl = new URL(`/login?callbackUrl=${encodeURIComponent(path)}`, req.nextUrl.origin);
+      return NextResponse.redirect(loginUrl);
+    }
+
+    const plan = (req.auth?.user as any)?.plan;
+    const role = (req.auth?.user as any)?.role;
+    const isPremium = hasPremiumAccess(plan, role);
+
+    if (!isPremium) {
+      const pricingUrl = new URL("/pricing", req.nextUrl.origin);
+      return NextResponse.redirect(pricingUrl);
     }
   }
 
