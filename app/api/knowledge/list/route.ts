@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { unstable_noStore as noStore } from "next/cache";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
+  noStore();
   try {
     // 1. Verify NextAuth session (authenticates the user in alignment with RLS)
     const session = await auth();

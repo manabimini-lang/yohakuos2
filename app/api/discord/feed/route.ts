@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-
+import { unstable_noStore as noStore } from "next/cache";
 export const dynamic = "force-dynamic";
 
 type DiscordFeedItem = {
@@ -40,6 +40,7 @@ const MOCK_FEED: DiscordFeedItem[] = [
 ];
 
 export async function GET() {
+  noStore();
   try {
     // 1. Check if cache is still valid
     if (feedCache && (Date.now() - feedCache.timestamp < CACHE_TTL)) {

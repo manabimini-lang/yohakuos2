@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { unstable_noStore as noStore } from "next/cache";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
+  noStore();
   try {
     const session = await auth();
     if (!session?.user?.id) {

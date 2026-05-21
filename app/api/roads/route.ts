@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { unstable_noStore as noStore } from "next/cache";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
+  noStore();
   try {
     const roads = await prisma.road.findMany({
       where: { isActive: true },
