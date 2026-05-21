@@ -3,6 +3,8 @@ import { auth } from "@/lib/auth";
 import { supabase, toUuid } from "@/lib/supabase";
 import { hasPremiumAccess } from "@/lib/constants/plan";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(req: Request) {
   try {
     // 1. Verify user session

@@ -4,6 +4,8 @@ import { getStripe } from "@/lib/stripe";
 import { userRepository } from "@/lib/repositories/user.repository";
 import { subscriptionRepository } from "@/lib/repositories/subscription.repository";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(req: Request) {
   try {
     const session = await auth();

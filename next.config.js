@@ -1,6 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // すべてのAPIルートを動的にする（next-auth/cookies/headers使用ルートのビルドエラー回避）
+  experimental: {
+    fetchCache: 'default-no-store',
+  },
   images: {
     domains: [
       'localhost',
