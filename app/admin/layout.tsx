@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import { AdminHeader } from "@/components/admin/header";
 import { AdminSidebar } from "@/components/admin/sidebar";
 import { auth } from "@/lib/auth";
+import { extractPermissionsFromSession, hasMinRoleLevel } from "@/lib/permissions/helpers";
 
 export default async function AdminLayout({
   children,
@@ -18,8 +19,9 @@ export default async function AdminLayout({
     redirect("/login");
   }
 
-  const role = (session.user as any).role;
-  if (role !== "ADMIN" && role !== "SUPER_ADMIN") {
+  // Use RBAC permission-based check
+  const extracted = extractPermissionsFromSession(session);
+  if (!extracted || !hasMinRoleLevel(extracted.roles, "admin")) {
     redirect("/member");
   }
 

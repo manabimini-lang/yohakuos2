@@ -47,40 +47,112 @@ enum CardStyle {
   COMFORTABLE
 }
 
+// ===================================================
+// YOHAKU RBAC — Role & Permission Models
+// ===================================================
+
+model SystemRoleAssignment {
+  id         String   @id @default(cuid())
+  userId     String   @map("user_id")
+  role       String   // "user" | "moderator" | "admin" | "owner"
+  assignedBy String?  @map("assigned_by")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, role])
+  @@index([userId])
+  @@index([role])
+  @@map("system_role_assignments")
+}
+
+model Permission {
+  id          String   @id @default(cuid())
+  permission  String   @unique // "read_reports" | "manage_reports" | etc.
+  label       String
+  description String?
+  category    String   // "moderation" | "administration" | "billing" | "ai" | "analytics" | "system"
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  rolePermissions RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  id           String   @id @default(cuid())
+  role         String   // "user" | "moderator" | "admin" | "owner"
+  permissionId String   @map("permission_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([role, permissionId])
+  @@index([role])
+  @@index([permissionId])
+  @@map("role_permissions")
+}
+
 model User {
-  id                     String         @id @default(cuid())
-  email                  String         @unique
-  password               String?
-  name                   String?
-  image                  String?
-  emailVerified          DateTime?      @map("email_verified")
-  role                   UserRole       @default(FREE_MEMBER)
-  planType               String?        @map("plan_type")
-  plan                   String         @default("free") @map("plan")
-  discordId              String?        @map("discord_id")
-  discordName            String?        @map("discord_name")
-  discordAvatar          String?        @map("discord_avatar")
+  id            String    @id @default(cuid())
+  email         String    @unique
+  password      String?
+  name          String?
+  image         String?
+  emailVerified DateTime? @map("email_verified")
+  role          UserRole  @default(FREE_MEMBER)
+  planType      String?   @map("plan_type")
+  plan          String    @default("free") @map("plan")
+  discordId     String?   @map("discord_id")
+  discordName   String?   @map("discord_name")
+  discordAvatar String?   @map("discord_avatar")
+
+  // RBAC — System Roles (new permission-based system)
+  systemRoleAssignments SystemRoleAssignment[]
 
   // Settings & Integrations
-  userApiKeys            UserApiKey[]
-  
+  userApiKeys UserApiKey[]
+
   // Stripe Subscription
-  subscription           Subscription?
-  
-  createdAt              DateTime       @default(now()) @map("created_at")
-  updatedAt              DateTime       @updatedAt @map("updated_at")
-  contents               Content[]
-  progress               UserProgress[]
-  accounts               Account[]
-  sessions               Session[]
-  dailyLogs              DailyLog[]
-  reflections            Reflection[]
+  subscription Subscription?
+
+  // Audit Trail
+  auditLogs AuditLog[]
+
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+  contents       Content[]
+  progress       UserProgress[]
+  accounts       Account[]
+  sessions       Session[]
+  dailyLogs      DailyLog[]
+  reflections    Reflection[]
+  userMemories   UserMemory[]
+  knowledgeCards KnowledgeCard[]
+
+  // Life OS Layer relations
+  ambientInsights       AmbientInsight[]
+  resonancePatterns     ResonancePattern[]
+  slowFeedEntries       SlowFeedEntry[]
+  lifeAreas             LifeArea[]
+  habitFlows            HabitFlow[]
+  lifeReflections       LifeReflection[]
+  energyStates          EnergyState[]
+  meaningSignals        MeaningSignal[]
+  lifeBalances          LifeBalance[]
+  directionReflections  DirectionReflection[]
+  quietPlans            QuietPlan[]
+  emotionalCooldowns    EmotionalCooldown[]
+  roadHistories         RoadHistory[]
+  roadTransitions       RoadTransition[]
+  seasonalSummaries     SeasonalSummary[]
+  companionConversations CompanionConversation[]
 
   // Security & Admin
-  failedLoginAttempts    Int       @default(0) @map("failed_login_attempts")
-  lockedUntil            DateTime? @map("locked_until")
-  mfaSecret              String?   @map("mfa_secret")
-  mfaEnabled             Boolean   @default(false) @map("mfa_enabled")
+  failedLoginAttempts Int       @default(0) @map("failed_login_attempts")
+  lockedUntil         DateTime? @map("locked_until")
+  mfaSecret           String?   @map("mfa_secret")
+  mfaEnabled          Boolean   @default(false) @map("mfa_enabled")
 
   @@map("users")
 }
@@ -103,8 +175,8 @@ model DailyLog {
   id          String   @id @default(cuid())
   userId      String   @map("user_id")
   moodTag     String?  @map("mood_tag")
-  inputText   String   @db.Text @map("input_text")
-  aiResponse  String?  @db.Text @map("ai_response")
+  inputText   String   @map("input_text") @db.Text
+  aiResponse  String?  @map("ai_response") @db.Text
   smallAction String?  @map("small_action")
   createdAt   DateTime @default(now()) @map("created_at")
 
@@ -116,10 +188,20 @@ model DailyLog {
 }
 
 model Reflection {
-  id             String   @id @default(cuid())
-  userId         String   @map("user_id")
-  reflectionText String   @db.Text @map("reflection_text")
-  createdAt      DateTime @default(now()) @map("created_at")
+  id             String @id @default(cuid())
+  userId         String @map("user_id")
+  reflectionText String @map("reflection_text") @db.Text
+
+  // AI Memory Fields
+  title         String?
+  content       String?  @db.Text
+  type          String? // 'user', 'ai_insight', 'weekly', 'pattern'
+  confidence    Float?
+  triggeredBy   String[] // Array of UserMemory IDs
+  sentiment     String?
+  promptVersion String?  @map("prompt_version")
+
+  createdAt DateTime @default(now()) @map("created_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -146,21 +228,21 @@ model Subscription {
 }
 
 model Content {
-  id            String          @id @default(cuid())
+  id            String            @id @default(cuid())
   title         String
-  slug          String          @unique
+  slug          String            @unique
   description   String?
-  thumbnailUrl  String?         @map("thumbnail_url")
+  thumbnailUrl  String?           @map("thumbnail_url")
   content       String?
-  contentType   ContentType     @map("content_type")
+  contentType   ContentType       @map("content_type")
   visibility    ContentVisibility
-  publishStatus PublishStatus   @default(DRAFT) @map("publish_status")
+  publishStatus PublishStatus     @default(DRAFT) @map("publish_status")
   layer         ContentLayer
-  releaseDate   DateTime?       @map("release_date")
-  createdBy     String          @map("created_by")
-  createdAt     DateTime        @default(now()) @map("created_at")
-  updatedAt     DateTime        @updatedAt @map("updated_at")
-  author        User            @relation(fields: [createdBy], references: [id], onDelete: Restrict)
+  releaseDate   DateTime?         @map("release_date")
+  createdBy     String            @map("created_by")
+  createdAt     DateTime          @default(now()) @map("created_at")
+  updatedAt     DateTime          @updatedAt @map("updated_at")
+  author        User              @relation(fields: [createdBy], references: [id], onDelete: Restrict)
   tags          ContentTag[]
   progress      UserProgress[]
 
@@ -243,6 +325,31 @@ model VerificationToken {
   @@map("verification_tokens")
 }
 
+// ===================================================
+// YOHAKU Safety Engine — Risk Review Queue
+// ===================================================
+
+model RiskReview {
+  id           String   @id @default(cuid())
+  userId       String   @map("user_id")
+  assessmentId String   @map("assessment_id")
+  riskLevel    String   @map("risk_level") // "low" | "medium" | "high" | "critical"
+  riskScore    Float    @map("risk_score")
+  signals      Json     @default("[]") @db.JsonB
+  status       String   @default("pending") // "pending" | "in_review" | "resolved" | "escalated"
+  assignedTo   String?  @map("assigned_to")
+  notes        String?  @db.Text
+  resolution   String?  @db.Text
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@index([status])
+  @@index([assignedTo])
+  @@index([riskLevel])
+  @@map("risk_reviews")
+}
+
 model SiteSettings {
   id              String    @id @default("global")
   siteTitle       String    @default("YOHAKU")
@@ -255,17 +362,68 @@ model SiteSettings {
   @@map("site_settings")
 }
 
-model AuditLog {
-  id        String   @id @default(cuid())
-  userId    String?  @map("user_id")
-  action    String
-  resource  String
-  ipAddress String?  @map("ip_address")
-  details   String?  @db.Text
-  createdAt DateTime @default(now()) @map("created_at")
+// ===================================================
+// YOHAKU Operational State — State Transitions
+// ===================================================
+//
+// IMMUTABLE DESIGN: Records must never be updated or deleted.
+// This is an append-only log of all state transitions.
+// ===================================================
 
-  @@index([userId])
+model StateTransition {
+  id         String   @id @default(cuid())
+  entityType String   @map("entity_type") // "user" | "moderation" | "subscription" | "safety"
+  entityId   String   @map("entity_id")
+  fromState  String   @map("from_state")
+  toState    String   @map("to_state")
+  reason     String
+  actorId    String?  @map("actor_id")
+  metadata   Json?    @default("{}") @db.JsonB
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([entityType, entityId])
+  @@index([entityType, entityId, createdAt])
+  @@index([actorId])
   @@index([createdAt])
+  @@map("state_transitions")
+}
+
+// ===================================================
+// YOHAKU Audit & Security — Audit Log
+// ===================================================
+//
+// IMMUTABLE DESIGN: Records must never be updated or deleted.
+// This is an append-only log for security, compliance, and forensics.
+// ===================================================
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?  @map("actor_id")
+  category   String   // "auth" | "moderation" | "billing" | "ai" | "admin" | "security" | "user_management"
+  action     String   // e.g. "user.login", "role.change", "moderation.resolve"
+  targetType String?  @map("target_type") // e.g. "user", "content", "report", "role"
+  targetId   String?  @map("target_id")
+  severity   String   @default("info") // "info" | "warning" | "error" | "critical"
+
+  // Structured metadata as JSON (generic, flexible for future events)
+  metadata   Json?    @default("{}") @db.JsonB
+
+  // Security context
+  ipAddress  String?  @map("ip_address")
+  userAgent  String?  @map("user_agent")
+  sessionId  String?  @map("session_id")
+
+  // Actor relation (nullable for system actions)
+  actor      User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([actorId])
+  @@index([category])
+  @@index([action])
+  @@index([createdAt])
+  @@index([category, createdAt])
+  @@index([actorId, createdAt])
   @@map("audit_logs")
 }
 
@@ -297,15 +455,15 @@ model ExternalContent {
 }
 
 model SuggestedContent {
-  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  title        String
-  url          String
-  type         String
-  road         String
-  tags         Json     @default("[]")
-  description  String?
-  createdAt    DateTime @default(now()) @map("created_at")
-  createdBy    String   @map("created_by") @db.Uuid
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title       String
+  url         String
+  type        String
+  road        String
+  tags        Json     @default("[]")
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  createdBy   String   @map("created_by") @db.Uuid
 
   @@map("suggested_contents")
 }
@@ -319,7 +477,7 @@ model Road {
   isActive    Boolean  @default(true) @map("is_active")
   createdAt   DateTime @default(now()) @map("created_at")
 
-  roadPrompt  RoadPrompt?
+  roadPrompt RoadPrompt?
 
   @@map("roads")
 }
@@ -336,4 +494,636 @@ model RoadPrompt {
   @@map("road_prompts")
 }
 
+// ===================================================
+// YOHAKU Life OS Layer — Life Timeline / Areas / Meaning / Energy / Habit
+// ===================================================
 
+enum LifeAreaType {
+  Health
+  Learning
+  Work
+  Creativity
+  Relationships
+  Mind
+  Rest
+  Challenge
+}
+
+model LifeArea {
+  id          String       @id @default(cuid())
+  userId      String       @map("user_id")
+  type        LifeAreaType
+  title       String
+  description String?      @db.Text
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type])
+  @@index([userId])
+  @@map("life_areas")
+}
+
+enum HabitFlowStatus {
+  active
+  paused
+  completed
+  naturally_ended
+}
+
+model HabitFlow {
+  id         String           @id @default(cuid())
+  userId     String           @map("user_id")
+  title      String
+  category   String?
+  status     HabitFlowStatus  @default(active)
+  intensity  Int              @default(1) // 1-5 scale
+  areaType   LifeAreaType?    @map("area_type")
+
+  startedAt DateTime         @default(now()) @map("started_at")
+  endedAt   DateTime?        @map("ended_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([userId, areaType])
+  @@map("habit_flows")
+}
+
+enum LifeReflectionType {
+  weekly
+  monthly
+  seasonal
+  half_year
+  yearly
+  goal
+}
+
+model LifeReflection {
+  id         String              @id @default(cuid())
+  userId     String              @map("user_id")
+  type       LifeReflectionType
+  title      String
+  content    String              @db.Text
+  confidence Float               @default(0.5)
+
+  sourceIds  String[]            @map("source_ids")
+  areaType   LifeAreaType?       @map("area_type")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type])
+  @@index([userId, createdAt])
+  @@map("life_reflections")
+}
+
+enum EnergyStateType {
+  calm_focus
+  exhaustion
+  recovery
+  curiosity
+  instability
+  groundedness
+}
+
+model EnergyState {
+  id         String           @id @default(cuid())
+  userId     String           @map("user_id")
+  state      EnergyStateType
+  intensity  Int              @default(3) // 1-10 scale
+  sourceReflectionId String?  @map("source_reflection_id")
+
+  note       String?          @db.Text
+  areaType   LifeAreaType?    @map("area_type")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, state])
+  @@index([userId, createdAt])
+  @@map("energy_states")
+}
+
+model MeaningSignal {
+  id          String   @id @default(cuid())
+  userId      String   @map("user_id")
+  signalType  String   @map("signal_type") // recurring_theme, unresolved_question, value_tension, long_term_curiosity, emotional_recurrence
+  description String   @db.Text
+  confidence  Float    @default(0.3)
+  areaType    LifeAreaType? @map("area_type")
+
+  relatedMemoryIds String[] @map("related_memory_ids")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, signalType])
+  @@index([userId, confidence])
+  @@map("meaning_signals")
+}
+
+// ===================================================
+// Life Balance & Direction
+// ===================================================
+
+model LifeBalance {
+  id        String @id @default(cuid())
+  userId    String @map("user_id")
+  analysis  String @db.Text
+  signals   Json   @default("[]") @db.JsonB // Array of imbalance signals
+  confidence Float @default(0.3)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("life_balances")
+}
+
+model DirectionReflection {
+  id        String @id @default(cuid())
+  userId    String @map("user_id")
+  direction String @db.Text
+  intention String @db.Text
+  values    Json   @default("[]") @db.JsonB
+  quietWish String? @db.Text @map("quiet_wish")
+  confidence Float @default(0.3)
+
+  period    String @default("current") // current, past, emerging
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, period])
+  @@index([userId, createdAt])
+  @@map("direction_reflections")
+}
+
+model QuietPlan {
+  id        String @id @default(cuid())
+  userId    String @map("user_id")
+  intention String @db.Text
+  nextStep  String? @db.Text @map("next_step")
+  note      String? @db.Text
+
+  isOptional   Boolean @default(true) @map("is_optional")
+  isCompleted  Boolean @default(false) @map("is_completed")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  completedAt DateTime? @map("completed_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("quiet_plans")
+}
+
+// ===================================================
+// Conversation Compression Layer
+// ===================================================
+
+model ConversationSummary {
+  id             String   @id @default(cuid())
+  conversationId String   @map("conversation_id")
+  summaryType    String   @map("summary_type") // rolling, thematic, abstract, meaning
+  content        String   @db.Text
+  tokenCount     Int      @default(0) @map("token_count")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  conversation CompanionConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, summaryType])
+  @@map("conversation_summaries")
+}
+
+model ConversationTheme {
+  id             String   @id @default(cuid())
+  conversationId String   @map("conversation_id")
+  theme          String
+  confidence     Float    @default(0.5)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  conversation CompanionConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@map("conversation_themes")
+}
+
+model ConversationInsight {
+  id             String   @id @default(cuid())
+  conversationId String   @map("conversation_id")
+  insight        String   @db.Text
+  confidence     Float    @default(0.5)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  conversation CompanionConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@map("conversation_insights")
+}
+
+// ===================================================
+// Emotional Cooldown System
+// ===================================================
+
+model EmotionalCooldown {
+  id          String   @id @default(cuid())
+  userId      String   @map("user_id")
+  cooldownType String  @map("cooldown_type") // emotional_overload, anxiety_repetition, reflection_cooldown
+  intensity   Int      @default(3) // 1-10
+  sourceId    String?  @map("source_id")
+
+  expiresAt   DateTime @map("expires_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, cooldownType])
+  @@index([userId, expiresAt])
+  @@map("emotional_cooldowns")
+}
+
+// ===================================================
+// Road Context Persistence
+// ===================================================
+
+model RoadHistory {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  roadSlug  String   @map("road_slug")
+  roadTitle String   @map("road_title")
+  roadIcon  String?  @map("road_icon")
+
+  startedAt DateTime @default(now()) @map("started_at")
+  endedAt   DateTime? @map("ended_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("road_histories")
+}
+
+model RoadTransition {
+  id          String   @id @default(cuid())
+  userId      String   @map("user_id")
+  fromRoad    String   @map("from_road")
+  toRoad      String   @map("to_road")
+  reflection  String?  @db.Text
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("road_transitions")
+}
+
+model SeasonalSummary {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  period    String   @map("period") // spring_2026, summer_2026, etc.
+  season    String   @map("season") // spring, summer, autumn, winter
+  year      Int      @map("year")
+  summary   String   @db.Text
+  themes    Json     @default("[]") @db.JsonB
+  confidence Float   @default(0.4)
+
+  startDate DateTime  @map("start_date")
+  endDate   DateTime  @map("end_date")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, period])
+  @@index([userId])
+  @@map("seasonal_summaries")
+}
+
+// ===================================================
+// YOHAKU Ambient Intelligence Layer
+// ===================================================
+
+model AmbientInsight {
+  id              String   @id @default(cuid())
+  userId          String   @map("user_id")
+  type            String   @map("type") // seasonal_echo, memory_resonance, reflection_bridge, theme_recurrence, quiet_discovery
+  title           String
+  content         String   @db.Text
+  sourceMemoryIds String[] @map("source_memory_ids")
+  confidence      Float    @default(0.3)
+
+  surfacedAt  DateTime  @map("surfaced_at")
+  dismissedAt DateTime? @map("dismissed_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type])
+  @@index([userId, surfacedAt])
+  @@index([userId, confidence])
+  @@map("ambient_insights")
+}
+
+model ResonancePattern {
+  id          String   @id @default(cuid())
+  userId      String   @map("user_id")
+  patternType String   @map("pattern_type") // seasonal_recurrence, emotional_cycle, behavioral_loop, thematic_return, value_consistency
+  description String   @db.Text
+  confidence  Float    @default(0.3)
+
+  sourceMemoryIds String[] @map("source_memory_ids")
+  evidenceIds     String[] @map("evidence_ids")
+
+  firstObservedAt DateTime  @map("first_observed_at")
+  observedCount   Int       @default(1) @map("observed_count")
+  lastObservedAt  DateTime  @map("last_observed_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, patternType, firstObservedAt])
+  @@index([userId, patternType])
+  @@index([userId, confidence])
+  @@map("resonance_patterns")
+}
+
+model SlowFeedEntry {
+  id          String   @id @default(cuid())
+  userId      String   @map("user_id")
+  entryType   String   @map("entry_type") // insight, resonance, reflection, seasonal_echo, quiet_connection
+  title       String
+  content     String   @db.Text
+  sourceType  String?  @map("source_type") // ambient_insight, resonance_pattern, life_reflection, meaning_signal, seasonal_summary
+  sourceId    String?  @map("source_id")
+
+  isRead      Boolean  @default(false) @map("is_read")
+  isSaved     Boolean  @default(false) @map("is_saved")
+
+  confidence  Float    @default(0.3)
+  priority    Int      @default(0) // 0-5, 0=lowest
+
+  surfacedAt  DateTime @default(now()) @map("surfaced_at")
+  readAt      DateTime? @map("read_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead, createdAt])
+  @@index([userId, priority, surfacedAt])
+  @@index([userId, entryType])
+  @@map("slow_feed_entries")
+}
+
+// ===================================================
+// YOHAKU Personal Knowledge Memory Layer
+// ===================================================
+
+enum KnowledgeCardType {
+  url
+  text
+  youtube
+  pdf
+  voice
+  web_clipping
+  ai_conversation
+  reflection
+}
+
+model KnowledgeCard {
+  id       String            @id @default(cuid())
+  userId   String            @map("user_id")
+  type     KnowledgeCardType
+  source   String? // 元URL、ファイルパスなど
+  title    String?
+  content  String            @db.Text
+  metadata Json?             @db.JsonB
+
+  summary String?  @db.Text
+  tags    String[]
+
+  userMemories  UserMemory[]
+  memorySources MemorySource[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, type])
+  @@index([userId, createdAt])
+  @@map("knowledge_cards")
+}
+
+enum MemoryType {
+  value
+  belief
+  goal
+  fear
+  motivation
+  learning_style
+  habit
+  personality_trait
+  reflection
+  emotional_pattern
+  life_theme
+  behavior_pattern
+  thinking_pattern
+}
+
+model UserMemory {
+  id         String     @id @default(cuid())
+  userId     String     @map("user_id")
+  type       MemoryType
+  category   String?
+  title      String
+  content    String     @db.Text
+  confidence Float      @default(0.5)
+
+  fingerprint  String? @unique
+  version      Int     @default(1)
+  supersededId String? @map("superseded_id")
+
+  outgoingEdges MemoryGraphEdge[] @relation("OutgoingEdges")
+  incomingEdges MemoryGraphEdge[] @relation("IncomingEdges")
+
+  sourceCard   KnowledgeCard? @relation(fields: [sourceCardId], references: [id], onDelete: SetNull)
+  sourceCardId String?        @map("source_card_id")
+  sources      MemorySource[]
+
+  promptVersion String? @map("prompt_version")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type])
+  @@index([userId, confidence])
+  @@index([userId, type, confidence])
+  @@index([fingerprint])
+  @@map("user_memories")
+}
+
+enum EdgeRelation {
+  supports
+  contradicts
+  causes
+  results_in
+  similar_to
+  evolved_to
+  influenced_by
+}
+
+model MemoryGraphEdge {
+  id           String       @id @default(cuid())
+  fromMemoryId String       @map("from_memory_id")
+  toMemoryId   String       @map("to_memory_id")
+  relation     EdgeRelation
+  strength     Float        @default(0.5)
+  userId       String       @map("user_id")
+
+  fromMemory UserMemory @relation("OutgoingEdges", fields: [fromMemoryId], references: [id], onDelete: Cascade)
+  toMemory   UserMemory @relation("IncomingEdges", fields: [toMemoryId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([fromMemoryId, toMemoryId, relation])
+  @@index([userId])
+  @@index([fromMemoryId])
+  @@index([toMemoryId])
+  @@map("memory_graph_edges")
+}
+
+model IdentitySnapshot {
+  id      String @id @default(cuid())
+  userId  String @map("user_id")
+  period  String
+  label   String
+  summary String @db.Text
+  traits  Json   @db.JsonB
+
+  startDate DateTime  @map("start_date")
+  endDate   DateTime? @map("end_date")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId, period])
+  @@index([userId, startDate])
+  @@map("identity_snapshots")
+}
+
+model MemorySource {
+  id       String @id @default(cuid())
+  memoryId String @map("memory_id")
+  cardId   String @map("card_id")
+
+  memory UserMemory    @relation(fields: [memoryId], references: [id], onDelete: Cascade)
+  card   KnowledgeCard @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([memoryId, cardId])
+  @@index([cardId])
+  @@index([memoryId])
+  @@map("memory_sources")
+}
+
+// ===================================================
+// YOHAKU AI Companion Layer
+// ===================================================
+
+model CompanionConversation {
+  id             String   @id @default(cuid())
+  userId         String   @map("user_id")
+  title          String   @default("")
+  contextVersion Int      @default(1) @map("context_version")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user     User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages CompanionMessage[]
+  summaries ConversationSummary[]
+  themes    ConversationTheme[]
+  insights  ConversationInsight[]
+
+  @@index([userId])
+  @@index([userId, createdAt])
+  @@map("companion_conversations")
+}
+
+enum MessageRole {
+  user
+  assistant
+  system
+}
+
+model CompanionMessage {
+  id             String       @id @default(cuid())
+  conversationId String       @map("conversation_id")
+  role           MessageRole
+  content        String       @db.Text
+  tokenCount     Int          @default(0) @map("token_count")
+  memorySnapshot Json?        @map("memory_snapshot") @db.JsonB
+
+  conversation CompanionConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([conversationId])
+  @@index([conversationId, createdAt])
+  @@map("companion_messages")
+}
+
+enum JobStatus {
+  pending
+  processing
+  completed
+  failed
+  deduped
+}
+
+model AIJob {
+  id       String    @id @default(cuid())
+  userId   String    @map("user_id")
+  jobType  String    @map("job_type")
+  status   JobStatus @default(pending)
+  priority Int       @default(0)
+
+  input  Json  @db.JsonB
+  output Json? @db.JsonB
+
+  error      String? @db.Text
+  retryCount Int     @default(0) @map("retry_count")
+  maxRetries Int     @default(3) @map("max_retries")
+
+  tokenUsed    Int?   @map("token_used")
+  costEstimate Float? @map("cost_estimate")
+
+  createdAt   DateTime  @default(now()) @map("created_at")
+  startedAt   DateTime? @map("started_at")
+  completedAt DateTime? @map("completed_at")
+
+  @@index([userId, status])
+  @@index([status, priority, createdAt])
+  @@index([status, createdAt])
+  @@map("ai_jobs")
+}

@@ -63,6 +63,9 @@ export const middleware = auth(async (req) => {
     }
   }
 
+  // RBAC route protection is handled by auth.config.ts authorized callback
+  // which runs on every request matching the matcher
+
   return NextResponse.next();
 });
 
