@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { unstable_noStore as noStore } from "next/cache";
-import { apiKeyRepository } from "@/lib/repositories/api-key.repository";
-import { decryptKey } from "@/lib/encryption";
+import { validateApiKey } from "@/lib/ai/gemini";
 
 export const dynamic = "force-dynamic";
 
@@ -15,35 +14,18 @@ export async function GET(req: Request) {
     }
     const userId = session.user.id;
 
-    const oauthKeyRecord = await apiKeyRepository.findByUserIdAndProvider(userId, "gemini_oauth");
-    const legacyKeyRecord = await apiKeyRepository.findByUserIdAndProvider(userId, "gemini");
-
-    let method: "oauth" | "apikey" | null = null;
-    let expiresSoon = false;
-
-    if (oauthKeyRecord?.encryptedKey) {
-      method = "oauth";
-      try {
-        const decryptedPayload = decryptKey(oauthKeyRecord.encryptedKey);
-        const tokenData = JSON.parse(decryptedPayload);
-        if (Date.now() >= tokenData.expires_at - 5 * 60 * 1000) {
-          expiresSoon = true;
-        }
-      } catch (e) {
-        method = null;
-      }
-    } else if (legacyKeyRecord?.encryptedKey) {
-      method = "apikey";
-    }
+    // 実際にGemini APIを呼び出して疎通確認
+    const result = await validateApiKey(userId);
 
     return NextResponse.json({
-      connected: method !== null,
-      method,
-      expiresSoon,
+      connected: result.connected,
+      method: result.method,
+      expiresSoon: false,
+      error: result.error || null,
     });
 
   } catch (error) {
     console.error("[GEMINI_STATUS]", error);
-    return NextResponse.json({ connected: false, method: null }, { status: 500 });
+    return NextResponse.json({ connected: false, method: null, error: "Internal error" }, { status: 500 });
   }
 }
