@@ -61,9 +61,25 @@ export class GeminiProvider implements AIProvider {
   readonly version = PROVIDER_VERSION;
 
   private userId?: string;
+  private apiKey?: string;
+  private customModel?: string;
 
-  constructor(userId?: string) {
-    this.userId = userId;
+  constructor(options?: string | { userId?: string; apiKey?: string; model?: string }) {
+    if (typeof options === "string") {
+      this.userId = options;
+    } else if (options) {
+      this.userId = options.userId;
+      this.apiKey = options.apiKey;
+      this.customModel = options.model;
+    }
+  }
+
+  private getRequestOptions() {
+    return {
+      userId: this.userId,
+      apiKey: this.apiKey,
+      modelName: this.customModel,
+    };
   }
 
   async summarize(text: string, options?: SummarizeOptions): Promise<string> {
@@ -71,7 +87,7 @@ export class GeminiProvider implements AIProvider {
     const prompt = `以下のテキストを最大${maxChars}文字で要約してください：\n\n${text.slice(0, 3000)}`;
 
     try {
-      const result = await generateText(prompt, SUMMARIZE_SYSTEM, this.userId);
+      const result = await generateText(prompt, SUMMARIZE_SYSTEM, this.getRequestOptions());
       return result.text.trim().slice(0, maxChars);
     } catch (error) {
       console.error("[GeminiProvider.summarize] error:", error);
@@ -88,7 +104,7 @@ export class GeminiProvider implements AIProvider {
       const result = await generateJSON<string[]>(
         prompt,
         TAGGER_SYSTEM,
-        this.userId
+        this.getRequestOptions()
       );
       const tags = Array.isArray(result.data) ? result.data : [];
       return tags.slice(0, maxTags);
@@ -117,7 +133,7 @@ export class GeminiProvider implements AIProvider {
       const result = await generateJSON<{ type: ContentItemType }>(
         prompt,
         CLASSIFIER_SYSTEM,
-        this.userId
+        this.getRequestOptions()
       );
       return result.data?.type ?? "other";
     } catch (error) {
@@ -127,9 +143,19 @@ export class GeminiProvider implements AIProvider {
   }
 
   async embed(text: string): Promise<number[]> {
-    // Gemini embedding via REST API (the @google/generative-ai SDK supports this)
-    const apiKey =
-      process.env.GEMINI_API_KEY;
+    let apiKey = this.apiKey;
+    if (!apiKey && this.userId) {
+      try {
+        const { getApiCredentials } = await import("./gemini");
+        const creds = await getApiCredentials(this.userId);
+        apiKey = creds.apiKey;
+      } catch {
+        // ignore
+      }
+    }
+    if (!apiKey) {
+      apiKey = process.env.GEMINI_API_KEY;
+    }
 
     if (!apiKey) {
       console.warn("[GeminiProvider.embed] No API key, skipping embedding");
@@ -165,7 +191,7 @@ export class GeminiProvider implements AIProvider {
 
   async generateInsight(systemPrompt: string, userPrompt: string): Promise<string> {
     try {
-      const result = await generateText(userPrompt, systemPrompt, this.userId);
+      const result = await generateText(userPrompt, systemPrompt, this.getRequestOptions());
       return result.text.trim();
     } catch (error) {
       console.error("[GeminiProvider.generateInsight] error:", error);
@@ -178,6 +204,6 @@ export class GeminiProvider implements AIProvider {
  * Singleton factory for server-side usage.
  * Instantiated per-request with optional userId.
  */
-export function createGeminiProvider(userId?: string): GeminiProvider {
-  return new GeminiProvider(userId);
+export function createGeminiProvider(options?: string | { userId?: string; apiKey?: string; model?: string }): GeminiProvider {
+  return new GeminiProvider(options);
 }

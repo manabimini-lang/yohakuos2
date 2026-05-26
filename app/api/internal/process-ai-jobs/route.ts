@@ -1,8 +1,20 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-
 import crypto from "crypto";
 import { processAIAnalysis } from "@/app/actions/ai-processing";
+
+export const dynamic = "force-dynamic";
+
+function getRetryDelayMinutes(retryCount: number): number {
+  switch (retryCount) {
+    case 1: return 5;
+    case 2: return 15;
+    case 3: return 60;
+    case 4: return 360;
+    case 5: return 1440;
+    default: return 1440; // 24 hours
+  }
+}
 
 export async function GET(request: Request) {
   // Validate CRON_SECRET to prevent unauthorized access
@@ -28,7 +40,6 @@ export async function GET(request: Request) {
 
   try {
     // 1. Process pending/retrying AIJobs (Content Analysis, Resurfacing, etc.)
-    // Lock jobs by updating status from pending to processing (atomic in a transaction if needed, but here we'll fetch then update and check if it was pending to prevent duplicate processing)
     const jobsToProcess = await prisma.aIJob.findMany({
       where: {
         status: { in: ["pending"] },
@@ -69,15 +80,34 @@ export async function GET(request: Request) {
         }
         // Additional job types (theme_extraction, memory_resurfacing) will be handled here
       } catch (err: any) {
-        // Handle failure
-        await prisma.aIJob.update({
-          where: { id: job.id },
-          data: {
-            status: "failed",
-            lastError: err.message,
-            retryCount: { increment: 1 },
-          },
-        });
+        // Handle failure with exponential backoff retry scheduling
+        const nextRetryCount = job.retryCount + 1;
+        const maxRetries = job.maxRetries || 5;
+
+        if (nextRetryCount <= maxRetries) {
+          const delayMinutes = getRetryDelayMinutes(nextRetryCount);
+          const nextScheduledAt = new Date(Date.now() + delayMinutes * 60 * 1000);
+
+          await prisma.aIJob.update({
+            where: { id: job.id },
+            data: {
+              status: "pending", // rescheduled
+              retryCount: nextRetryCount,
+              scheduledAt: nextScheduledAt,
+              lastError: err.message || "Unknown error",
+            },
+          });
+        } else {
+          // Permanently failed
+          await prisma.aIJob.update({
+            where: { id: job.id },
+            data: {
+              status: "failed",
+              retryCount: nextRetryCount,
+              lastError: err.message || "Max retries exceeded",
+            },
+          });
+        }
       }
     }
 

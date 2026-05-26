@@ -27,14 +27,30 @@ export async function computeMemoryResurfacing(
       where: { id: contentItemId, userId },
     });
 
-    if (!currentItem || !currentItem.embedding) {
+    if (!currentItem) {
       return null;
     }
+
+    // embedding is Unsupported("vector(768)") in Prisma, so we must query it via raw SQL
+    const embeddingRows = await prisma.$queryRaw<{ embedding: number[] }[]>`
+      SELECT embedding::text FROM content_items WHERE id = ${contentItemId} AND embedding IS NOT NULL LIMIT 1
+    `;
+
+    if (embeddingRows.length === 0) {
+      return null;
+    }
+
+    // Parse the vector string "[0.1,0.2,...]" into a number array
+    const embeddingStr = embeddingRows[0].embedding as unknown as string;
+    const embeddingValues = embeddingStr
+      .replace(/^\[|\]$/g, "")
+      .split(",")
+      .map(Number);
 
     // 1. Find similar past content (threshold ~0.75 for ambiguity/serendipity)
     const similarItems = await findSimilarContent(
       userId,
-      currentItem.embedding as unknown as number[],
+      embeddingValues,
       1,
       0.75
     );

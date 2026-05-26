@@ -77,7 +77,7 @@ export async function recoverStalledJobs(): Promise<number> {
         },
         data: {
             status: "pending",
-            error: "自動リカバリー: スタールジョブを再試行",
+            lastError: "自動リカバリー: スタールジョブを再試行",
             retryCount: { increment: 1 },
         },
     });

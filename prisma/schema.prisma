@@ -115,6 +115,7 @@ model User {
 
   // Settings & Integrations
   userApiKeys UserApiKey[]
+  userAiSettings UserAISettings?
 
   // Stripe Subscription
   subscription Subscription?
@@ -174,6 +175,28 @@ model UserApiKey {
 
   @@unique([userId, apiProvider])
   @@map("user_api_keys")
+}
+
+model UserAISettings {
+  id              String   @id @default(cuid())
+  userId          String   @unique @map("user_id")
+  provider        String   @default("gemini")
+  encryptedApiKey String?  @map("encrypted_api_key")
+  model           String?
+  embeddingsModel String?  @map("embeddings_model")
+  isEnabled       Boolean  @default(false) @map("is_enabled")
+
+  // Usage Protection (利用量制限)
+  dailyTokenUsage    Int       @default(0) @map("daily_token_usage")
+  monthlyTokenUsage  Int       @default(0) @map("monthly_token_usage")
+  lastUsageReset     DateTime? @map("last_usage_reset")
+
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_ai_settings")
 }
 
 model DailyLog {

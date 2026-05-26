@@ -1,7 +1,6 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { createGeminiProvider } from "@/lib/ai/gemini-provider";
 import { summarizeContent } from "@/lib/ai/summarize";
 import { generateContentTags } from "@/lib/ai/tagger";
 import { classifyContentItem } from "@/lib/ai/classifier";
@@ -9,17 +8,6 @@ import { generateEmbedding } from "@/lib/ai/embeddings";
 
 // Current AI version — bump when prompts or models change (enables re-analysis)
 const AI_VERSION = "1.0";
-
-// ===================================================
-// AI Analysis Job Runner
-// ===================================================
-// 将来的にWorker化できる構造で設計。
-// 現状はServer Action内から非同期で呼ばれる。
-//
-// Flow:
-//   Save Content → AIJob create (status: pending)
-//   → processAIAnalysis() → processing → completed / failed
-// ===================================================
 
 export async function processAIAnalysis(
   contentItemId: string,
@@ -42,8 +30,6 @@ export async function processAIAnalysis(
     }
 
     // 3. Gather text to analyze
-    //    Priority: reflection → title → URL
-    //    For PDF: file name is used as context; OCR is Phase 3+
     const textForAnalysis = [
       item.reflection,
       item.title,
@@ -61,8 +47,12 @@ export async function processAIAnalysis(
       return;
     }
 
-    // 4. Initialize provider (uses env GEMINI_API_KEY or user's key)
-    if (!process.env.GEMINI_API_KEY) {
+    // 4. Initialize provider (dynamically resolved)
+    const { resolveProvider } = await import("@/lib/ai/provider-resolver");
+    const provider = await resolveProvider(userId);
+
+    if (!provider) {
+      // AI is disabled / not connected
       await prisma.contentItem.update({
         where: { id: contentItemId },
         data: { aiStatus: "disabled", aiProcessedAt: new Date() },
@@ -74,11 +64,10 @@ export async function processAIAnalysis(
           input: { path: ["contentItemId"], equals: contentItemId },
           status: { in: ["pending", "processing"] },
         },
-        data: { status: "completed", completedAt: new Date() },
+        data: { status: "completed", completedAt: new Date() }, // completed because AI is disabled
       });
       return;
     }
-    const provider = createGeminiProvider(userId);
 
     // 5. Run all AI tasks in parallel
     const [summary, tags, contentType, embedding] = await Promise.allSettled([
@@ -110,7 +99,7 @@ export async function processAIAnalysis(
       ...(resolvedContentType !== null && { contentType: resolvedContentType }),
     };
 
-    // Embedding update via raw SQL (Prisma doesn't support vector natively)
+    // Embedding update via raw SQL
     if (resolvedEmbedding && resolvedEmbedding.length > 0) {
       const vectorStr = `[${resolvedEmbedding.join(",")}]`;
       await prisma.$executeRaw`
@@ -127,7 +116,7 @@ export async function processAIAnalysis(
       data: updateData,
     });
 
-    // 7. Mark corresponding AIJob as completed (if exists)
+    // 7. Mark corresponding AIJob as completed
     await prisma.aIJob.updateMany({
       where: {
         userId,
@@ -138,13 +127,12 @@ export async function processAIAnalysis(
       data: { status: "completed", completedAt: new Date() },
     });
 
-    // 8. Generate Memory Resurfacing if applicable (Phase 3)
+    // 8. Generate Memory Resurfacing if applicable
     if (resolvedEmbedding && resolvedEmbedding.length > 0) {
-      // Import dynamically to avoid circular dependencies if any
       const { computeMemoryResurfacing } = await import("@/lib/memory/memory-resurfacer");
       await computeMemoryResurfacing(userId, contentItemId);
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error("[processAIAnalysis] failed:", error);
 
     await prisma.contentItem.update({
@@ -152,17 +140,6 @@ export async function processAIAnalysis(
       data: { aiStatus: "failed" },
     });
 
-    await prisma.aIJob.updateMany({
-      where: {
-        userId,
-        jobType: "content_analysis",
-        input: { path: ["contentItemId"], equals: contentItemId },
-        status: { in: ["pending", "processing"] },
-      },
-      data: {
-        status: "failed",
-        lastError: error instanceof Error ? error.message : "Unknown error",
-      },
-    });
+    throw error;
   }
 }

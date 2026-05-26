@@ -65,13 +65,13 @@ export async function processNextJob(): Promise<void> {
                 data: {
                     status: 'pending',
                     retryCount: { increment: 1 },
-                    error: error.message,
+                    lastError: error.message,
                 },
             });
         } else {
             await prisma.aIJob.update({
                 where: { id: job.id },
-                data: { status: 'failed', error: error.message },
+                data: { status: 'failed', lastError: error.message },
             });
         }
     }

@@ -101,7 +101,7 @@ export class PrismaQueueProvider implements IQueueProvider {
         data: {
           status: "pending",
           retryCount: newRetryCount,
-          error,
+          lastError: error,
         },
       });
     } else {
@@ -110,7 +110,7 @@ export class PrismaQueueProvider implements IQueueProvider {
         data: {
           status: "failed",
           retryCount: newRetryCount,
-          error,
+          lastError: error,
         },
       });
     }
@@ -125,7 +125,7 @@ export class PrismaQueueProvider implements IQueueProvider {
       data: {
         status: "pending",
         retryCount: 0,
-        error: null,
+        lastError: null,
       },
     });
   }
@@ -138,7 +138,7 @@ export class PrismaQueueProvider implements IQueueProvider {
       where: { id: jobId },
       data: {
         status: "failed",
-        error,
+        lastError: error,
       },
     });
   }
@@ -221,7 +221,7 @@ function mapJob(record: any): Job {
     startedAt: record.startedAt ?? null,
     completedAt: record.completedAt ?? null,
     failedAt: null,
-    error: record.error ?? null,
+    error: record.lastError ?? null,
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,
   };

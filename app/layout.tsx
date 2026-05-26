@@ -37,11 +37,15 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+import { auth } from "@/lib/auth";
+
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const session = await auth();
+
   return (
     <html lang="ja" className={notoSansJP.variable}>
       <head>
@@ -50,10 +54,10 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
       </head>
       <body className={notoSansJP.className}>
-        <SessionProvider>
+        <SessionProvider session={session}>
           <PWAProvider>
             {children}
-            <CaptureLayer />
+            {session && <CaptureLayer />}
           </PWAProvider>
         </SessionProvider>
       </body>
