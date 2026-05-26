@@ -1,12 +1,5 @@
-import { createClient } from "@supabase/supabase-js";
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || "https://placeholder-supabase-url.supabase.co";
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "placeholder-supabase-key-for-build-time";
-
-export const supabase = createClient(supabaseUrl, supabaseKey);
-
 /**
- * Deterministically translates a generic string string ID (like cuid, NextAuth ID, or custom text)
+ * Deterministically translates a generic string ID (like cuid, NextAuth ID, or custom text)
  * into a valid UUID string to prevent type errors in PostgreSQL UUID fields.
  */
 export function toUuid(id: string): string {

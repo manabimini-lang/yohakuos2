@@ -1,10 +1,13 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+  extensions = [vector]
 }
 
 enum UserRole {
@@ -54,11 +57,11 @@ enum CardStyle {
 model SystemRoleAssignment {
   id         String   @id @default(cuid())
   userId     String   @map("user_id")
-  role       String   // "user" | "moderator" | "admin" | "owner"
+  role       String // "user" | "moderator" | "admin" | "owner"
   assignedBy String?  @map("assigned_by")
   createdAt  DateTime @default(now()) @map("created_at")
 
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, role])
   @@index([userId])
@@ -71,7 +74,7 @@ model Permission {
   permission  String   @unique // "read_reports" | "manage_reports" | etc.
   label       String
   description String?
-  category    String   // "moderation" | "administration" | "billing" | "ai" | "analytics" | "system"
+  category    String // "moderation" | "administration" | "billing" | "ai" | "analytics" | "system"
   createdAt   DateTime @default(now()) @map("created_at")
 
   rolePermissions RolePermission[]
@@ -81,11 +84,11 @@ model Permission {
 
 model RolePermission {
   id           String   @id @default(cuid())
-  role         String   // "user" | "moderator" | "admin" | "owner"
+  role         String // "user" | "moderator" | "admin" | "owner"
   permissionId String   @map("permission_id")
   createdAt    DateTime @default(now()) @map("created_at")
 
-  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
 
   @@unique([role, permissionId])
   @@index([role])
@@ -131,21 +134,21 @@ model User {
   knowledgeCards KnowledgeCard[]
 
   // Life OS Layer relations
-  ambientInsights       AmbientInsight[]
-  resonancePatterns     ResonancePattern[]
-  slowFeedEntries       SlowFeedEntry[]
-  lifeAreas             LifeArea[]
-  habitFlows            HabitFlow[]
-  lifeReflections       LifeReflection[]
-  energyStates          EnergyState[]
-  meaningSignals        MeaningSignal[]
-  lifeBalances          LifeBalance[]
-  directionReflections  DirectionReflection[]
-  quietPlans            QuietPlan[]
-  emotionalCooldowns    EmotionalCooldown[]
-  roadHistories         RoadHistory[]
-  roadTransitions       RoadTransition[]
-  seasonalSummaries     SeasonalSummary[]
+  ambientInsights        AmbientInsight[]
+  resonancePatterns      ResonancePattern[]
+  slowFeedEntries        SlowFeedEntry[]
+  lifeAreas              LifeArea[]
+  habitFlows             HabitFlow[]
+  lifeReflections        LifeReflection[]
+  energyStates           EnergyState[]
+  meaningSignals         MeaningSignal[]
+  lifeBalances           LifeBalance[]
+  directionReflections   DirectionReflection[]
+  quietPlans             QuietPlan[]
+  emotionalCooldowns     EmotionalCooldown[]
+  roadHistories          RoadHistory[]
+  roadTransitions        RoadTransition[]
+  seasonalSummaries      SeasonalSummary[]
   companionConversations CompanionConversation[]
 
   // Security & Admin
@@ -153,6 +156,8 @@ model User {
   lockedUntil         DateTime? @map("locked_until")
   mfaSecret           String?   @map("mfa_secret")
   mfaEnabled          Boolean   @default(false) @map("mfa_enabled")
+
+  contentItems ContentItem[]
 
   @@map("users")
 }
@@ -397,26 +402,26 @@ model StateTransition {
 // ===================================================
 
 model AuditLog {
-  id         String   @id @default(cuid())
-  actorId    String?  @map("actor_id")
-  category   String   // "auth" | "moderation" | "billing" | "ai" | "admin" | "security" | "user_management"
-  action     String   // e.g. "user.login", "role.change", "moderation.resolve"
-  targetType String?  @map("target_type") // e.g. "user", "content", "report", "role"
-  targetId   String?  @map("target_id")
-  severity   String   @default("info") // "info" | "warning" | "error" | "critical"
+  id         String  @id @default(cuid())
+  actorId    String? @map("actor_id")
+  category   String // "auth" | "moderation" | "billing" | "ai" | "admin" | "security" | "user_management"
+  action     String // e.g. "user.login", "role.change", "moderation.resolve"
+  targetType String? @map("target_type") // e.g. "user", "content", "report", "role"
+  targetId   String? @map("target_id")
+  severity   String  @default("info") // "info" | "warning" | "error" | "critical"
 
   // Structured metadata as JSON (generic, flexible for future events)
-  metadata   Json?    @default("{}") @db.JsonB
+  metadata Json? @default("{}") @db.JsonB
 
   // Security context
-  ipAddress  String?  @map("ip_address")
-  userAgent  String?  @map("user_agent")
-  sessionId  String?  @map("session_id")
+  ipAddress String? @map("ip_address")
+  userAgent String? @map("user_agent")
+  sessionId String? @map("session_id")
 
   // Actor relation (nullable for system actions)
-  actor      User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  actor User? @relation(fields: [actorId], references: [id], onDelete: SetNull)
 
-  createdAt  DateTime @default(now()) @map("created_at")
+  createdAt DateTime @default(now()) @map("created_at")
 
   @@index([actorId])
   @@index([category])
@@ -534,16 +539,16 @@ enum HabitFlowStatus {
 }
 
 model HabitFlow {
-  id         String           @id @default(cuid())
-  userId     String           @map("user_id")
-  title      String
-  category   String?
-  status     HabitFlowStatus  @default(active)
-  intensity  Int              @default(1) // 1-5 scale
-  areaType   LifeAreaType?    @map("area_type")
+  id        String          @id @default(cuid())
+  userId    String          @map("user_id")
+  title     String
+  category  String?
+  status    HabitFlowStatus @default(active)
+  intensity Int             @default(1) // 1-5 scale
+  areaType  LifeAreaType?   @map("area_type")
 
-  startedAt DateTime         @default(now()) @map("started_at")
-  endedAt   DateTime?        @map("ended_at")
+  startedAt DateTime  @default(now()) @map("started_at")
+  endedAt   DateTime? @map("ended_at")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -565,15 +570,15 @@ enum LifeReflectionType {
 }
 
 model LifeReflection {
-  id         String              @id @default(cuid())
-  userId     String              @map("user_id")
+  id         String             @id @default(cuid())
+  userId     String             @map("user_id")
   type       LifeReflectionType
   title      String
-  content    String              @db.Text
-  confidence Float               @default(0.5)
+  content    String             @db.Text
+  confidence Float              @default(0.5)
 
-  sourceIds  String[]            @map("source_ids")
-  areaType   LifeAreaType?       @map("area_type")
+  sourceIds String[]      @map("source_ids")
+  areaType  LifeAreaType? @map("area_type")
 
   createdAt DateTime @default(now()) @map("created_at")
 
@@ -594,14 +599,14 @@ enum EnergyStateType {
 }
 
 model EnergyState {
-  id         String           @id @default(cuid())
-  userId     String           @map("user_id")
-  state      EnergyStateType
-  intensity  Int              @default(3) // 1-10 scale
-  sourceReflectionId String?  @map("source_reflection_id")
+  id                 String          @id @default(cuid())
+  userId             String          @map("user_id")
+  state              EnergyStateType
+  intensity          Int             @default(3) // 1-10 scale
+  sourceReflectionId String?         @map("source_reflection_id")
 
-  note       String?          @db.Text
-  areaType   LifeAreaType?    @map("area_type")
+  note     String?       @db.Text
+  areaType LifeAreaType? @map("area_type")
 
   createdAt DateTime @default(now()) @map("created_at")
 
@@ -613,11 +618,11 @@ model EnergyState {
 }
 
 model MeaningSignal {
-  id          String   @id @default(cuid())
-  userId      String   @map("user_id")
-  signalType  String   @map("signal_type") // recurring_theme, unresolved_question, value_tension, long_term_curiosity, emotional_recurrence
-  description String   @db.Text
-  confidence  Float    @default(0.3)
+  id          String        @id @default(cuid())
+  userId      String        @map("user_id")
+  signalType  String        @map("signal_type") // recurring_theme, unresolved_question, value_tension, long_term_curiosity, emotional_recurrence
+  description String        @db.Text
+  confidence  Float         @default(0.3)
   areaType    LifeAreaType? @map("area_type")
 
   relatedMemoryIds String[] @map("related_memory_ids")
@@ -636,11 +641,11 @@ model MeaningSignal {
 // ===================================================
 
 model LifeBalance {
-  id        String @id @default(cuid())
-  userId    String @map("user_id")
-  analysis  String @db.Text
-  signals   Json   @default("[]") @db.JsonB // Array of imbalance signals
-  confidence Float @default(0.3)
+  id         String @id @default(cuid())
+  userId     String @map("user_id")
+  analysis   String @db.Text
+  signals    Json   @default("[]") @db.JsonB // Array of imbalance signals
+  confidence Float  @default(0.3)
 
   createdAt DateTime @default(now()) @map("created_at")
 
@@ -651,15 +656,15 @@ model LifeBalance {
 }
 
 model DirectionReflection {
-  id        String @id @default(cuid())
-  userId    String @map("user_id")
-  direction String @db.Text
-  intention String @db.Text
-  values    Json   @default("[]") @db.JsonB
-  quietWish String? @db.Text @map("quiet_wish")
-  confidence Float @default(0.3)
+  id         String  @id @default(cuid())
+  userId     String  @map("user_id")
+  direction  String  @db.Text
+  intention  String  @db.Text
+  values     Json    @default("[]") @db.JsonB
+  quietWish  String? @map("quiet_wish") @db.Text
+  confidence Float   @default(0.3)
 
-  period    String @default("current") // current, past, emerging
+  period    String   @default("current") // current, past, emerging
   createdAt DateTime @default(now()) @map("created_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -670,16 +675,16 @@ model DirectionReflection {
 }
 
 model QuietPlan {
-  id        String @id @default(cuid())
-  userId    String @map("user_id")
-  intention String @db.Text
-  nextStep  String? @db.Text @map("next_step")
+  id        String  @id @default(cuid())
+  userId    String  @map("user_id")
+  intention String  @db.Text
+  nextStep  String? @map("next_step") @db.Text
   note      String? @db.Text
 
-  isOptional   Boolean @default(true) @map("is_optional")
-  isCompleted  Boolean @default(false) @map("is_completed")
+  isOptional  Boolean @default(true) @map("is_optional")
+  isCompleted Boolean @default(false) @map("is_completed")
 
-  createdAt DateTime @default(now()) @map("created_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
   completedAt DateTime? @map("completed_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -693,11 +698,11 @@ model QuietPlan {
 // ===================================================
 
 model ConversationSummary {
-  id             String   @id @default(cuid())
-  conversationId String   @map("conversation_id")
-  summaryType    String   @map("summary_type") // rolling, thematic, abstract, meaning
-  content        String   @db.Text
-  tokenCount     Int      @default(0) @map("token_count")
+  id             String @id @default(cuid())
+  conversationId String @map("conversation_id")
+  summaryType    String @map("summary_type") // rolling, thematic, abstract, meaning
+  content        String @db.Text
+  tokenCount     Int    @default(0) @map("token_count")
 
   createdAt DateTime @default(now()) @map("created_at")
 
@@ -708,10 +713,10 @@ model ConversationSummary {
 }
 
 model ConversationTheme {
-  id             String   @id @default(cuid())
-  conversationId String   @map("conversation_id")
+  id             String @id @default(cuid())
+  conversationId String @map("conversation_id")
   theme          String
-  confidence     Float    @default(0.5)
+  confidence     Float  @default(0.5)
 
   createdAt DateTime @default(now()) @map("created_at")
 
@@ -722,10 +727,10 @@ model ConversationTheme {
 }
 
 model ConversationInsight {
-  id             String   @id @default(cuid())
-  conversationId String   @map("conversation_id")
-  insight        String   @db.Text
-  confidence     Float    @default(0.5)
+  id             String @id @default(cuid())
+  conversationId String @map("conversation_id")
+  insight        String @db.Text
+  confidence     Float  @default(0.5)
 
   createdAt DateTime @default(now()) @map("created_at")
 
@@ -740,14 +745,14 @@ model ConversationInsight {
 // ===================================================
 
 model EmotionalCooldown {
-  id          String   @id @default(cuid())
-  userId      String   @map("user_id")
+  id           String  @id @default(cuid())
+  userId       String  @map("user_id")
   cooldownType String  @map("cooldown_type") // emotional_overload, anxiety_repetition, reflection_cooldown
-  intensity   Int      @default(3) // 1-10
-  sourceId    String?  @map("source_id")
+  intensity    Int     @default(3) // 1-10
+  sourceId     String? @map("source_id")
 
-  expiresAt   DateTime @map("expires_at")
-  createdAt   DateTime @default(now()) @map("created_at")
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -761,13 +766,13 @@ model EmotionalCooldown {
 // ===================================================
 
 model RoadHistory {
-  id        String   @id @default(cuid())
-  userId    String   @map("user_id")
-  roadSlug  String   @map("road_slug")
-  roadTitle String   @map("road_title")
-  roadIcon  String?  @map("road_icon")
+  id        String  @id @default(cuid())
+  userId    String  @map("user_id")
+  roadSlug  String  @map("road_slug")
+  roadTitle String  @map("road_title")
+  roadIcon  String? @map("road_icon")
 
-  startedAt DateTime @default(now()) @map("started_at")
+  startedAt DateTime  @default(now()) @map("started_at")
   endedAt   DateTime? @map("ended_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -777,11 +782,11 @@ model RoadHistory {
 }
 
 model RoadTransition {
-  id          String   @id @default(cuid())
-  userId      String   @map("user_id")
-  fromRoad    String   @map("from_road")
-  toRoad      String   @map("to_road")
-  reflection  String?  @db.Text
+  id         String  @id @default(cuid())
+  userId     String  @map("user_id")
+  fromRoad   String  @map("from_road")
+  toRoad     String  @map("to_road")
+  reflection String? @db.Text
 
   createdAt DateTime @default(now()) @map("created_at")
 
@@ -792,17 +797,17 @@ model RoadTransition {
 }
 
 model SeasonalSummary {
-  id        String   @id @default(cuid())
-  userId    String   @map("user_id")
-  period    String   @map("period") // spring_2026, summer_2026, etc.
-  season    String   @map("season") // spring, summer, autumn, winter
-  year      Int      @map("year")
-  summary   String   @db.Text
-  themes    Json     @default("[]") @db.JsonB
-  confidence Float   @default(0.4)
+  id         String @id @default(cuid())
+  userId     String @map("user_id")
+  period     String @map("period") // spring_2026, summer_2026, etc.
+  season     String @map("season") // spring, summer, autumn, winter
+  year       Int    @map("year")
+  summary    String @db.Text
+  themes     Json   @default("[]") @db.JsonB
+  confidence Float  @default(0.4)
 
-  startDate DateTime  @map("start_date")
-  endDate   DateTime  @map("end_date")
+  startDate DateTime @map("start_date")
+  endDate   DateTime @map("end_date")
 
   createdAt DateTime @default(now()) @map("created_at")
 
@@ -840,18 +845,18 @@ model AmbientInsight {
 }
 
 model ResonancePattern {
-  id          String   @id @default(cuid())
-  userId      String   @map("user_id")
-  patternType String   @map("pattern_type") // seasonal_recurrence, emotional_cycle, behavioral_loop, thematic_return, value_consistency
-  description String   @db.Text
-  confidence  Float    @default(0.3)
+  id          String @id @default(cuid())
+  userId      String @map("user_id")
+  patternType String @map("pattern_type") // seasonal_recurrence, emotional_cycle, behavioral_loop, thematic_return, value_consistency
+  description String @db.Text
+  confidence  Float  @default(0.3)
 
   sourceMemoryIds String[] @map("source_memory_ids")
   evidenceIds     String[] @map("evidence_ids")
 
-  firstObservedAt DateTime  @map("first_observed_at")
-  observedCount   Int       @default(1) @map("observed_count")
-  lastObservedAt  DateTime  @map("last_observed_at")
+  firstObservedAt DateTime @map("first_observed_at")
+  observedCount   Int      @default(1) @map("observed_count")
+  lastObservedAt  DateTime @map("last_observed_at")
 
   createdAt DateTime @default(now()) @map("created_at")
 
@@ -864,22 +869,22 @@ model ResonancePattern {
 }
 
 model SlowFeedEntry {
-  id          String   @id @default(cuid())
-  userId      String   @map("user_id")
-  entryType   String   @map("entry_type") // insight, resonance, reflection, seasonal_echo, quiet_connection
-  title       String
-  content     String   @db.Text
-  sourceType  String?  @map("source_type") // ambient_insight, resonance_pattern, life_reflection, meaning_signal, seasonal_summary
-  sourceId    String?  @map("source_id")
+  id         String  @id @default(cuid())
+  userId     String  @map("user_id")
+  entryType  String  @map("entry_type") // insight, resonance, reflection, seasonal_echo, quiet_connection
+  title      String
+  content    String  @db.Text
+  sourceType String? @map("source_type") // ambient_insight, resonance_pattern, life_reflection, meaning_signal, seasonal_summary
+  sourceId   String? @map("source_id")
 
-  isRead      Boolean  @default(false) @map("is_read")
-  isSaved     Boolean  @default(false) @map("is_saved")
+  isRead  Boolean @default(false) @map("is_read")
+  isSaved Boolean @default(false) @map("is_saved")
 
-  confidence  Float    @default(0.3)
-  priority    Int      @default(0) // 0-5, 0=lowest
+  confidence Float @default(0.3)
+  priority   Int   @default(0) // 0-5, 0=lowest
 
-  surfacedAt  DateTime @default(now()) @map("surfaced_at")
-  readAt      DateTime? @map("read_at")
+  surfacedAt DateTime  @default(now()) @map("surfaced_at")
+  readAt     DateTime? @map("read_at")
 
   createdAt DateTime @default(now()) @map("created_at")
 
@@ -1051,16 +1056,16 @@ model MemorySource {
 // ===================================================
 
 model CompanionConversation {
-  id             String   @id @default(cuid())
-  userId         String   @map("user_id")
-  title          String   @default("")
-  contextVersion Int      @default(1) @map("context_version")
+  id             String @id @default(cuid())
+  userId         String @map("user_id")
+  title          String @default("")
+  contextVersion Int    @default(1) @map("context_version")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  user     User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  messages CompanionMessage[]
+  user      User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages  CompanionMessage[]
   summaries ConversationSummary[]
   themes    ConversationTheme[]
   insights  ConversationInsight[]
@@ -1077,12 +1082,12 @@ enum MessageRole {
 }
 
 model CompanionMessage {
-  id             String       @id @default(cuid())
-  conversationId String       @map("conversation_id")
+  id             String      @id @default(cuid())
+  conversationId String      @map("conversation_id")
   role           MessageRole
-  content        String       @db.Text
-  tokenCount     Int          @default(0) @map("token_count")
-  memorySnapshot Json?        @map("memory_snapshot") @db.JsonB
+  content        String      @db.Text
+  tokenCount     Int         @default(0) @map("token_count")
+  memorySnapshot Json?       @map("memory_snapshot") @db.JsonB
 
   conversation CompanionConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
@@ -1111,19 +1116,94 @@ model AIJob {
   input  Json  @db.JsonB
   output Json? @db.JsonB
 
-  error      String? @db.Text
+  lastError  String? @map("last_error") @db.Text
   retryCount Int     @default(0) @map("retry_count")
   maxRetries Int     @default(3) @map("max_retries")
 
   tokenUsed    Int?   @map("token_used")
   costEstimate Float? @map("cost_estimate")
 
+  scheduledAt DateTime? @map("scheduled_at")
   createdAt   DateTime  @default(now()) @map("created_at")
   startedAt   DateTime? @map("started_at")
+  processedAt DateTime? @map("processed_at")
   completedAt DateTime? @map("completed_at")
 
   @@index([userId, status])
   @@index([status, priority, createdAt])
   @@index([status, createdAt])
   @@map("ai_jobs")
+}
+
+// ===================================================
+// YOHAKU Capture Inbox Layer
+// ===================================================
+
+model ContentItem {
+  id           String  @id @default(cuid())
+  userId       String  @map("user_id")
+  type         String // 'url' | 'pdf'
+  title        String?
+  url          String?
+  thumbnailUrl String? @map("thumbnail_url")
+  domain       String?
+  fileUrl      String? @map("file_url")
+  fileName     String? @map("file_name")
+  fileSize     Int?    @map("file_size")
+  metadata     Json?   @default("{}") @db.JsonB
+
+  memoryState         String                      @default("active") @map("memory_state")
+
+  // AI Meaning Layer
+  summary             String?                     @db.Text
+  aiTags              String[]                    @map("ai_tags")
+  contentType         String?                     @map("content_type")
+  reflection          String?                     @db.Text
+  aiStatus            String                      @default("pending") @map("ai_status")
+  embedding           Unsupported("vector(768)")?
+  embeddingModel      String?                     @map("embedding_model")
+  embeddingDimensions Int?                        @map("embedding_dimensions")
+  aiVersion           String?                     @map("ai_version")
+  aiProcessedAt       DateTime?                   @map("ai_processed_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("content_items")
+}
+
+// ===================================================
+// YOHAKU Memory Layer
+// ===================================================
+
+model MemoryResurfacing {
+  id               String    @id @default(cuid())
+  userId           String    @map("user_id")
+  sourceContentId  String?   @map("source_content_id")
+  relatedContentId String?   @map("related_content_id")
+  message          String    @db.Text
+  similarityScore  Float     @map("similarity_score")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  expiresAt        DateTime? @map("expires_at")
+
+  @@index([userId])
+  @@index([userId, createdAt])
+  @@map("memory_resurfacings")
+}
+
+model MemorySnapshot {
+  id          String   @id @default(cuid())
+  userId      String   @map("user_id")
+  period      String
+  themes      Json     @db.JsonB
+  reflections Json     @db.JsonB
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([userId, period])
+  @@map("memory_snapshots")
 }

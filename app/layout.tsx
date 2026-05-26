@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { PWAProvider } from "@/components/pwa-provider";
 import { SessionProvider } from "next-auth/react";
+import { CaptureLayer } from "@/components/capture/CaptureLayer";
 
 export const dynamic = "force-dynamic";
 import { Noto_Sans_JP } from "next/font/google";
@@ -52,6 +53,7 @@ export default function RootLayout({
         <SessionProvider>
           <PWAProvider>
             {children}
+            <CaptureLayer />
           </PWAProvider>
         </SessionProvider>
       </body>

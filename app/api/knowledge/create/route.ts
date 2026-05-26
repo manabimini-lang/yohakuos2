@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { supabase, toUuid } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase/server";
+import { toUuid } from "@/lib/supabase/utils";
 import { hasPremiumAccess } from "@/lib/constants/plan";
 
 export const dynamic = "force-dynamic";
@@ -29,6 +30,7 @@ export async function POST(req: Request) {
     const createdByUuid = toUuid(session.user.id);
 
     // 4. Save to Supabase
+    const supabase = await createClient();
     const { data, error } = await supabase
       .from("shared_knowledge")
       .insert({

@@ -1,9 +1,10 @@
 import NextAuth from "next-auth";
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { authConfig } from "@/lib/auth.config";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 import { isPremiumRoute, hasPremiumAccess } from "@/lib/constants/plan";
+import { updateSession } from "@/lib/supabase/middleware";
 
 const { auth } = NextAuth(authConfig);
 
@@ -23,51 +24,56 @@ if (hasRedisConfig) {
   }
 }
 
-export const middleware = auth(async (req) => {
-  const ip = req.headers.get("x-forwarded-for") ?? "127.0.0.1";
-  const path = req.nextUrl.pathname;
+export async function middleware(request: NextRequest) {
+  // 1. Maintain Supabase Session
+  const supabaseResponse = await updateSession(request);
 
-  // Rate Limiting の対象パスで、かつRedisが設定されている場合のみ適用
-  if (
-    ratelimit &&
-    (path.startsWith("/api/auth") ||
-      path.startsWith("/api/checkout") ||
-      path === "/login" ||
-      path === "/register")
-  ) {
-    try {
-      const { success } = await ratelimit.limit(`ratelimit_${ip}`);
-      if (!success) {
-        return new NextResponse("Too Many Requests", { status: 429 });
+  // 2. NextAuth & App logic
+  const authMiddleware = auth(async (req) => {
+    const ip = req.headers.get("x-forwarded-for") ?? "127.0.0.1";
+    const path = req.nextUrl.pathname;
+
+    // Rate Limiting
+    if (
+      ratelimit &&
+      (path.startsWith("/api/auth") ||
+        path.startsWith("/api/checkout") ||
+        path === "/login" ||
+        path === "/register")
+    ) {
+      try {
+        const { success } = await ratelimit.limit(`ratelimit_${ip}`);
+        if (!success) {
+          return new NextResponse("Too Many Requests", { status: 429 });
+        }
+      } catch (e) {
+        console.warn("Rate limit bypass due to Redis request error", e);
       }
-    } catch (e) {
-      console.warn("Rate limit bypass due to Redis request error", e);
-    }
-  }
-
-  // Centralized Premium route protection
-  if (isPremiumRoute(path)) {
-    const isLoggedIn = !!req.auth?.user;
-    if (!isLoggedIn) {
-      const loginUrl = new URL(`/login?callbackUrl=${encodeURIComponent(path)}`, req.nextUrl.origin);
-      return NextResponse.redirect(loginUrl);
     }
 
-    const plan = (req.auth?.user as any)?.plan;
-    const role = (req.auth?.user as any)?.role;
-    const isPremium = hasPremiumAccess(plan, role);
+    // Centralized Premium route protection
+    if (isPremiumRoute(path)) {
+      const isLoggedIn = !!req.auth?.user;
+      if (!isLoggedIn) {
+        const loginUrl = new URL(`/login?callbackUrl=${encodeURIComponent(path)}`, req.nextUrl.origin);
+        return NextResponse.redirect(loginUrl);
+      }
 
-    if (!isPremium) {
-      const pricingUrl = new URL("/pricing", req.nextUrl.origin);
-      return NextResponse.redirect(pricingUrl);
+      const plan = (req.auth?.user as any)?.plan;
+      const role = (req.auth?.user as any)?.role;
+      const isPremium = hasPremiumAccess(plan, role);
+
+      if (!isPremium) {
+        const pricingUrl = new URL("/pricing", req.nextUrl.origin);
+        return NextResponse.redirect(pricingUrl);
+      }
     }
-  }
 
-  // RBAC route protection is handled by auth.config.ts authorized callback
-  // which runs on every request matching the matcher
+    return supabaseResponse;
+  });
 
-  return NextResponse.next();
-});
+  return (authMiddleware as any)(request);
+}
 
 export const config = {
   matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
