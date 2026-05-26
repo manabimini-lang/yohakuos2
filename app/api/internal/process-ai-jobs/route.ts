@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import crypto from "crypto";
 import { processAIAnalysis } from "@/app/actions/ai-processing";
+import { generateReflectionScript } from "@/lib/audio/generate-reflection-script";
+import { generateQuietAudio } from "@/lib/audio/gemini-tts";
 
 export const dynamic = "force-dynamic";
 
@@ -77,8 +79,30 @@ export async function GET(request: Request) {
             // Actually call the AI processing action
             await processAIAnalysis(contentItemId, job.userId);
           }
+        } else if (job.jobType === "generate_audio_reflection") {
+          const { recentMemories, resurfacedMemories, contentItemId, memoryResonanceId } = job.input as any;
+          const script = await generateReflectionScript(job.userId, recentMemories || [], resurfacedMemories || []);
+          if (!script) throw new Error("Failed to generate reflection script");
+          
+          const audioUrl = await generateQuietAudio(script, job.userId);
+          
+          await prisma.audioReflection.create({
+            data: {
+              userId: job.userId,
+              contentItemId: contentItemId || null,
+              memoryResonanceId: memoryResonanceId || null,
+              script,
+              audioUrl,
+              status: audioUrl ? "completed" : "failed",
+            },
+          });
         }
-        // Additional job types (theme_extraction, memory_resurfacing) will be handled here
+        
+        // Mark job as completed
+        await prisma.aIJob.update({
+          where: { id: job.id },
+          data: { status: "completed", completedAt: new Date() }
+        });
       } catch (err: any) {
         // Handle failure with exponential backoff retry scheduling
         const nextRetryCount = job.retryCount + 1;

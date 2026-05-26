@@ -4,9 +4,9 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  directUrl  = env("DIRECT_URL")
   extensions = [vector]
 }
 
@@ -114,7 +114,7 @@ model User {
   systemRoleAssignments SystemRoleAssignment[]
 
   // Settings & Integrations
-  userApiKeys UserApiKey[]
+  userApiKeys    UserApiKey[]
   userAiSettings UserAISettings?
 
   // Stripe Subscription
@@ -178,21 +178,21 @@ model UserApiKey {
 }
 
 model UserAISettings {
-  id              String   @id @default(cuid())
-  userId          String   @unique @map("user_id")
-  provider        String   @default("gemini")
-  encryptedApiKey String?  @map("encrypted_api_key")
+  id              String  @id @default(cuid())
+  userId          String  @unique @map("user_id")
+  provider        String  @default("gemini")
+  encryptedApiKey String? @map("encrypted_api_key")
   model           String?
-  embeddingsModel String?  @map("embeddings_model")
-  isEnabled       Boolean  @default(false) @map("is_enabled")
+  embeddingsModel String? @map("embeddings_model")
+  isEnabled       Boolean @default(false) @map("is_enabled")
 
   // Usage Protection (利用量制限)
-  dailyTokenUsage    Int       @default(0) @map("daily_token_usage")
-  monthlyTokenUsage  Int       @default(0) @map("monthly_token_usage")
-  lastUsageReset     DateTime? @map("last_usage_reset")
+  dailyTokenUsage   Int       @default(0) @map("daily_token_usage")
+  monthlyTokenUsage Int       @default(0) @map("monthly_token_usage")
+  lastUsageReset    DateTime? @map("last_usage_reset")
 
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -1175,7 +1175,7 @@ model ContentItem {
   fileSize     Int?    @map("file_size")
   metadata     Json?   @default("{}") @db.JsonB
 
-  memoryState         String                      @default("active") @map("memory_state")
+  memoryState String @default("active") @map("memory_state")
 
   // AI Meaning Layer
   summary             String?                     @db.Text
@@ -1229,4 +1229,61 @@ model MemorySnapshot {
   @@index([userId])
   @@index([userId, period])
   @@map("memory_snapshots")
+}
+
+// ===================================================
+// YOHAKU Learning Memory OS
+// ===================================================
+
+model KnowledgeContent {
+  id          String                      @id @default(cuid())
+  title       String
+  description String?
+  body        String?                     @db.Text
+  contentType String                      @map("content_type")
+  tags        String[]
+  embedding   Unsupported("vector(768)")?
+  difficulty  Int                         @default(1)
+  isPublished Boolean                     @default(false) @map("is_published")
+  createdAt   DateTime                    @default(now()) @map("created_at")
+  updatedAt   DateTime                    @updatedAt @map("updated_at")
+
+  @@map("knowledge_contents")
+}
+
+model LearningSuggestion {
+  id                 String   @id @default(cuid())
+  userId             String   @map("user_id")
+  contentItemId      String?  @map("content_item_id")
+  knowledgeContentId String   @map("knowledge_content_id")
+  similarityScore    Float    @map("similarity_score")
+  reason             String?  @db.Text
+  createdAt          DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([knowledgeContentId])
+  @@map("learning_suggestions")
+}
+
+// ===================================================
+// YOHAKU Audio Reflection Layer
+// ===================================================
+
+model AudioReflection {
+  id                String   @id @default(cuid())
+  userId            String   @map("user_id")
+  contentItemId     String?  @map("content_item_id")
+  memoryResonanceId String?  @map("memory_resonance_id")
+  script            String   @db.Text
+  audioUrl          String?  @map("audio_url")
+  voiceProvider     String?  @map("voice_provider")
+  voiceModel        String?  @map("voice_model")
+  duration          Int?
+  status            String   @default("pending")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@index([status])
+  @@map("audio_reflections")
 }
