@@ -161,10 +161,10 @@ export default function CompanionChat() {
     return (
         <div className="flex flex-col h-full max-w-2xl mx-auto">
             {/* Header */}
-            <div className="px-6 py-4 border-b border-gray-100">
-                <h2 className="text-lg font-medium text-gray-800">静かな対話</h2>
-                <p className="text-sm text-gray-400 mt-1">
-                    考えたいことがあれば、そのまま書いてみてください
+            <div className="px-6 py-4 border-b border-white/10 bg-[#090909]">
+                <h2 className="text-lg font-light text-white">静かな対話</h2>
+                <p className="text-sm text-slate-400 mt-1">
+                    言葉をひとつずつ置いておく場所です。
                 </p>
             </div>
 
@@ -188,9 +188,9 @@ export default function CompanionChat() {
                             }`}
                     >
                         <div
-                            className={`max-w-[80%] rounded-2xl px-4 py-2.5 ${msg.role === "user"
-                                    ? "bg-gray-800 text-white"
-                                    : "bg-gray-50 text-gray-700 border border-gray-100"
+                            className={`max-w-[80%] rounded-3xl px-4 py-3 ${msg.role === "user"
+                                    ? "bg-white/10 text-white"
+                                    : "bg-white/5 text-slate-200 border border-white/10"
                                 }`}
                         >
                             <p className="text-sm leading-relaxed whitespace-pre-wrap">
@@ -214,15 +214,7 @@ export default function CompanionChat() {
 
                 {/* Loading */}
                 {state.isLoading && (
-                    <div className="flex justify-start">
-                        <div className="bg-gray-50 border border-gray-100 rounded-2xl px-4 py-2.5">
-                            <div className="flex space-x-1">
-                                <div className="w-2 h-2 bg-gray-300 rounded-full animate-bounce" />
-                                <div className="w-2 h-2 bg-gray-300 rounded-full animate-bounce [animation-delay:0.1s]" />
-                                <div className="w-2 h-2 bg-gray-300 rounded-full animate-bounce [animation-delay:0.2s]" />
-                            </div>
-                        </div>
-                    </div>
+                    <div className="text-slate-500 text-sm italic">少し静かに考えています…</div>
                 )}
 
                 <div ref={messagesEndRef} />
@@ -242,15 +234,15 @@ export default function CompanionChat() {
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         onKeyDown={handleKeyDown}
-                        placeholder="何か考えていることはありますか？"
+                        placeholder="そのまま、ここに置いてください"
                         rows={1}
-                        className="flex-1 resize-none rounded-2xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-gray-300 focus:border-gray-300 placeholder-gray-300"
+                        className="flex-1 resize-none rounded-3xl border border-white/10 bg-[#080808] px-4 py-3 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-white/10 focus:border-white/10 placeholder:text-slate-500"
                         disabled={state.isLoading}
                     />
                     <button
                         onClick={sendMessage}
                         disabled={state.isLoading || !input.trim()}
-                        className="px-4 py-2.5 bg-gray-800 text-white rounded-2xl text-sm hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                        className="px-4 py-2.5 rounded-3xl bg-white/10 text-sm text-slate-100 transition-colors hover:bg-white/15 disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                         送信
                     </button>

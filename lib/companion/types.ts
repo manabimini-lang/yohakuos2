@@ -20,6 +20,25 @@ export interface CompanionContext {
     relevantMemories: MemorySnippet[];
     /** 継続中の問い / 未解決テーマ */
     ongoingQuestions: string[];
+    /** 人生OS層 — 浮かび上がる人生テーマと哲学 */
+    lifeOSContext?: {
+        lifeThemes: Array<{
+            name: string;
+            description: string;
+            strength: number;
+            monthsSince: number;
+        }>;
+        returningThemes: Array<{
+            name: string;
+            cycleCount: number;
+            gapDays: number;
+        }>;
+        philosophyFragments: Array<{
+            content: string;
+            sourceTheme: string;
+        }>;
+        lifeDirection: string | null;
+    };
     /** コンテキスト生成時刻 */
     generatedAt: string;
     /** コンテキストの確度下限 */

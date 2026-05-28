@@ -15,10 +15,13 @@ export const useCaptureStore = create<CaptureState>((set) => ({
   openCapture: () => set({ isOpen: true }),
   closeCapture: () => set({ isOpen: false }),
   showToast: (message) => {
+    if (typeof window !== "undefined" && navigator.vibrate) {
+      navigator.vibrate(10);
+    }
     set({ toastMessage: message });
     setTimeout(() => {
       set({ toastMessage: null });
-    }, 4000);
+    }, 2600);
   },
   hideToast: () => set({ toastMessage: null }),
 }));

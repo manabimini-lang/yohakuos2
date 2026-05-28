@@ -1,156 +1,272 @@
-import { prisma } from '../prisma';
-import { generateJSON } from '../ai/gemini';
-import { registerJobHandler, enqueueJob } from './queue';
+import { prisma } from "@/lib/prisma";
 
-interface RelationJudgment {
-    fromId: string;
-    toId: string;
-    relation: 'supports' | 'contradicts' | 'causes' | 'results_in' | 'similar_to' | 'evolved_to' | 'influenced_by';
-    strength: number;
+const PHRASE_MARKERS = [
+  "ではなく",
+  "ことが大切",
+  "ように思う",
+  "を感じた",
+  "ために",
+  "静かな蓄積",
+  "学び",
+  "価値",
+  "違い",
+  "つながる",
+];
+
+function normalizeText(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^\p{Letter}\p{Number}\s]+/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
-async function updateMemoryGraph(
-    userId: string,
-    newMemoryIds: string[]
-): Promise<void> {
-    if (newMemoryIds.length === 0) return;
+function collectKeywords(text: string): string[] {
+  return Array.from(
+    new Set(
+      normalizeText(text)
+        .split(" ")
+        .filter((token) => token.length >= 3)
+    )
+  );
+}
 
-    // 1. Get new memories
-    const newMemories = await prisma.userMemory.findMany({
-        where: { id: { in: newMemoryIds } },
-    });
+function calculateOverlapScore(source: string, target: string): number {
+  const sourceKeywords = collectKeywords(source);
+  const targetKeywords = collectKeywords(target);
+  if (sourceKeywords.length === 0 || targetKeywords.length === 0) return 0;
 
-    // 2. Get existing high-confidence memories for relation candidates
-    const existingMemories = await prisma.userMemory.findMany({
+  const shared = sourceKeywords.filter((keyword) => targetKeywords.includes(keyword));
+  return shared.length / Math.max(sourceKeywords.length, targetKeywords.length);
+}
+
+function determineEdgeType(sourceType: string, targetType: string, overlapScore: number, longGap: boolean): string {
+  if (sourceType === targetType && sourceType === "life_theme") {
+    return "theme_similarity";
+  }
+
+  if (sourceType === "reflection" || targetType === "reflection") {
+    return "reflection_connection";
+  }
+
+  if (longGap && overlapScore >= 0.18) {
+    return "timeline_resonance";
+  }
+
+  if (
+    overlapScore >= 0.25 &&
+    ["life_theme", "value", "belief", "motivation"].includes(sourceType) &&
+    ["life_theme", "value", "belief", "motivation"].includes(targetType)
+  ) {
+    return "philosophy_overlap";
+  }
+
+  if (
+    (sourceType.startsWith("learning") && targetType === "life_theme") ||
+    (targetType.startsWith("learning") && sourceType === "life_theme")
+  ) {
+    return "learning_progression";
+  }
+
+  return overlapScore >= 0.2 ? "theme_similarity" : "memory_similarity";
+}
+
+function buildEdgeReason(edgeType: string, hasMarker: boolean, longGap: boolean): string {
+  const reasons: string[] = [];
+  if (edgeType === "reflection_connection") {
+    reasons.push("内省と記録のつながり");
+  }
+  if (edgeType === "timeline_resonance") {
+    reasons.push("時間を超えた再接続");
+  }
+  if (edgeType === "philosophy_overlap") {
+    reasons.push("繰り返し現れる価値観");
+  }
+  if (edgeType === "learning_progression") {
+    reasons.push("学びとテーマの橋渡し");
+  }
+  if (edgeType === "theme_similarity") {
+    reasons.push("共通するテーマや言葉");
+  }
+  if (hasMarker) {
+    reasons.push("静かな言葉の共鳴");
+  }
+  if (reasons.length === 0) {
+    reasons.push("記憶の静かな共鳴");
+  }
+  return reasons.join("、");
+}
+
+function calculateWeight(overlapScore: number, sameType: boolean, timeGapDays: number, markerMatch: boolean): number {
+  const typeBonus = sameType ? 0.14 : 0.07;
+  const timeBonus = timeGapDays >= 90 ? 0.12 : timeGapDays <= 30 ? 0.08 : 0.04;
+  const markerBonus = markerMatch ? 0.12 : 0;
+  const weight = Math.min(1, overlapScore * 0.45 + typeBonus + timeBonus + markerBonus);
+  return Math.max(0, weight);
+}
+
+export async function generateMemoryEdges(userId: string, newMemoryIds: string[] = []) {
+  const memories = await prisma.userMemory.findMany({
+    where: { userId, confidence: { gte: 0.3 } },
+    orderBy: { createdAt: "desc" },
+    take: 100,
+    select: { id: true, title: true, content: true, type: true, confidence: true, createdAt: true },
+  });
+
+  if (memories.length < 2) return;
+
+  const newMemories = newMemoryIds.length > 0
+    ? memories.filter((item) => newMemoryIds.includes(item.id))
+    : memories.slice(0, 10);
+
+  const existingMemories = memories.filter((item) => !newMemoryIds.includes(item.id));
+  if (existingMemories.length === 0) return;
+
+  const edgeUpdates = [];
+
+  for (const source of newMemories) {
+    for (const target of existingMemories) {
+      if (source.id === target.id) continue;
+
+      const overlapScore = Math.max(
+        calculateOverlapScore(source.title ?? "", target.title ?? ""),
+        calculateOverlapScore(source.content ?? "", target.content ?? "")
+      );
+      if (overlapScore < 0.08) continue;
+
+      const sameType = source.type === target.type;
+      const timeGapDays = Math.abs(source.createdAt.getTime() - target.createdAt.getTime()) / (1000 * 60 * 60 * 24);
+      const longGap = timeGapDays >= 90;
+      const sourceText = `${source.title} ${source.content}`;
+      const targetText = `${target.title} ${target.content}`;
+      const markerMatch = PHRASE_MARKERS.some(
+        (marker) => sourceText.includes(marker) && targetText.includes(marker)
+      );
+      const weight = calculateWeight(overlapScore, sameType, timeGapDays, markerMatch);
+      if (weight < 0.18) continue;
+
+      const edgeType = determineEdgeType(source.type, target.type, overlapScore, longGap);
+      const reason = buildEdgeReason(edgeType, markerMatch, longGap);
+
+      edgeUpdates.push(prisma.memoryGraphEdge.upsert({
         where: {
+          userId_fromContentId_toContentId_edgeType: {
             userId,
-            id: { notIn: newMemoryIds },
-            confidence: { gte: 0.3 },
+            fromContentId: source.id,
+            toContentId: target.id,
+            edgeType,
+          },
         },
-        orderBy: { confidence: 'desc' },
-        take: 30,
-    });
-
-    if (existingMemories.length === 0) return;
-
-    // 3. Batch relation judgment via AI
-    const newSummary = newMemories
-        .map((m) => `[ID:${m.id}] [${m.type}] ${m.title}: ${m.content.slice(0, 100)}`)
-        .join('\n');
-    const existingSummary = existingMemories
-        .map((m) => `[ID:${m.id}] [${m.type}] ${m.title}`)
-        .join('\n');
-
-    const prompt = `あなたはメモリーグラフの関係性判断エキスパートです。
-新しい記憶と既存の記憶の間の関係を判断してください。
-
-新しい記憶:
-${newSummary}
-
-既存の記憶:
-${existingSummary}
-
-ルール:
-- 本当に関連があるペアのみを出力
-- 関連の強さ (strength) を0.0~1.0で評価
-- 最大10ペアまで
-- 関係タイプ: supports, contradicts, causes, results_in, similar_to, evolved_to, influenced_by
-
-出力形式（JSONのみ）:
-{
-  "relations": [
-    {
-      "fromId": "新しい記憶のID",
-      "toId": "既存の記憶のID",
-      "relation": "supports",
-      "strength": 0.8
+        update: {
+          weight: Math.max(weight, 0.05),
+          reason,
+        },
+        create: {
+          userId,
+          fromContentId: source.id,
+          toContentId: target.id,
+          edgeType,
+          weight,
+          reason,
+        },
+      }));
     }
-  ]
-}`;
+  }
 
-    try {
-        const { data } = await generateJSON<{ relations: RelationJudgment[] }>(prompt);
-        const relations = data.relations || [];
-
-        // 4. Create edges
-        for (const rel of relations) {
-            if (rel.strength < 0.3) continue;
-
-            try {
-                await prisma.memoryGraphEdge.upsert({
-                    where: {
-                        fromMemoryId_toMemoryId_relation: {
-                            fromMemoryId: rel.fromId,
-                            toMemoryId: rel.toId,
-                            relation: rel.relation,
-                        },
-                    },
-                    update: { strength: rel.strength },
-                    create: {
-                        fromMemoryId: rel.fromId,
-                        toMemoryId: rel.toId,
-                        relation: rel.relation,
-                        strength: rel.strength,
-                        userId,
-                    },
-                });
-            } catch {
-                // Skip if IDs don't exist (race condition)
-                continue;
-            }
-        }
-    } catch (error) {
-        console.error('Graph update failed:', error);
-        // Non-critical: graph update failure should not block the pipeline
-    }
+  try {
+    await Promise.all(edgeUpdates);
+  } catch (error) {
+    console.error("Memory graph generation failed:", error);
+  }
 }
 
-// Register handler
-registerJobHandler('graph_update', async (job) => {
-    const { memoryIds } = job.input as { memoryIds: string[] };
-    await updateMemoryGraph(job.userId, memoryIds);
-});
+export async function decayMemoryGraph(userId: string) {
+  const decayCutoff = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+  const staleEdges = await prisma.memoryGraphEdge.findMany({
+    where: { userId, createdAt: { lte: decayCutoff }, weight: { gt: 0.12 } },
+    select: { id: true, weight: true },
+  });
 
-export { updateMemoryGraph };
+  const updates = staleEdges.map((edge) =>
+    prisma.memoryGraphEdge.update({
+      where: { id: edge.id },
+      data: { weight: Math.max(0.05, edge.weight * 0.88) },
+    })
+  );
 
-// Query helpers for UI
+  if (updates.length > 0) {
+    await Promise.all(updates);
+  }
+}
 
-export async function getMemoryGraph(userId: string, limit: number = 50) {
-    const edges = await prisma.memoryGraphEdge.findMany({
-        where: { userId },
-        include: {
-            fromMemory: {
-                select: { id: true, type: true, title: true, confidence: true },
-            },
-            toMemory: {
-                select: { id: true, type: true, title: true, confidence: true },
-            },
-        },
-        orderBy: { createdAt: 'desc' },
-        take: limit,
-    });
+export async function getMemoryConstellation(userId: string, limit: number = 8) {
+  const edges = await prisma.memoryGraphEdge.findMany({
+    where: { userId },
+    orderBy: { weight: "desc" },
+    take: limit,
+    select: {
+      id: true,
+      fromContentId: true,
+      toContentId: true,
+      edgeType: true,
+      weight: true,
+      reason: true,
+    },
+  });
 
-    const nodes = new Map<string, any>();
-    const graphEdges = edges.map((e) => {
-        // Add nodes
-        if (!nodes.has(e.fromMemory.id)) {
-            nodes.set(e.fromMemory.id, { ...e.fromMemory, id: e.fromMemory.id });
-        }
-        if (!nodes.has(e.toMemory.id)) {
-            nodes.set(e.toMemory.id, { ...e.toMemory, id: e.toMemory.id });
-        }
+  const ids = Array.from(new Set(edges.flatMap((edge) => [edge.fromContentId, edge.toContentId])));
+  const nodes = await prisma.userMemory.findMany({
+    where: { id: { in: ids } },
+    select: { id: true, title: true, type: true },
+  });
+  const nodesById = new Map(nodes.map((node) => [node.id, node]));
 
-        return {
-            id: e.id,
-            source: e.fromMemoryId,
-            target: e.toMemoryId,
-            relation: e.relation,
-            strength: e.strength,
-        };
-    });
+  return edges.map((edge) => ({
+    id: edge.id,
+    from: nodesById.get(edge.fromContentId) ?? { id: edge.fromContentId, title: "記録", type: "unknown" },
+    to: nodesById.get(edge.toContentId) ?? { id: edge.toContentId, title: "記録", type: "unknown" },
+    edgeType: edge.edgeType,
+    weight: edge.weight,
+    reason: edge.reason,
+  }));
+}
 
-    return {
-        nodes: Array.from(nodes.values()),
-        edges: graphEdges,
-    };
+export async function getPhilosophyFragments(userId: string, limit: number = 4) {
+  return prisma.philosophyFragment.findMany({
+    where: { userId },
+    orderBy: { resonanceScore: "desc" },
+    take: limit,
+  });
+}
+
+export async function getThemeDrift(userId: string) {
+  const snapshots = await prisma.memorySnapshot.findMany({
+    where: { userId },
+    orderBy: { createdAt: "desc" },
+    take: 2,
+    select: { period: true, themes: true },
+  });
+
+  if (snapshots.length < 2) return null;
+
+  const [latest, previous] = snapshots;
+  const parseThemeTitles = (themes: any): string[] => {
+    if (!Array.isArray(themes)) return [];
+    return themes
+      .map((item) => (item?.title ? item.title : item?.name ? item.name : String(item)))
+      .filter(Boolean);
+  };
+
+  const latestThemes = parseThemeTitles(latest.themes);
+  const previousThemes = parseThemeTitles(previous.themes);
+
+  const gained = latestThemes.filter((theme) => !previousThemes.includes(theme));
+  const faded = previousThemes.filter((theme) => !latestThemes.includes(theme));
+
+  if (!gained.length && !faded.length) return null;
+
+  const gainedText = gained.length > 0 ? `最近は、「${gained.join('」「')}」への関心が増えています。` : "";
+  const fadedText = faded.length > 0 ? `以前は「${faded.join('」「')}」が多かったようです。` : "";
+
+  return `${fadedText}${gainedText}`.trim();
 }

@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { QuietAudioPlayer } from "@/components/audio/QuietAudioPlayer";
+import { QuietQuestionCard } from "@/components/learning/QuietQuestionCard";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 
@@ -29,6 +30,31 @@ export default async function LearningFeedPage() {
     orderBy: { createdAt: "desc" },
     take: 5,
   });
+
+  // Fetch related content items and knowledge contents for suggestions
+  const contentItemIds = suggestions
+    .map(s => s.contentItemId)
+    .filter(Boolean) as string[];
+  const knowledgeContentIds = suggestions.map(s => s.knowledgeContentId);
+
+  const contentItems = contentItemIds.length > 0
+    ? await prisma.contentItem.findMany({
+        where: { id: { in: contentItemIds } }
+      })
+    : [];
+
+  const knowledgeContents = knowledgeContentIds.length > 0
+    ? await prisma.knowledgeContent.findMany({
+        where: { id: { in: knowledgeContentIds } }
+      })
+    : [];
+
+  // Map related data to suggestions
+  const enrichedSuggestions = suggestions.map(suggestion => ({
+    ...suggestion,
+    contentItem: contentItems.find(ci => ci.id === suggestion.contentItemId) || null,
+    knowledgeContent: knowledgeContents.find(kc => kc.id === suggestion.knowledgeContentId) || null
+  }));
 
   // Fetch resurfaced memories (Fogging applied for Free users if older than 3 days)
   const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
@@ -70,6 +96,27 @@ export default async function LearningFeedPage() {
             </Link>
           </section>
         )}
+
+        {/* Quiet Questions */}
+        <section className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-225 fill-mode-both">
+          <h2 className="text-xs tracking-[0.2em] uppercase text-black/40 dark:text-white/40">静かな問い</h2>
+          {enrichedSuggestions.length === 0 ? (
+            <div className="p-8 rounded-2xl bg-black/[0.02] dark:bg-white/[0.02] border border-black/5 dark:border-white/5 text-center space-y-3">
+              <p className="text-sm text-black/40 dark:text-white/40 font-light">
+                まだ静かな問いは浮かんでいません
+              </p>
+              <p className="text-xs text-black/25 dark:text-white/25 leading-relaxed font-light">
+                記録を積み重ねることで、やがてその奥に隠された共通点が見えてきます。
+              </p>
+            </div>
+          ) : (
+            <div className="grid gap-6">
+              {enrichedSuggestions.map((suggestion) => (
+                <QuietQuestionCard key={suggestion.id} suggestion={suggestion as any} />
+              ))}
+            </div>
+          )}
+        </section>
 
         {/* Resurfaced Memories with Decay Logic */}
         <section className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-300 fill-mode-both">

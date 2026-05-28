@@ -5,11 +5,11 @@ import { decryptKey } from "@/lib/encryption";
 import { revalidatePath } from "next/cache";
 import { generateAiResponseSchema } from "@/lib/validators/ai.validator";
 import { userRepository } from "@/lib/repositories/user.repository";
-import { subscriptionService } from "@/lib/services/subscription.service";
 import { apiKeyRepository } from "@/lib/repositories/api-key.repository";
 import { aiService } from "@/lib/services/ai.service";
 import { dailyLogRepository } from "@/lib/repositories/daily-log.repository";
 import { buildUserMessage, extractSmallAction } from "@/lib/prompts/yohaku-system-prompt";
+import { prisma } from "@/lib/prisma";
 
 export async function generateAiResponseAction(input: string, moodTag?: string) {
   try {
@@ -34,14 +34,19 @@ export async function generateAiResponseAction(input: string, moodTag?: string) 
     }
 
     // 4. Fetch API Key
-    const apiKeyRecord = await apiKeyRepository.findByUserIdAndProvider(userId, "gemini");
-    if (!apiKeyRecord?.encryptedKey) {
+    const [apiKeyRecord, userAiSettings] = await Promise.all([
+      apiKeyRepository.findByUserIdAndProvider(userId, "gemini"),
+      prisma.userAISettings.findUnique({ where: { userId } }),
+    ]);
+
+    const encryptedKey = apiKeyRecord?.encryptedKey || userAiSettings?.encryptedApiKey;
+    if (!encryptedKey) {
       return { ok: false, error: "APIキーが設定されていません。設定画面からGemini APIキーを登録してください。" };
     }
 
     let apiKey = "";
     try {
-      apiKey = decryptKey(apiKeyRecord.encryptedKey);
+      apiKey = decryptKey(encryptedKey);
     } catch (e) {
       return { ok: false, error: "APIキーの復号化に失敗しました。再度設定画面から登録してください。" };
     }

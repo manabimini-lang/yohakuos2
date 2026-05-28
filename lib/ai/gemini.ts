@@ -41,100 +41,117 @@ export async function getApiCredentials(
     return getApiCredentialsFromUserId(options?.userId);
 }
 
-async function getApiCredentialsFromUserId(userId?: string): Promise<{ apiKey: string; modelName: string }> {
-    // 1. Check new UserAISettings first
-    if (userId) {
-        try {
-            const settings = await prisma.userAISettings.findUnique({
+export async function getUserOwnedApiCredentials(
+    userId?: string
+): Promise<{ apiKey: string; modelName: string } | null> {
+    if (!userId) {
+        return null;
+    }
+
+    console.log("LOAD USER OWNED GEMINI CREDENTIALS", { userId });
+    const settings = await prisma.userAISettings.findUnique({
+        where: { userId },
+    });
+
+    if (settings) {
+        const now = new Date();
+        const lastReset = settings.lastUsageReset ? new Date(settings.lastUsageReset) : null;
+        let dailyUsage = settings.dailyTokenUsage;
+        let monthlyUsage = settings.monthlyTokenUsage;
+        let needsUpdate = false;
+
+        const isDifferentDay = !lastReset ||
+            now.getDate() !== lastReset.getDate() ||
+            now.getMonth() !== lastReset.getMonth() ||
+            now.getFullYear() !== lastReset.getFullYear();
+
+        const isDifferentMonth = !lastReset ||
+            now.getMonth() !== lastReset.getMonth() ||
+            now.getFullYear() !== lastReset.getFullYear();
+
+        if (isDifferentDay) {
+            dailyUsage = 0;
+            needsUpdate = true;
+        }
+        if (isDifferentMonth) {
+            monthlyUsage = 0;
+            needsUpdate = true;
+        }
+
+        if (needsUpdate) {
+            await prisma.userAISettings.update({
                 where: { userId },
-            });
-            if (settings && settings.isEnabled) {
-                // Reset daily/monthly token counts if period has rolled over
-                const now = new Date();
-                const lastReset = settings.lastUsageReset ? new Date(settings.lastUsageReset) : null;
-                let dailyUsage = settings.dailyTokenUsage;
-                let monthlyUsage = settings.monthlyTokenUsage;
-                let needsUpdate = false;
-
-                const isDifferentDay = !lastReset || 
-                  now.getDate() !== lastReset.getDate() || 
-                  now.getMonth() !== lastReset.getMonth() || 
-                  now.getFullYear() !== lastReset.getFullYear();
-
-                const isDifferentMonth = !lastReset || 
-                  now.getMonth() !== lastReset.getMonth() || 
-                  now.getFullYear() !== lastReset.getFullYear();
-
-                if (isDifferentDay) {
-                    dailyUsage = 0;
-                    needsUpdate = true;
-                }
-                if (isDifferentMonth) {
-                    monthlyUsage = 0;
-                    needsUpdate = true;
-                }
-
-                if (needsUpdate) {
-                    await prisma.userAISettings.update({
-                        where: { userId },
-                        data: {
-                            dailyTokenUsage: dailyUsage,
-                            monthlyTokenUsage: monthlyUsage,
-                            lastUsageReset: now,
-                        },
-                    }).catch(e => console.error("[GEMINI] Failed to reset token usage:", e));
-                }
-
-                // Enforce token usage limits
-                if (dailyUsage >= 100000) {
-                    throw new Error("本日の一日利用量制限（100,000トークン）に達しました。");
-                }
-                if (monthlyUsage >= 2000000) {
-                    throw new Error("当月の月間利用量制限（2,000,000トークン）に達しました。");
-                }
-
-                if (settings.encryptedApiKey) {
-                    const apiKey = decryptKey(settings.encryptedApiKey);
-                    const modelName = settings.model || GEMINI_MODEL;
-                    return { apiKey, modelName };
-                }
-            }
-        } catch (error: any) {
-            if (error.message && error.message.includes("利用量制限")) {
-                throw error;
-            }
-            console.warn("[GEMINI] UserAISettings read failed:", error);
-        }
-    }
-
-    // 2. Fallback to legacy UserApiKey
-    if (userId) {
-        try {
-            const keyRecord = await prisma.userApiKey.findUnique({
-                where: {
-                    userId_apiProvider: {
-                        userId,
-                        apiProvider: "gemini",
-                    },
+                data: {
+                    dailyTokenUsage: dailyUsage,
+                    monthlyTokenUsage: monthlyUsage,
+                    lastUsageReset: now,
                 },
-            });
+            }).catch(e => console.error("[GEMINI] Failed to reset token usage:", e));
+        }
 
-            if (keyRecord?.encryptedKey) {
-                const apiKey = decryptKey(keyRecord.encryptedKey);
-                return { apiKey, modelName: GEMINI_MODEL };
+        if (settings.isEnabled) {
+            if (dailyUsage >= 100000) {
+                throw new Error("本日の一日利用量制限（100,000トークン）に達しました。");
             }
-        } catch (error) {
-            console.warn("[GEMINI] UserApiKey read failed:", error);
+            if (monthlyUsage >= 2000000) {
+                throw new Error("当月の月間利用量制限（2,000,000トークン）に達しました。");
+            }
+
+            if (settings.encryptedApiKey) {
+                const decrypted = decryptKey(settings.encryptedApiKey);
+                console.log("FOUND USER GEMINI KEY FROM SETTINGS", {
+                    userId,
+                    model: settings.model || GEMINI_MODEL,
+                });
+                return {
+                    apiKey: decrypted,
+                    modelName: settings.model || GEMINI_MODEL,
+                };
+            }
         }
     }
 
-    // 3. Fallback to process.env.GEMINI_API_KEY
+    const keyRecord = await prisma.userApiKey.findUnique({
+        where: {
+            userId_apiProvider: {
+                userId,
+                apiProvider: "gemini",
+            },
+        },
+    });
+
+    if (keyRecord?.encryptedKey) {
+        console.log("FOUND USER GEMINI KEY FROM LEGACY STORAGE", { userId });
+        return {
+            apiKey: decryptKey(keyRecord.encryptedKey),
+            modelName: GEMINI_MODEL,
+        };
+    }
+
+    console.log("NO USER GEMINI CREDENTIALS FOUND", { userId });
+    return null;
+}
+
+async function getApiCredentialsFromUserId(userId?: string): Promise<{ apiKey: string; modelName: string }> {
+    if (userId) {
+        const credentials = await getUserOwnedApiCredentials(userId);
+        if (credentials) {
+            return credentials;
+        }
+
+        throw new Error(
+            "Gemini APIキーが設定されていません。設定画面からユーザー固有のAPIキーを入力してください。"
+        );
+    }
+
     const envKey = process.env.GEMINI_API_KEY;
     if (envKey) {
         return { apiKey: envKey, modelName: GEMINI_MODEL };
     }
 
-    throw new Error('GEMINI_API_KEY が設定されていません。設定画面からAPIキーを入力するか、環境変数を設定してください。');
+    throw new Error(
+        'GEMINI_API_KEY が設定されていません。設定画面からAPIキーを入力するか、環境変数を設定してください。'
+    );
 }
 
 /**
@@ -142,6 +159,11 @@ async function getApiCredentialsFromUserId(userId?: string): Promise<{ apiKey: s
  */
 async function getClient(options?: AIRequestOptions): Promise<{ client: GenerativeModel; modelName: string }> {
     const { apiKey, modelName } = await getApiCredentials(options);
+    console.log("CREATE GEMINI CLIENT", {
+        modelName,
+        hasApiKey: !!apiKey,
+        source: typeof options === 'string' ? 'userId' : options?.apiKey ? 'direct' : 'env/user-settings',
+    });
     const genAI = new GoogleGenerativeAI(apiKey);
     const client = genAI.getGenerativeModel({ model: modelName });
     return { client, modelName };
@@ -256,34 +278,41 @@ export async function validateApiKey(options?: AIRequestOptions): Promise<{
         });
 
         // 使用されたキーの種類を特定
-        let method: 'env' | 'apikey' | 'oauth' | null = 'apikey';
+        let method: 'env' | 'apikey' | 'oauth' | null = null;
+        const userId = typeof options === 'string' ? options : options?.userId;
+
         if (typeof options === 'object' && options !== null && options.apiKey) {
             method = 'apikey';
+        } else if (userId) {
+            try {
+                const settings = await prisma.userAISettings.findUnique({
+                    where: { userId },
+                });
+                if (settings && settings.isEnabled) {
+                    method = 'apikey';
+                } else {
+                    const oauthRecord = await prisma.userApiKey.findUnique({
+                        where: {
+                            userId_apiProvider: { userId, apiProvider: "gemini_oauth" },
+                        },
+                    });
+                    const legacyRecord = await prisma.userApiKey.findUnique({
+                        where: {
+                            userId_apiProvider: { userId, apiProvider: "gemini" },
+                        },
+                    });
+
+                    if (oauthRecord?.encryptedKey) {
+                        method = 'oauth';
+                    } else if (legacyRecord?.encryptedKey) {
+                        method = 'apikey';
+                    }
+                }
+            } catch {
+                method = 'apikey';
+            }
         } else if (process.env.GEMINI_API_KEY) {
             method = 'env';
-        } else {
-            const userId = typeof options === 'string' ? options : options?.userId;
-            if (userId) {
-                try {
-                    const settings = await prisma.userAISettings.findUnique({
-                        where: { userId },
-                    });
-                    if (settings && settings.isEnabled) {
-                        method = 'apikey';
-                    } else {
-                        const oauthRecord = await prisma.userApiKey.findUnique({
-                            where: {
-                                userId_apiProvider: { userId, apiProvider: "gemini_oauth" },
-                            },
-                        });
-                        if (oauthRecord?.encryptedKey) {
-                            method = 'oauth';
-                        }
-                    }
-                } catch {
-                    method = 'apikey';
-                }
-            }
         }
 
         return { connected: true, method };

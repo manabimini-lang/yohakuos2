@@ -21,7 +21,7 @@ export default async function CompanionPage() {
     }
 
     return (
-        <div className="min-h-screen bg-white">
+        <div className="min-h-screen bg-[#090909] text-slate-100">
             <div className="h-screen flex flex-col">
                 <CompanionChat />
             </div>

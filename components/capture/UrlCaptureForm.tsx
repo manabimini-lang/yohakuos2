@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { saveUrlContent } from "@/app/actions/capture";
 import { useCaptureStore } from "@/store/capture-store";
-import { Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 
 export function UrlCaptureForm({ onSuccess }: { onSuccess: () => void }) {
@@ -63,10 +62,9 @@ export function UrlCaptureForm({ onSuccess }: { onSuccess: () => void }) {
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="flex items-center gap-2"
+              className="text-sm text-slate-400"
             >
-              <Loader2 className="w-4 h-4 animate-spin" />
-              <span>静かに整理しています...</span>
+              静かに整理しています...
             </motion.div>
           )}
         </div>

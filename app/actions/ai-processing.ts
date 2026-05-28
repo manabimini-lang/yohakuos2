@@ -5,6 +5,9 @@ import { summarizeContent } from "@/lib/ai/summarize";
 import { generateContentTags } from "@/lib/ai/tagger";
 import { classifyContentItem } from "@/lib/ai/classifier";
 import { generateEmbedding } from "@/lib/ai/embeddings";
+import { shouldGenerateReflection } from "@/lib/ai/should-generate-reflection";
+import { maybeEnqueueLifeOSJobs } from "@/lib/life/queue-life-jobs";
+import { maybeEnqueueReturnJobs } from "@/lib/memory/queue-return-jobs";
 
 // Current AI version — bump when prompts or models change (enables re-analysis)
 const AI_VERSION = "1.0";
@@ -13,6 +16,11 @@ export async function processAIAnalysis(
   contentItemId: string,
   userId: string
 ): Promise<void> {
+  console.log("PROCESSING AI ANALYSIS", {
+    contentItemId,
+    userId,
+  });
+
   // 1. Mark as processing
   await prisma.contentItem.update({
     where: { id: contentItemId },
@@ -48,10 +56,12 @@ export async function processAIAnalysis(
     }
 
     // 4. Initialize provider (dynamically resolved)
+    console.log("LOADING USER API KEY", { userId });
     const { resolveProvider } = await import("@/lib/ai/provider-resolver");
     const provider = await resolveProvider(userId);
 
     if (!provider) {
+      console.log("NO PROVIDER FOUND", { userId });
       // AI is disabled / not connected
       await prisma.contentItem.update({
         where: { id: contentItemId },
@@ -70,6 +80,7 @@ export async function processAIAnalysis(
     }
 
     // 5. Run all AI tasks in parallel
+    console.log("RUNNING AI TASKS", { contentItemId, userId });
     const [summary, tags, contentType, embedding] = await Promise.allSettled([
       summarizeContent(provider, textForAnalysis),
       generateContentTags(provider, textForAnalysis),
@@ -88,6 +99,16 @@ export async function processAIAnalysis(
         ? embedding.value
         : null;
 
+    if (resolvedSummary) {
+      console.log("SUMMARY GENERATED", {
+        contentItemId,
+        userId,
+        summary: resolvedSummary.slice(0, 120),
+      });
+    } else {
+      console.log("SUMMARY FAILED TO GENERATE", { contentItemId, userId });
+    }
+
     // 6. Build update payload
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const updateData: any = {
@@ -101,6 +122,11 @@ export async function processAIAnalysis(
 
     // Embedding update via raw SQL
     if (resolvedEmbedding && resolvedEmbedding.length > 0) {
+      console.log("UPDATING CONTENT EMBEDDING", {
+        contentItemId,
+        userId,
+        embeddingLength: resolvedEmbedding.length,
+      });
       const vectorStr = `[${resolvedEmbedding.join(",")}]`;
       await prisma.$executeRaw`
         UPDATE content_items
@@ -111,10 +137,72 @@ export async function processAIAnalysis(
       `;
     }
 
+    console.log("UPDATING CONTENT", {
+      contentItemId,
+      userId,
+      summary: resolvedSummary !== null,
+      tags: resolvedTags.length,
+      contentType: resolvedContentType,
+      embedding: !!resolvedEmbedding,
+    });
+
     await prisma.contentItem.update({
       where: { id: contentItemId },
       data: updateData,
     });
+
+    async function enqueueAudioReflectionIfEligible(contentItemId: string, userId: string) {
+      const contentItem = await prisma.contentItem.findUnique({
+        where: { id: contentItemId },
+        select: {
+          reflection: true,
+          summary: true,
+          aiTags: true,
+          contentType: true,
+          title: true,
+          url: true,
+        },
+      });
+      if (!contentItem) return;
+
+      const hasReflection = Boolean(contentItem.reflection?.trim());
+      const shouldGenerate = await shouldGenerateReflection({
+        contentItemId,
+        userId,
+        hasReflection,
+      });
+      if (!shouldGenerate) {
+        return;
+      }
+
+      const userSettings = await prisma.userAISettings.findUnique({
+        where: { userId },
+      });
+      if (!userSettings?.isEnabled) {
+        return;
+      }
+
+      const reflection = await prisma.audioReflection.create({
+        data: {
+          userId,
+          contentItemId,
+          script: contentItem.reflection?.trim() || "今夜の思考を、静かに見つめ直す時間です。",
+          status: "pending",
+        },
+      });
+
+      await prisma.aIJob.create({
+        data: {
+          userId,
+          jobType: "generate_audio_reflection",
+          status: "pending",
+          input: {
+            reflectionId: reflection.id,
+            contentItemId,
+          },
+        },
+      });
+    }
 
     // 7. Mark corresponding AIJob as completed
     await prisma.aIJob.updateMany({
@@ -127,17 +215,35 @@ export async function processAIAnalysis(
       data: { status: "completed", completedAt: new Date() },
     });
 
-    // 8. Generate Memory Resurfacing if applicable
+    // 8. Maybe enqueue audio reflection after AI summary is complete
+    await enqueueAudioReflectionIfEligible(contentItemId, userId);
+
+    // 9. Generate Memory Resurfacing if applicable
     if (resolvedEmbedding && resolvedEmbedding.length > 0) {
       const { computeMemoryResurfacing } = await import("@/lib/memory/memory-resurfacer");
       await computeMemoryResurfacing(userId, contentItemId);
+      await maybeEnqueueReturnJobs(userId);
     }
+
+    // 10. Trigger Life OS analysis if eligible
+    await maybeEnqueueLifeOSJobs(userId);
   } catch (error: any) {
     console.error("[processAIAnalysis] failed:", error);
 
     await prisma.contentItem.update({
       where: { id: contentItemId },
       data: { aiStatus: "failed" },
+    });
+
+    await prisma.aIJob.updateMany({
+      where: {
+        jobType: "content_analysis",
+        input: { path: ["contentItemId"], equals: contentItemId },
+        status: { in: ["pending", "processing"] },
+      },
+      data: {
+        lastError: String(error?.message || error),
+      },
     });
 
     throw error;

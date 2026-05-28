@@ -13,6 +13,11 @@ import { processAIAnalysis } from "./ai-processing";
 // processAIAnalysis() はQueue-readyなインターフェースで実装済み。
 // ===================================================
 async function queueAndRunAI(contentItemId: string, userId: string) {
+  console.log("AI JOB ENQUEUED", {
+    contentId: contentItemId,
+    userId,
+  });
+
   // Create AIJob record for tracking/future worker pickup
   await prisma.aIJob.create({
     data: {
@@ -26,9 +31,9 @@ async function queueAndRunAI(contentItemId: string, userId: string) {
   // Fire-and-forget: run analysis asynchronously
   // NOTE: In serverless (Vercel), this may be killed after response.
   // For reliability, use /api/internal/process-ai-jobs cron endpoint (Phase 3).
-  processAIAnalysis(contentItemId, userId).catch((err) =>
-    console.error("[capture] AI analysis failed silently:", err)
-  );
+  processAIAnalysis(contentItemId, userId).catch((err) => {
+    console.error("[capture] AI analysis failed silently:", err);
+  });
 }
 
 // ===================================================

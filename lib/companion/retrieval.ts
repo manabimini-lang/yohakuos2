@@ -22,6 +22,7 @@ import {
     MemorySnippet,
 } from "./types";
 import { estimateTokenCount } from "@/lib/memory/cost";
+import { getLifeOSContextForCompanion } from "./life-os-context";
 
 const MAX_TOTAL_TOKENS = 8_000; // user context token budget
 const MAX_MEMORIES = 15;
@@ -35,8 +36,8 @@ export async function buildCompanionContext(
     const now = new Date();
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-    // 1. Fetch all data sources in parallel
-    const [activeThemes, emotionalMemories, recentReflections, activeRoads, recentMemories, highConfidenceMemories] =
+    // 1. Fetch all data sources in parallel (including Life OS context)
+    const [activeThemes, emotionalMemories, recentReflections, activeRoads, recentMemories, highConfidenceMemories, lifeOSContext] =
         await Promise.all([
             // Active life themes (highest confidence, most recent)
             prisma.userMemory.findMany({
@@ -123,6 +124,9 @@ export async function buildCompanionContext(
                     createdAt: true,
                 },
             }),
+
+            // Life OS context (人生OS層)
+            getLifeOSContextForCompanion(userId),
         ]);
 
     // 2. Build themes with duration info
@@ -192,6 +196,7 @@ export async function buildCompanionContext(
         activeRoad,
         relevantMemories: budgetedMemories,
         ongoingQuestions,
+        lifeOSContext,
         generatedAt: now.toISOString(),
         confidenceFloor: 0.35,
         estimatedTokens,

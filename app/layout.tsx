@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { PWAProvider } from "@/components/pwa-provider";
 import { SessionProvider } from "next-auth/react";
 import { CaptureLayer } from "@/components/capture/CaptureLayer";
+import BottomNav from "@/components/ui/BottomNav";
 
 export const dynamic = "force-dynamic";
 import { Noto_Sans_JP } from "next/font/google";
@@ -53,11 +54,14 @@ export default async function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
       </head>
-      <body className={notoSansJP.className}>
+      <body className={`${notoSansJP.className} min-h-screen bg-[#090909] text-slate-100 antialiased`}> 
         <SessionProvider session={session}>
           <PWAProvider>
-            {children}
-            {session && <CaptureLayer />}
+            <div className="min-h-screen">
+              {children}
+              {session && <CaptureLayer />}
+              {session && <BottomNav />}
+            </div>
           </PWAProvider>
         </SessionProvider>
       </body>

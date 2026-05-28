@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { AiChatClient } from "@/components/member/ai-chat-client";
 import { userRepository } from "@/lib/repositories/user.repository";
 import { apiKeyRepository } from "@/lib/repositories/api-key.repository";
+import { prisma } from "@/lib/prisma";
 import { PremiumInvitation } from "@/components/member/premium-invitation";
 
 export const metadata = {
@@ -31,9 +32,16 @@ export default async function AiPage() {
       redirect("/login");
     }
     isPremium = hasPremiumAccess(user.plan, user.role);
-    
-    const apiKeyRecord = await apiKeyRepository.findByUserIdAndProvider(userId, "gemini");
-    hasKey = !!apiKeyRecord?.encryptedKey;
+
+    const [apiKeyRecord, userAiSettings] = await Promise.all([
+      apiKeyRepository.findByUserIdAndProvider(userId, "gemini"),
+      prisma.userAISettings.findUnique({ where: { userId } }),
+    ]);
+
+    hasKey = !!(
+      apiKeyRecord?.encryptedKey ||
+      userAiSettings?.encryptedApiKey
+    );
   } catch (error) {
     console.warn("Database connection failed, falling back to mock session for frontend demonstration:", error);
     isPremium = hasPremiumAccess(session.user.plan, session.user.role);

@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Play, Pause } from "lucide-react";
-import { motion } from "framer-motion";
 
 interface QuietAudioPlayerProps {
   src: string;
@@ -17,6 +16,7 @@ export function QuietAudioPlayer({
 }: QuietAudioPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
@@ -25,6 +25,7 @@ export function QuietAudioPlayer({
 
     const updateProgress = () => {
       setProgress((audio.currentTime / (audio.duration || 1)) * 100);
+      setCurrentTime(audio.currentTime);
     };
 
     const handleEnded = () => setIsPlaying(false);
@@ -56,39 +57,45 @@ export function QuietAudioPlayer({
   };
 
   return (
-    <div className="flex items-center gap-4 py-3 px-4 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-black/70 dark:text-white/70 hover:bg-black/10 dark:hover:bg-white/10 transition-all duration-500 w-fit">
-      <audio ref={audioRef} src={src} preload="none" />
+    <div className="space-y-3">
+      <audio ref={audioRef} src={src} preload="metadata" />
       
-      <button 
-        onClick={togglePlay}
-        className="w-8 h-8 rounded-full flex items-center justify-center bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 transition-colors"
-        aria-label={isPlaying ? "Pause" : "Play"}
-      >
-        {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
-      </button>
+      <div className="flex items-center gap-3">
+        {/* Play button */}
+        <button 
+          onClick={togglePlay}
+          className="w-7 h-7 rounded-full flex items-center justify-center bg-black/8 dark:bg-white/8 hover:bg-black/15 dark:hover:bg-white/15 transition-colors duration-200"
+          aria-label={isPlaying ? "一時停止" : "再生"}
+        >
+          {isPlaying ? (
+            <Pause className="w-3.5 h-3.5 text-black/60 dark:text-white/60" />
+          ) : (
+            <Play className="w-3.5 h-3.5 text-black/60 dark:text-white/60 ml-0.5" />
+          )}
+        </button>
 
-      <div className="flex flex-col">
-        <span className="text-sm font-medium tracking-wide">◉ {title}</span>
-        {duration && (
-          <span className="text-xs opacity-50 font-mono mt-0.5">
-            {formatTime(duration)}
-          </span>
-        )}
+        {/* Time display */}
+        <div className="text-xs font-mono text-black/40 dark:text-white/40 min-w-fit">
+          {formatTime(currentTime)} / {duration ? formatTime(duration) : "0:00"}
+        </div>
       </div>
 
-      {isPlaying && (
-        <motion.div 
-          className="h-[2px] bg-black/10 dark:bg-white/10 w-20 ml-4 overflow-hidden rounded-full"
-          initial={{ opacity: 0, width: 0 }}
-          animate={{ opacity: 1, width: 80 }}
-          transition={{ duration: 0.8, ease: "easeOut" }}
-        >
-          <motion.div 
-            className="h-full bg-black/40 dark:bg-white/40" 
-            style={{ width: `${progress}%` }} 
-          />
-        </motion.div>
-      )}
+      {/* Progress bar */}
+      <div 
+        className="h-0.5 bg-black/8 dark:bg-white/8 rounded-full overflow-hidden cursor-pointer hover:h-1 transition-all duration-200"
+        onClick={(e) => {
+          const rect = e.currentTarget.getBoundingClientRect();
+          const percent = (e.clientX - rect.left) / rect.width;
+          if (audioRef.current && audioRef.current.duration) {
+            audioRef.current.currentTime = percent * audioRef.current.duration;
+          }
+        }}
+      >
+        <div 
+          className="h-full bg-black/30 dark:bg-white/30 transition-all duration-100" 
+          style={{ width: `${progress}%` }} 
+        />
+      </div>
     </div>
   );
 }

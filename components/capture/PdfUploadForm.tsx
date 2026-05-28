@@ -3,7 +3,7 @@
 import { useState, useRef } from "react";
 import { savePdfFile } from "@/app/actions/capture";
 import { useCaptureStore } from "@/store/capture-store";
-import { Loader2, FileUp, File as FileIcon } from "lucide-react";
+import { FileUp, File as FileIcon } from "lucide-react";
 import { motion } from "framer-motion";
 
 export function PdfUploadForm({ onSuccess }: { onSuccess: () => void }) {
@@ -121,10 +121,9 @@ export function PdfUploadForm({ onSuccess }: { onSuccess: () => void }) {
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="flex items-center gap-2"
+              className="text-sm text-slate-400"
             >
-              <Loader2 className="w-4 h-4 animate-spin" />
-              <span>記録を保存しています...</span>
+              記録を保存しています...
             </motion.div>
           )}
         </div>

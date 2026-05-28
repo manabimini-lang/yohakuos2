@@ -841,6 +841,26 @@ model SeasonalSummary {
   @@map("seasonal_summaries")
 }
 
+model LegacySnapshot {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  period    String   @map("period")
+  type      String   @map("type")
+  title     String
+  content   String   @db.Text
+  themes    Json     @default("[]") @db.JsonB
+  chapters  Json     @default("[]") @db.JsonB
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, period])
+  @@index([userId])
+  @@map("legacy_snapshots")
+}
+
 // ===================================================
 // YOHAKU Ambient Intelligence Layer
 // ===================================================
@@ -989,9 +1009,6 @@ model UserMemory {
   version      Int     @default(1)
   supersededId String? @map("superseded_id")
 
-  outgoingEdges MemoryGraphEdge[] @relation("OutgoingEdges")
-  incomingEdges MemoryGraphEdge[] @relation("IncomingEdges")
-
   sourceCard   KnowledgeCard? @relation(fields: [sourceCardId], references: [id], onDelete: SetNull)
   sourceCardId String?        @map("source_card_id")
   sources      MemorySource[]
@@ -1010,34 +1027,36 @@ model UserMemory {
   @@map("user_memories")
 }
 
-enum EdgeRelation {
-  supports
-  contradicts
-  causes
-  results_in
-  similar_to
-  evolved_to
-  influenced_by
+model MemoryGraphEdge {
+  id             String   @id @default(cuid())
+  userId         String   @map("user_id")
+  fromContentId  String   @map("from_content_id")
+  toContentId    String   @map("to_content_id")
+  edgeType       String   @map("edge_type")
+  weight         Float    @default(0.0)
+  reason         String?  @db.Text
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([fromContentId])
+  @@index([toContentId])
+  @@index([userId, edgeType])
+  @@unique([userId, fromContentId, toContentId, edgeType])
+  @@map("memory_graph_edges")
 }
 
-model MemoryGraphEdge {
-  id           String       @id @default(cuid())
-  fromMemoryId String       @map("from_memory_id")
-  toMemoryId   String       @map("to_memory_id")
-  relation     EdgeRelation
-  strength     Float        @default(0.5)
-  userId       String       @map("user_id")
+model PhilosophyFragment {
+  id             String   @id @default(cuid())
+  userId         String   @map("user_id")
+  fragment       String   @db.Text
+  sourceType     String   @map("source_type")
+  resonanceScore Float    @map("resonance_score")
+  relatedTheme   String?  @map("related_theme")
+  createdAt      DateTime @default(now()) @map("created_at")
 
-  fromMemory UserMemory @relation("OutgoingEdges", fields: [fromMemoryId], references: [id], onDelete: Cascade)
-  toMemory   UserMemory @relation("IncomingEdges", fields: [toMemoryId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now()) @map("created_at")
-
-  @@unique([fromMemoryId, toMemoryId, relation])
+  @@unique([userId, fragment])
   @@index([userId])
-  @@index([fromMemoryId])
-  @@index([toMemoryId])
-  @@map("memory_graph_edges")
+  @@map("philosophy_fragments")
 }
 
 model IdentitySnapshot {
@@ -1218,6 +1237,25 @@ model MemoryResurfacing {
   @@map("memory_resurfacings")
 }
 
+model DailyRitual {
+  id                 String   @id @default(cuid())
+  userId             String   @map("user_id")
+  date               DateTime @map("date")
+  quietQuestion      String   @db.Text @map("quiet_question")
+  ambientReflection  String   @db.Text @map("ambient_reflection")
+  returningThemes    Json     @db.JsonB @map("returning_themes")
+  philosophyFragments Json    @db.JsonB @map("philosophy_fragments")
+  pastMemories       Json     @db.JsonB @map("past_memories")
+  audioReflectionId  String?  @map("audio_reflection_id")
+  audioUrl           String?  @map("audio_url")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  @@unique([userId, date])
+  @@index([userId, date])
+  @@map("daily_rituals")
+}
+
 model MemorySnapshot {
   id          String   @id @default(cuid())
   userId      String   @map("user_id")
@@ -1229,6 +1267,20 @@ model MemorySnapshot {
   @@index([userId])
   @@index([userId, period])
   @@map("memory_snapshots")
+}
+
+model WeeklyReflection {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  weekStart DateTime @map("week_start")
+  reflection String   @db.Text
+  tags      Json     @db.JsonB // Array of string
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([userId, weekStart])
+  @@index([userId])
+  @@index([userId, createdAt])
+  @@map("weekly_reflections")
 }
 
 // ===================================================
