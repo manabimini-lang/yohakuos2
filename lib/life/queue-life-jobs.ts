@@ -314,6 +314,99 @@ export async function enqueueLifeChaptersGeneration(
   });
 }
 
+export async function enqueueInnerLandscapeGeneration(userId: string, period?: string): Promise<void> {
+  const now = new Date();
+
+  const existingJob = await prisma.aIJob.findFirst({
+    where: { userId, jobType: "generate_inner_landscape", status: "pending" },
+  });
+  if (existingJob) return;
+
+  const recentJob = await prisma.aIJob.findFirst({
+    where: {
+      userId,
+      jobType: "generate_inner_landscape",
+      status: "completed",
+      completedAt: { gte: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000) },
+    },
+    orderBy: { completedAt: "desc" },
+  });
+  if (recentJob) return;
+
+  await prisma.aIJob.create({
+    data: {
+      userId,
+      jobType: "generate_inner_landscape",
+      status: "pending",
+      priority: 2,
+      input: { type: "inner_landscape", period: period || null },
+      maxRetries: 2,
+    },
+  });
+}
+
+export async function enqueueReturningQuestionsExtraction(userId: string): Promise<void> {
+  const now = new Date();
+
+  const existingJob = await prisma.aIJob.findFirst({
+    where: { userId, jobType: "returning_questions", status: "pending" },
+  });
+  if (existingJob) return;
+
+  const recentJob = await prisma.aIJob.findFirst({
+    where: {
+      userId,
+      jobType: "returning_questions",
+      status: "completed",
+      completedAt: { gte: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000) },
+    },
+    orderBy: { completedAt: "desc" },
+  });
+  if (recentJob) return;
+
+  await prisma.aIJob.create({
+    data: {
+      userId,
+      jobType: "returning_questions",
+      status: "pending",
+      priority: 2,
+      input: { type: "returning_questions" },
+      maxRetries: 2,
+    },
+  });
+}
+
+export async function enqueueResonanceWeatherGeneration(userId: string): Promise<void> {
+  const now = new Date();
+
+  const existingJob = await prisma.aIJob.findFirst({
+    where: { userId, jobType: "resonance_weather", status: "pending" },
+  });
+  if (existingJob) return;
+
+  const recentJob = await prisma.aIJob.findFirst({
+    where: {
+      userId,
+      jobType: "resonance_weather",
+      status: "completed",
+      completedAt: { gte: new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000) },
+    },
+    orderBy: { completedAt: "desc" },
+  });
+  if (recentJob) return;
+
+  await prisma.aIJob.create({
+    data: {
+      userId,
+      jobType: "resonance_weather",
+      status: "pending",
+      priority: 2,
+      input: { type: "resonance_weather" },
+      maxRetries: 2,
+    },
+  });
+}
+
 /**
  * Smart enqueueing: only if user has enough data and AI is enabled
  */
@@ -360,5 +453,8 @@ export async function maybeEnqueueLifeOSJobs(userId: string): Promise<void> {
     enqueueReturningThemesDetection(userId),
     enqueueLegacySnapshotGeneration(userId),
     enqueueLifeChaptersGeneration(userId),
+    enqueueInnerLandscapeGeneration(userId),
+    enqueueReturningQuestionsExtraction(userId),
+    enqueueResonanceWeatherGeneration(userId),
   ]);
 }

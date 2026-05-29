@@ -155,6 +155,60 @@ export function registerLifeOSJobHandlers(): void {
             },
         });
     });
+
+    // Inner Landscape: generate_inner_landscape
+    registerJobHandler("generate_inner_landscape", async (job) => {
+        const { generateInnerLandscape } = await import("@/lib/landscape/engine");
+        const { prisma } = await import("@/lib/prisma");
+
+        const landscape = await generateInnerLandscape(job.userId, (job.input as any)?.period);
+
+        await prisma.aIJob.update({
+            where: { id: job.id },
+            data: {
+                output: {
+                    created: !!landscape,
+                    period: landscape?.period,
+                    dominantTheme: landscape?.dominantTheme || null,
+                },
+            },
+        });
+    });
+
+    // Inner Landscape: returning_questions
+    registerJobHandler("returning_questions", async (job) => {
+        const { extractReturningQuestions } = await import("@/lib/landscape/engine");
+        const { prisma } = await import("@/lib/prisma");
+
+        const questions = await extractReturningQuestions(job.userId);
+
+        await prisma.aIJob.update({
+            where: { id: job.id },
+            data: {
+                output: {
+                    questionCount: questions.length,
+                    sample: questions.slice(0, 3),
+                },
+            },
+        });
+    });
+
+    // Inner Landscape: resonance_weather
+    registerJobHandler("resonance_weather", async (job) => {
+        const { generateResonanceWeather } = await import("@/lib/landscape/engine");
+        const { prisma } = await import("@/lib/prisma");
+
+        const weather = await generateResonanceWeather(job.userId);
+
+        await prisma.aIJob.update({
+            where: { id: job.id },
+            data: {
+                output: {
+                    weatherSnippet: weather?.slice(0, 200),
+                },
+            },
+        });
+    });
 }
 
 export { enqueueJob };

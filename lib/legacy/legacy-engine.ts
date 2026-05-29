@@ -21,13 +21,9 @@ function formatDateLabel(date: Date) {
   });
 }
 
-function getSeasonLabel(season: string) {
-  return SEASON_LABELS[season] ?? season;
-}
-
 function buildPhilosophyDrift(
   summaries: Array<{ period: string; themes: string[] }> | null,
-  fragments: PhilosophyFragment[]
+  fragments: Array<{ sourceTheme: string; fragment: string }>
 ) {
   if (!summaries || summaries.length < 2) {
     if (fragments.length >= 2) {
@@ -183,7 +179,15 @@ export interface PastLetter {
 export interface LegacyPageData {
   seasonalSummaries: Array<{ period: string; season: string; year: number; summary: string; themes: string[]; startDate: Date; endDate: Date }>;
   returningThemes: ReturningTheme[];
-  philosophyFragments: PhilosophyFragment[];
+  philosophyFragments: Array<{
+    id: string;
+    userId: string;
+    sourceType: string;
+    fragment: string;
+    resonanceScore: number;
+    relatedTheme: string | null;
+    createdAt: Date;
+  }>;
   pastLetters: PastLetter[];
   lifeChapters: LegacyChapter[];
   philosophyDrift: { earlier: string; later: string; text: string } | null;
@@ -229,27 +233,37 @@ export async function getLegacyPageData(userId: string): Promise<LegacyPageData>
     createdAt: letter.createdAt,
   }));
 
-  const chapters = buildLifeChapters(seasonalSummaries, lifeThemes);
+  const typedSummaries = seasonalSummaries.map((summary) => ({
+    ...summary,
+    themes: Array.isArray(summary.themes)
+      ? summary.themes.filter((item): item is string => typeof item === "string")
+      : [],
+  }));
+
+  const chapters = buildLifeChapters(typedSummaries, lifeThemes);
   const philosophyDrift = buildPhilosophyDrift(
-    seasonalSummaries.length > 1
-      ? seasonalSummaries.map((summary) => ({
+    typedSummaries.length > 1
+      ? typedSummaries.map((summary) => ({
           period: summary.period,
-          themes: Array.isArray(summary.themes) ? summary.themes : [],
+          themes: summary.themes,
         }))
       : null,
-    philosophyFragments
+    philosophyFragments.map((fragment) => ({
+      sourceTheme: fragment.relatedTheme ?? fragment.sourceType,
+      fragment: fragment.fragment,
+    }))
   );
   const resonancePath = buildResonancePath(returningThemes);
-  const timelineEntries = buildTimelineEntries(seasonalSummaries);
+  const timelineEntries = buildTimelineEntries(typedSummaries);
 
-  const seasonalNarrative = seasonalSummaries.length === 0
+  const seasonalNarrative = typedSummaries.length === 0
     ? "時間とともに、季節ごとの空気感が少しずつ形作られていきます。"
-    : seasonalSummaries.slice(-3).map((summary) => {
-        return `${getSeasonLabel(summary.season)} ${summary.year} は、${summary.themes?.slice(0, 3).join("、")} の余白が漂っていました。`;
+    : typedSummaries.slice(-3).map((summary) => {
+        return `${getSeasonLabel(summary.season)} ${summary.year} は、${summary.themes.slice(0, 3).join("、")} の余白が漂っていました。`;
       }).join(" ");
 
   const exportText = buildLegacyExportText({
-    seasonalSummaries,
+    seasonalSummaries: typedSummaries,
     returningThemes,
     philosophyFragments,
     pastLetters: letters,
@@ -262,7 +276,7 @@ export async function getLegacyPageData(userId: string): Promise<LegacyPageData>
   });
 
   return {
-    seasonalSummaries,
+    seasonalSummaries: typedSummaries,
     returningThemes,
     philosophyFragments,
     pastLetters: letters,
@@ -302,7 +316,7 @@ export async function generateLegacySnapshot(userId: string) {
       title,
       content,
       themes: data.seasonalSummaries.flatMap((summary) => summary.themes ?? []),
-      chapters: data.lifeChapters,
+      chapters: data.lifeChapters as any,
     },
     create: {
       userId,
@@ -311,7 +325,7 @@ export async function generateLegacySnapshot(userId: string) {
       title,
       content,
       themes: data.seasonalSummaries.flatMap((summary) => summary.themes ?? []),
-      chapters: data.lifeChapters,
+      chapters: data.lifeChapters as any,
     },
   });
 

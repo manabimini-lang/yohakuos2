@@ -15,6 +15,7 @@ import {
 } from "@/lib/life/life-themes-engine";
 import { getLatestPhilosophyFragments } from "@/lib/memory/philosophy";
 import type { PhilosophyFragment } from "@/lib/life/life-themes-engine";
+import { prisma } from "@/lib/prisma";
 
 export interface LifeOSAwareContext {
   lifeThemes: Array<{
@@ -33,6 +34,14 @@ export interface LifeOSAwareContext {
     sourceTheme: string;
   }>;
   lifeDirection: string | null;
+  innerLandscape?: {
+    period: string;
+    seasonalAir?: string;
+    quietCurrents?: string[];
+    returningQuestions?: string[];
+    resonanceWeather?: string;
+    philosophyEchoes?: string[];
+  } | null;
 }
 
 /**
@@ -44,7 +53,7 @@ export async function getLifeOSContextForCompanion(
   userId: string
 ): Promise<LifeOSAwareContext> {
   try {
-    const [themes, returning, philosophy, direction] = await Promise.all([
+    const [themes, returning, philosophy, direction, innerLandscapeRec] = await Promise.all([
       extractLifeThemes(userId, 6).then((t) => t.slice(0, 3)), // top 3 themes
       detectReturningThemes(userId).then((t) =>
         t.slice(0, 2).map((th) => ({
@@ -60,6 +69,18 @@ export async function getLifeOSContextForCompanion(
         }))
       ),
       detectLifeDirection(userId),
+      prisma.innerLandscape.findFirst({
+        where: { userId },
+        orderBy: { generatedAt: "desc" },
+        select: {
+          period: true,
+          seasonalAir: true,
+          quietCurrents: true,
+          returningQuestions: true,
+          resonanceWeather: true,
+          philosophyEchoes: true,
+        },
+      }),
     ]);
 
     return {
@@ -72,6 +93,16 @@ export async function getLifeOSContextForCompanion(
       returningThemes: returning,
       philosophyFragments: philosophy,
       lifeDirection: direction,
+      innerLandscape: innerLandscapeRec
+        ? {
+            period: innerLandscapeRec.period,
+            seasonalAir: innerLandscapeRec.seasonalAir || undefined,
+            quietCurrents: (innerLandscapeRec.quietCurrents as string[]) || [],
+            returningQuestions: (innerLandscapeRec.returningQuestions as string[]) || [],
+            resonanceWeather: innerLandscapeRec.resonanceWeather || undefined,
+            philosophyEchoes: (innerLandscapeRec.philosophyEchoes as string[]) || [],
+          }
+        : null,
     };
   } catch (error: any) {
     console.warn("[Life OS Context] Failed to fetch:", error?.message);
@@ -81,6 +112,7 @@ export async function getLifeOSContextForCompanion(
       returningThemes: [],
       philosophyFragments: [],
       lifeDirection: null,
+      innerLandscape: null,
     };
   }
 }

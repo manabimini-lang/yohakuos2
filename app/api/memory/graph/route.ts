@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getMemoryGraph } from '@/lib/memory/graph';
+import { getMemoryConstellation } from '@/lib/memory/graph';
 
 export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ error: 'userId is required' }, { status: 400 });
     }
 
-    const graph = await getMemoryGraph(userId, limit);
+    const graph = await getMemoryConstellation(userId, limit);
 
     return NextResponse.json(graph);
 }

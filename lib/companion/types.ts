@@ -38,6 +38,14 @@ export interface CompanionContext {
             sourceTheme: string;
         }>;
         lifeDirection: string | null;
+        innerLandscape?: {
+            period: string;
+            seasonalAir?: string;
+            quietCurrents?: string[];
+            returningQuestions?: string[];
+            resonanceWeather?: string;
+            philosophyEchoes?: string[];
+        } | null;
     };
     /** コンテキスト生成時刻 */
     generatedAt: string;

@@ -212,8 +212,8 @@ export async function generateDailyRitual(userId: string) {
     update: {
       quietQuestion,
       ambientReflection,
-      returningThemes,
-      philosophyFragments,
+      returningThemes: returningThemes as any,
+      philosophyFragments: philosophyFragments as any,
       pastMemories,
       audioReflectionId: audioReflection?.id || null,
       audioUrl: audioReflection?.audioUrl || null,
@@ -223,15 +223,15 @@ export async function generateDailyRitual(userId: string) {
       date: today,
       quietQuestion,
       ambientReflection,
-      returningThemes,
-      philosophyFragments,
+      returningThemes: returningThemes as any,
+      philosophyFragments: philosophyFragments as any,
       pastMemories,
       audioReflectionId: audioReflection?.id || null,
       audioUrl: audioReflection?.audioUrl || null,
     },
   });
 
-  return ritual as DailyRitualData;
+  return ritual as any;
 }
 
 export function buildRitualTimelineItems(
