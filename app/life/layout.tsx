@@ -10,6 +10,7 @@ import Link from "next/link";
 
 const NAV_ITEMS = [
     { href: "/life/timeline", label: "タイムライン", icon: "⊞" },
+    { href: "/landscape", label: "内面の風景", icon: "⚏" },
     { href: "/life/areas", label: "人生領域", icon: "◎" },
     { href: "/life/meaning", label: "意味の兆し", icon: "◇" },
     { href: "/life/energy", label: "エネルギー", icon: "〜" },

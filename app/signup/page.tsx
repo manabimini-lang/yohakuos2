@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
 
 export const dynamic = "force-dynamic";
 
@@ -8,9 +9,14 @@ export default function SignUpPage({
 }: {
   searchParams: { error?: string; message?: string };
 }) {
-  const errorMessage = searchParams.error
-    ? "アカウント作成に失敗しました。もう一度お試しください。"
-    : null;
+  const errorMessage =
+    (searchParams.error === "OAuthSignin" || searchParams.error === "OAuthCallback" || searchParams.error === "google-error")
+      ? "Googleとの接続を完了できませんでした。少し時間を空けて、もう一度お試しください。"
+      : searchParams.error
+      ? "アカウント作成に失敗しました。もう一度お試しください。"
+      : null;
+
+  const isGoogleEnabled = !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
 
   const successMessage = searchParams.message === "check-email"
     ? "確認メールを送信しました。メールをご確認ください。"
@@ -88,6 +94,12 @@ export default function SignUpPage({
             アカウントを作成
           </button>
         </form>
+
+        {isGoogleEnabled && (
+          <div className="mb-6">
+            <GoogleSignInButton label="Googleで続ける" />
+          </div>
+        )}
 
         <div className="relative mb-6">
           <div className="absolute inset-0 flex items-center">

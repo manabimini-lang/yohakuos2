@@ -2,8 +2,50 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { ChevronRight } from "lucide-react";
 
 export const dynamic = "force-dynamic";
+
+function classifyAiError(lastError: string | null): { message: string; subMessage: string; showSettings: boolean } {
+  const calmDefault = {
+    message: "AIは今夜、静かに休んでいます。",
+    subMessage: "整理を完了できませんでした。後ほど再試行されます。",
+    showSettings: true,
+  };
+  
+  if (!lastError) return calmDefault;
+
+  const errStr = lastError.toLowerCase();
+
+  // API Key Invalid
+  if (errStr.includes("api key") || errStr.includes("invalid") || errStr.includes("key not valid") || errStr.includes("unauthorized") || errStr.includes("auth")) {
+    return {
+      message: "AIは今夜、静かに休んでいます。",
+      subMessage: "接続情報を確認してください。",
+      showSettings: true,
+    };
+  }
+
+  // Rate Limit / Quota
+  if (errStr.includes("exhausted") || errStr.includes("quota") || errStr.includes("limit") || errStr.includes("429")) {
+    return {
+      message: "AIは今夜、静かに休んでいます。",
+      subMessage: "現在AI利用上限に達しています。しばらく時間を空けて再試行されます。",
+      showSettings: false,
+    };
+  }
+
+  // Network Error
+  if (errStr.includes("fetch") || errStr.includes("network") || errStr.includes("dns") || errStr.includes("timeout") || errStr.includes("connect") || errStr.includes("econnrefused")) {
+    return {
+      message: "AIは今夜、静かに休んでいます。",
+      subMessage: "一時的な接続の問題が発生しました。",
+      showSettings: false,
+    };
+  }
+
+  return calmDefault;
+}
 
 export default async function InboxDetailPage({ params }: { params: { id: string } }) {
   const session = await auth();
@@ -18,6 +60,22 @@ export default async function InboxDetailPage({ params }: { params: { id: string
   if (!item || item.userId !== session.user.id) {
     redirect("/inbox");
   }
+
+  // Find the latest content_analysis job for this item to extract any lastError
+  let lastError: string | null = null;
+  const lastJob = await prisma.aIJob.findFirst({
+    where: {
+      userId: session.user.id,
+      jobType: "content_analysis",
+      input: { path: ["contentItemId"], equals: item.id },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+  if (lastJob) {
+    lastError = lastJob.lastError;
+  }
+
+  const errorDetails = classifyAiError(lastError);
 
   const relatedFilters: any[] = [];
   if (item.aiTags && item.aiTags.length > 0) {
@@ -76,9 +134,46 @@ export default async function InboxDetailPage({ params }: { params: { id: string
           {item.aiStatus === "pending" || item.aiStatus === "processing" ? (
             <p className="text-sm leading-relaxed text-slate-400">まだ静かに整理されています。</p>
           ) : item.aiStatus === "failed" ? (
-            <p className="text-sm leading-relaxed text-slate-400">AIは今夜、静かに休んでいます。</p>
+            <div className="space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-500">
+              <p className="text-sm leading-relaxed text-slate-300">{errorDetails.message}</p>
+              <p className="text-xs leading-relaxed text-slate-500 font-light leading-relaxed">
+                {errorDetails.subMessage}
+              </p>
+              <div className="flex gap-4 pt-1">
+                {errorDetails.showSettings && (
+                  <Link
+                    href="/settings/ai"
+                    className="inline-flex items-center text-xs font-light text-slate-400 hover:text-slate-200 transition-colors group"
+                  >
+                    AI設定を確認する
+                    <ChevronRight className="w-3 h-3 ml-1 group-hover:translate-x-1 transition-transform" />
+                  </Link>
+                )}
+                <Link
+                  href={`/inbox/${item.id}/retry`}
+                  className="inline-flex items-center text-xs font-light text-slate-400 hover:text-slate-200 transition-colors group"
+                >
+                  もう一度試す
+                  <ChevronRight className="w-3 h-3 ml-1 group-hover:translate-x-1 transition-transform" />
+                </Link>
+              </div>
+            </div>
           ) : item.aiStatus === "disabled" ? (
-            <p className="text-sm leading-relaxed text-slate-400">AI接続がされていません。</p>
+            <div className="space-y-3">
+              <p className="text-sm leading-relaxed text-slate-300">AI接続がまだ行われていません。</p>
+              <p className="text-xs leading-relaxed text-slate-500 font-light">
+                Gemini APIキーを設定すると、保存した記録が静かに整えられ、パーソナルAIとの対話や、内面の風景の描画が始まります。
+              </p>
+              <div className="pt-1">
+                <Link
+                  href="/settings/ai"
+                  className="inline-flex items-center text-xs font-light text-slate-400 hover:text-slate-200 transition-colors group"
+                >
+                  AI設定へ
+                  <ChevronRight className="w-3 h-3 ml-1 group-hover:translate-x-1 transition-transform" />
+                </Link>
+              </div>
+            </div>
           ) : null}
 
           {item.summary ? (

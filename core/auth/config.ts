@@ -30,6 +30,8 @@ export const authConfig = {
   publicRoutes: [
     "/login",
     "/signup",
+    "/forgot-password",
+    "/reset-password",
     "/pricing",
     "/about",
     "/",

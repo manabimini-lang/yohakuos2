@@ -148,6 +148,18 @@ export default async function LearningFeedPage() {
               );
             })}
           </div>
+
+          {memories.length > 0 && (
+            <div className="pt-12 text-center">
+              <Link 
+                href="/quiet-return"
+                className="inline-flex items-center text-xs font-light tracking-[0.1em] text-black/40 dark:text-white/40 hover:text-black/60 dark:hover:text-white/60 transition-colors group"
+              >
+                関連する記録を見る
+                <ChevronRight className="w-3 h-3 ml-1 group-hover:translate-x-1 transition-transform" />
+              </Link>
+            </div>
+          )}
         </section>
 
       </main>

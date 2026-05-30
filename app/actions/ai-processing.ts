@@ -6,6 +6,7 @@ import { generateContentTags } from "@/lib/ai/tagger";
 import { classifyContentItem } from "@/lib/ai/classifier";
 import { generateEmbedding } from "@/lib/ai/embeddings";
 import { shouldGenerateReflection } from "@/lib/ai/should-generate-reflection";
+import { isStarterJourneyUsingSharedKey } from "@/lib/ai/starter-journey";
 import { maybeEnqueueLifeOSJobs } from "@/lib/life/queue-life-jobs";
 import { maybeEnqueueReturnJobs } from "@/lib/memory/queue-return-jobs";
 
@@ -175,13 +176,13 @@ export async function processAIAnalysis(
         return;
       }
 
-      const userSettings = await prisma.userAISettings.findUnique({
-        where: { userId },
-      });
-      if (!userSettings?.isEnabled) {
+      const { resolveProvider } = await import("@/lib/ai/provider-resolver");
+      const provider = await resolveProvider(userId);
+      if (!provider) {
         return;
       }
 
+      const isStarter = await isStarterJourneyUsingSharedKey(userId);
       const reflection = await prisma.audioReflection.create({
         data: {
           userId,
@@ -196,10 +197,12 @@ export async function processAIAnalysis(
           userId,
           jobType: "generate_audio_reflection",
           status: "pending",
+          priority: isStarter ? 4 : 2,
           input: {
             reflectionId: reflection.id,
             contentItemId,
           },
+          maxRetries: 3,
         },
       });
     }

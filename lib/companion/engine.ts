@@ -14,6 +14,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { generateText } from "@/lib/ai/gemini";
+import { resolveProvider } from "@/lib/ai/provider-resolver";
 import { buildCompanionContext, buildCompanionContextForPrompt } from "./retrieval";
 import { evaluateSilence } from "./silence";
 import { COMPANION_SYSTEM_PROMPT, PROMPT_VERSION } from "./prompts/system";
@@ -177,7 +178,24 @@ export async function generateCompanionResponse(
     conversationId: string,
     userMessage: string
 ): Promise<CompanionResponse> {
-    // 1. Save user message
+    const provider = await resolveProvider(userId);
+    if (!provider) {
+        throw new Error("AI is unavailable for this account.");
+    }
+
+    // 1. Check if user can send companion messages (starter journey limit)
+    const { recordStarterJourneyCompanionMessage } = await import("@/lib/ai/starter-journey");
+    const canSendMessage = await recordStarterJourneyCompanionMessage(userId);
+
+    const userSettings = await prisma.userAISettings.findUnique({
+        where: { userId },
+    });
+
+    if (!userSettings?.isEnabled && !canSendMessage) {
+        throw new Error("Companion message limit reached for starter journey.");
+    }
+
+    // 2. Save user message
     const userTokenCount = estimateTokenCount(userMessage);
     await prisma.companionMessage.create({
         data: {
@@ -188,10 +206,10 @@ export async function generateCompanionResponse(
         },
     });
 
-    // 2. Build companion context (memory retrieval)
+    // 3. Build companion context (memory retrieval)
     const context = await buildCompanionContext(userId, conversationId);
 
-    // 3. Evaluate silence rules
+    // 4. Evaluate silence rules
     const silenceDecision = await evaluateSilence(
         userId,
         conversationId,
@@ -199,7 +217,7 @@ export async function generateCompanionResponse(
         userMessage
     );
 
-    // 4. Save memory snapshot
+    // 5. Save memory snapshot
     const memorySnapshot: Record<string, unknown> = {
         themes: context.currentThemes.length,
         emotionalTrend: context.emotionalTrend?.direction || null,
@@ -209,7 +227,7 @@ export async function generateCompanionResponse(
         silenceReason: silenceDecision.reason,
     };
 
-    // 5. Handle silence decision
+    // 6. Handle silence decision
     if (!silenceDecision.shouldSpeak) {
         // Save silence message (as system message)
         await prisma.companionMessage.create({
@@ -240,17 +258,17 @@ export async function generateCompanionResponse(
         };
     }
 
-    // 6. Build context string for prompt
+    // 7. Build context string for prompt
     const contextString = buildCompanionContextForPrompt(context);
 
-    // 7. Build conversation history (with budget)
+    // 8. Build conversation history (with budget)
     const historyBudget = 16_000; // tokens for history
     const conversationHistory = await buildConversationHistory(
         conversationId,
         historyBudget
     );
 
-    // 8. Construct full prompt
+    // 9. Construct full prompt
     const fullPrompt = [
         contextString,
         "",
@@ -266,16 +284,16 @@ export async function generateCompanionResponse(
         "【応答】",
     ].join("\n");
 
-    // 9. Generate AI response
+    // 10. Generate AI response
     const { text, tokenUsed } = await generateText(
         fullPrompt,
         COMPANION_SYSTEM_PROMPT
     );
 
-    // 10. Ethical validation
+    // 11. Ethical validation
     const validatedResponse = validateCompanionResponse(text);
 
-    // 11. Save assistant message
+    // 12. Save assistant message
     await prisma.companionMessage.create({
         data: {
             conversationId,
@@ -286,7 +304,7 @@ export async function generateCompanionResponse(
         },
     });
 
-    // 12. Update conversation
+    // 13. Update conversation
     await prisma.companionConversation.update({
         where: { id: conversationId },
         data: { updatedAt: new Date(), contextVersion: { increment: 1 } },

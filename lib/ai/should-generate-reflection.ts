@@ -42,6 +42,20 @@ export async function shouldGenerateReflection(
     return true;
   }
 
+  // Starter journey allowance: one older item plus no reflection yet
+  const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
+  const oldItem = await prisma.contentItem.findFirst({
+    where: {
+      userId,
+      createdAt: { lte: twoDaysAgo },
+    },
+  });
+
+  if (oldItem) {
+    console.log("[should-generate-reflection] Old content item found, eligible after 2 days");
+    return true;
+  }
+
   // Check for thematic resonance: multiple items with same tag
   const contentItem = await prisma.contentItem.findUnique({
     where: { id: contentItemId },

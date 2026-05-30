@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { unstable_noStore as noStore } from "next/cache";
 import { encryptKey } from "@/lib/encryption";
 import { apiKeyRepository } from "@/lib/repositories/api-key.repository";
+import { log } from "@/core/audit/logger";
 
 export const dynamic = "force-dynamic";
 
@@ -65,6 +66,18 @@ export async function GET(req: Request) {
     const encryptedPayload = encryptKey(JSON.stringify(tokenPayload));
 
     await apiKeyRepository.upsert(userId, encryptedPayload, "gemini_oauth");
+
+    await log({
+      actorId: userId,
+      category: "ai",
+      action: "gemini_connected",
+      targetType: "user_api_key",
+      targetId: userId,
+      metadata: {
+        provider: "gemini_oauth",
+        method: "oauth",
+      },
+    });
 
     const response = NextResponse.redirect(new URL("/member/settings?gemini=connected", req.url));
     response.cookies.delete("gemini_oauth_state");

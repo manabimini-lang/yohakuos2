@@ -187,6 +187,10 @@ model UserAISettings {
   model           String?
   embeddingsModel String? @map("embeddings_model")
   isEnabled       Boolean @default(false) @map("is_enabled")
+  starterJourneyStartedAt DateTime? @map("starter_journey_started_at")
+  starterJourneyExpiresAt DateTime? @map("starter_journey_expires_at")
+  starterJourneyCompanionMessageCount Int @default(0) @map("starter_journey_companion_message_count")
+  starterJourneyCompanionMessageLimit Int @default(20) @map("starter_journey_companion_message_limit")
 
   // Usage Protection (利用量制限)
   dailyTokenUsage   Int       @default(0) @map("daily_token_usage")

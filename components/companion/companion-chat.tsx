@@ -35,6 +35,7 @@ export default function CompanionChat() {
         error: null,
     });
     const [input, setInput] = useState("");
+    const [lastFailedInput, setLastFailedInput] = useState<string | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     // Load session on mount
@@ -77,10 +78,11 @@ export default function CompanionChat() {
         }
     };
 
-    const sendMessage = useCallback(async () => {
-        const trimmed = input.trim();
+    const sendMessage = useCallback(async (overrideText?: string) => {
+        const trimmed = (overrideText ?? input).trim();
         if (!trimmed || !state.conversationId) return;
 
+        setLastFailedInput(null);
         setInput("");
 
         // Add user message optimistically
@@ -135,13 +137,22 @@ export default function CompanionChat() {
                 }));
             }
         } catch {
+            setLastFailedInput(trimmed);
             setState((prev) => ({
                 ...prev,
                 isLoading: false,
-                error: "応答の生成に失敗しました。もう一度お試しください。",
+                error: "companion_failed",
             }));
         }
     }, [input, state.conversationId]);
+
+    const handleRetryConnection = useCallback(() => {
+        if (!lastFailedInput) return;
+        const textToResend = lastFailedInput;
+        setLastFailedInput(null);
+        setState((prev) => ({ ...prev, error: null }));
+        sendMessage(textToResend);
+    }, [lastFailedInput, sendMessage]);
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === "Enter" && !e.shiftKey) {
@@ -222,8 +233,26 @@ export default function CompanionChat() {
 
             {/* Error */}
             {state.error && (
-                <div className="px-6 py-2">
-                    <p className="text-red-400 text-xs text-center">{state.error}</p>
+                <div className="px-6 py-3">
+                    <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-4 space-y-3">
+                        <p className="text-sm text-slate-300 font-light leading-relaxed">
+                            現在の会話を続けられませんでした。
+                        </p>
+                        <p className="text-xs text-slate-500 font-light">
+                            少し時間を空けて、もう一度お試しください。
+                        </p>
+                        {lastFailedInput && (
+                            <button
+                                onClick={handleRetryConnection}
+                                className="inline-flex items-center text-xs font-light text-slate-400 hover:text-slate-200 transition-colors group"
+                            >
+                                再接続
+                                <svg className="w-3 h-3 ml-1 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                </svg>
+                            </button>
+                        )}
+                    </div>
                 </div>
             )}
 
@@ -240,7 +269,7 @@ export default function CompanionChat() {
                         disabled={state.isLoading}
                     />
                     <button
-                        onClick={sendMessage}
+                        onClick={() => sendMessage()}
                         disabled={state.isLoading || !input.trim()}
                         className="px-4 py-2.5 rounded-3xl bg-white/10 text-sm text-slate-100 transition-colors hover:bg-white/15 disabled:opacity-40 disabled:cursor-not-allowed"
                     >

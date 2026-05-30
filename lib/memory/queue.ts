@@ -29,7 +29,10 @@ export async function processNextJob(): Promise<void> {
     // Transaction-based exclusive lock
     const job = await prisma.$transaction(async (tx) => {
         const next = await tx.aIJob.findFirst({
-            where: { status: 'pending' },
+            where: { 
+                status: 'pending',
+                jobType: { in: Array.from(handlers.keys()) }
+            },
             orderBy: [{ priority: 'desc' }, { createdAt: 'asc' }],
         });
         if (!next) return null;

@@ -7,6 +7,23 @@ import { ChevronRight } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
+function classifyAiError(lastError: string | null): { subMessage: string; showSettings: boolean } {
+  if (!lastError) {
+    return { subMessage: "整理を完了できませんでした。後ほど再試行されます。", showSettings: true };
+  }
+  const errStr = lastError.toLowerCase();
+  if (errStr.includes("api key") || errStr.includes("invalid") || errStr.includes("key not valid") || errStr.includes("unauthorized") || errStr.includes("auth")) {
+    return { subMessage: "接続情報を確認してください。", showSettings: true };
+  }
+  if (errStr.includes("exhausted") || errStr.includes("quota") || errStr.includes("limit") || errStr.includes("429")) {
+    return { subMessage: "現在AI利用上限に達しています。しばらく時間を空けて再試行されます。", showSettings: false };
+  }
+  if (errStr.includes("fetch") || errStr.includes("network") || errStr.includes("dns") || errStr.includes("timeout") || errStr.includes("connect") || errStr.includes("econnrefused")) {
+    return { subMessage: "一時的な接続の問題が発生しました。", showSettings: false };
+  }
+  return { subMessage: "整理を完了できませんでした。後ほど再試行されます。", showSettings: true };
+}
+
 export default async function ReflectionsPage() {
   const session = await auth();
   if (!session?.user) {
@@ -31,6 +48,21 @@ export default async function ReflectionsPage() {
   const latestReflection = audioReflections[0] || null;
   const pastReflections = audioReflections.slice(1);
 
+  // Fetch lastError from the latest generate_audio_reflection job if the latest reflection failed
+  let latestReflectionError: string | null = null;
+  if (latestReflection?.status === "failed") {
+    const failedJob = await prisma.aIJob.findFirst({
+      where: {
+        userId,
+        jobType: "generate_audio_reflection",
+        input: { path: ["reflectionId"], equals: latestReflection.id },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+    latestReflectionError = failedJob?.lastError ?? null;
+  }
+  const latestReflectionErrorDetails = classifyAiError(latestReflectionError);
+
   return (
     <div className="min-h-screen bg-[#FDFDFD] dark:bg-[#0A0A0A] text-black/80 dark:text-white/80 pb-32 selection:bg-black/10 dark:selection:bg-white/10">
       <main className="max-w-3xl mx-auto px-6 pt-24 md:pt-32 space-y-32">
@@ -48,16 +80,17 @@ export default async function ReflectionsPage() {
         {/* AI Not Connected Notice */}
         {!userSettings?.isEnabled && (
           <section className="p-8 rounded-2xl border border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.02] space-y-4">
-            <p className="text-sm text-black/60 dark:text-white/60 leading-relaxed font-light">
-              AIを接続すると、
-              <br />
-              記録をもとに静かな振り返りが生成されます。
+            <p className="text-sm text-black/80 dark:text-white/80 leading-relaxed font-light">
+              AI接続がまだ行われていません。
+            </p>
+            <p className="text-xs text-black/50 dark:text-white/50 leading-relaxed font-light">
+              Gemini APIキーを設定すると、保存した記録が静かに整えられ、パーソナルAIとの対話や、内面の風景の描画が始まります。
             </p>
             <Link 
               href="/settings/ai"
               className="inline-flex items-center text-xs font-light text-black/40 dark:text-white/40 hover:text-black/60 dark:hover:text-white/60 transition-colors group"
             >
-              AI設定を開く
+              AI設定へ
               <ChevronRight className="w-3 h-3 ml-1 group-hover:translate-x-1 transition-transform" />
             </Link>
           </section>
@@ -101,15 +134,31 @@ export default async function ReflectionsPage() {
                 )}
 
                 {latestReflection.status === "failed" && (
-                  <div className="text-xs text-black/40 dark:text-white/40 italic font-light space-y-2">
-                    <p>生成に失敗しました。</p>
-                    <Link
-                      href={`/reflections/${latestReflection.id}/retry`}
-                      className="inline-flex items-center text-black/40 dark:text-white/40 hover:text-black/60 dark:hover:text-white/60 transition-colors group"
-                    >
-                      もう一度試す
-                      <ChevronRight className="w-3 h-3 ml-1 group-hover:translate-x-1 transition-transform" />
-                    </Link>
+                  <div className="space-y-2 pt-2">
+                    <p className="text-sm text-black/60 dark:text-white/60 font-light">
+                      AIは今夜、静かに休んでいます。
+                    </p>
+                    <p className="text-xs text-black/40 dark:text-white/40 font-light leading-relaxed">
+                      {latestReflectionErrorDetails.subMessage}
+                    </p>
+                    <div className="flex gap-4 pt-1">
+                      {latestReflectionErrorDetails.showSettings && (
+                        <Link
+                          href="/settings/ai"
+                          className="inline-flex items-center text-xs font-light text-black/40 dark:text-white/40 hover:text-black/60 dark:hover:text-white/60 transition-colors group"
+                        >
+                          AI設定を確認する
+                          <ChevronRight className="w-3 h-3 ml-1 group-hover:translate-x-1 transition-transform" />
+                        </Link>
+                      )}
+                      <Link
+                        href={`/reflections/${latestReflection.id}/retry`}
+                        className="inline-flex items-center text-xs font-light text-black/40 dark:text-white/40 hover:text-black/60 dark:hover:text-white/60 transition-colors group"
+                      >
+                        もう一度試す
+                        <ChevronRight className="w-3 h-3 ml-1 group-hover:translate-x-1 transition-transform" />
+                      </Link>
+                    </div>
                   </div>
                 )}
 
@@ -214,6 +263,46 @@ export default async function ReflectionsPage() {
               これより古い記憶は霧の中に沈んでいます。
             </p>
           </div>
+        )}
+
+        {/* Next actions section */}
+        {userSettings?.isEnabled && audioReflections.length > 0 && (
+          <section className="pt-24 border-t border-black/5 dark:border-white/5 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-1000 fill-mode-both">
+            <h2 className="text-xs tracking-[0.2em] uppercase text-black/40 dark:text-white/40">
+              次の余白
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <Link 
+                href="/quiet-return"
+                className="group p-8 rounded-2xl bg-black/[0.02] dark:bg-white/[0.02] border border-black/5 dark:border-white/5 hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition-colors flex flex-col justify-between min-h-[140px]"
+              >
+                <div className="space-y-2">
+                  <h3 className="text-lg font-light text-black/80 dark:text-white/80">静かな戻り</h3>
+                  <p className="text-sm font-light text-black/40 dark:text-white/40 leading-relaxed">
+                    以前の記録に、<br />もう一度出会ってみる。
+                  </p>
+                </div>
+                <div className="flex justify-end">
+                  <ChevronRight className="w-4 h-4 text-black/20 dark:text-white/20 group-hover:text-black/40 dark:group-hover:text-white/40 group-hover:translate-x-1 transition-all" />
+                </div>
+              </Link>
+
+              <Link 
+                href="/learning"
+                className="group p-8 rounded-2xl bg-black/[0.02] dark:bg-white/[0.02] border border-black/5 dark:border-white/5 hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition-colors flex flex-col justify-between min-h-[140px]"
+              >
+                <div className="space-y-2">
+                  <h3 className="text-lg font-light text-black/80 dark:text-white/80">今日の学び</h3>
+                  <p className="text-sm font-light text-black/40 dark:text-white/40 leading-relaxed">
+                    保存した記録から、<br />ゆっくり学びを振り返る。
+                  </p>
+                </div>
+                <div className="flex justify-end">
+                  <ChevronRight className="w-4 h-4 text-black/20 dark:text-white/20 group-hover:text-black/40 dark:group-hover:text-white/40 group-hover:translate-x-1 transition-all" />
+                </div>
+              </Link>
+            </div>
+          </section>
         )}
 
       </main>

@@ -74,7 +74,7 @@ export class GeminiProvider implements AIProvider {
     }
   }
 
-  private getRequestOptions() {
+  public getRequestOptions() {
     return {
       userId: this.userId,
       apiKey: this.apiKey,

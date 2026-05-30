@@ -1,8 +1,11 @@
 import { Metadata } from "next";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { ChevronRight } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getStarterJourneyStatus } from "@/lib/ai/starter-journey";
+import { StarterJourneyBanner } from "@/components/ai/StarterJourneyBanner";
 import {
   detectReturningFragments,
   detectTemporalEchoes,
@@ -29,17 +32,18 @@ export default async function QuietReturnPage() {
 
   const userId = session.user.id;
 
-  // Fetch user AI settings
-  const userAiSettings = await prisma.userAISettings.findUnique({
-    where: { userId },
-  });
-
-  // In parallel: detect all return patterns
-  const [fragments, echoes, resurfacings] = await Promise.all([
+  // In parallel: fetch AI settings, starter journey state and return patterns
+  const [userAiSettings, starterJourney, fragments, echoes, resurfacings] = await Promise.all([
+    prisma.userAISettings.findUnique({
+      where: { userId },
+    }),
+    getStarterJourneyStatus(userId),
     detectReturningFragments(userId),
     detectTemporalEchoes(userId),
     detectCalmResurfacing(userId),
   ]);
+
+  const hasAiAccess = userAiSettings?.isEnabled || starterJourney.active;
 
   // Filter to only significant returns
   const significantFragments = fragments.filter(isSignificantReturn).slice(0, 4);
@@ -101,25 +105,36 @@ export default async function QuietReturnPage() {
           </div>
 
           {/* AI status */}
-          {!userAiSettings?.isEnabled && (
-            <div className="mt-8 p-4 sm:p-6 border border-black/10 dark:border-white/10 rounded-lg bg-black/2 dark:bg-white/2">
-              <p className="text-sm font-light text-black/50 dark:text-white/50">
-                AIが休んでいるため、静かな戻りは表示されません。
-                <a
-                  href="/settings/ai"
-                  className="ml-2 underline opacity-70 hover:opacity-100 transition-opacity"
-                >
-                  設定を確認する
-                </a>
-              </p>
+          {starterJourney.active && !userAiSettings?.isEnabled ? (
+            <div className="mt-8 px-6">
+              <StarterJourneyBanner
+                remainingHours={starterJourney.remainingHours}
+                remainingMinutes={starterJourney.remainingMinutes}
+              />
             </div>
-          )}
+          ) : !userAiSettings?.isEnabled ? (
+            <div className="mt-8 p-8 rounded-2xl border border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.02] space-y-4">
+              <p className="text-sm text-black/80 dark:text-white/80 leading-relaxed font-light">
+                AI接続がまだ行われていません。
+              </p>
+              <p className="text-xs text-black/50 dark:text-white/50 leading-relaxed font-light">
+                Gemini APIキーを設定すると、保存した記録が静かに整えられ、パーソナルAIとの対話や、内面の風景の描画が始まります。
+              </p>
+              <Link 
+                href="/settings/ai"
+                className="inline-flex items-center text-xs font-light text-black/40 dark:text-white/40 hover:text-black/60 dark:hover:text-white/60 transition-colors group"
+              >
+                AI設定へ
+                <ChevronRight className="w-3 h-3 ml-1 group-hover:translate-x-1 transition-transform" />
+              </Link>
+            </div>
+          ) : null}
         </div>
       </div>
 
       {/* Main content */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-24 sm:space-y-32 pb-24 sm:pb-32">
-        {hasReturns && userAiSettings?.isEnabled ? (
+        {hasReturns && hasAiAccess ? (
           <>
             {/* Returning fragments section */}
             {fragmentsWithNarrative.length > 0 && (
@@ -209,6 +224,19 @@ export default async function QuietReturnPage() {
               <br />
               静かな往来を繰り返しています。
             </p>
+          </div>
+        )}
+
+        {/* Link to Learning */}
+        {hasReturns && hasAiAccess && (
+          <div className="pt-16 pb-8 border-t border-black/5 dark:border-white/5 text-center">
+            <Link 
+              href="/learning"
+              className="inline-flex items-center text-xs font-light tracking-[0.1em] text-black/40 dark:text-white/40 hover:text-black/60 dark:hover:text-white/60 transition-colors group"
+            >
+              この記録から学びを見る
+              <ChevronRight className="w-3 h-3 ml-1 group-hover:translate-x-1 transition-transform" />
+            </Link>
           </div>
         )}
       </div>

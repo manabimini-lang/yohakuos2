@@ -244,6 +244,17 @@ export default async function RitualPage() {
                 </Link>
               </div>
             </section>
+
+            {/* Link to Inbox */}
+            <div className="pt-16 pb-8 border-t border-black/5 dark:border-white/5 text-center">
+              <Link 
+                href="/inbox"
+                className="inline-flex items-center text-xs font-light tracking-[0.1em] text-black/40 dark:text-white/40 hover:text-black/60 dark:hover:text-white/60 transition-colors group"
+              >
+                今日の記録へ戻る
+                <ChevronRight className="w-3 h-3 ml-1 group-hover:translate-x-1 transition-transform" />
+              </Link>
+            </div>
           </div>
         ) : (
           <section className="rounded-[2rem] border border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.04] p-12 text-center space-y-6">

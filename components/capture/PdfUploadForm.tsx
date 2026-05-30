@@ -4,26 +4,67 @@ import { useState, useRef } from "react";
 import { savePdfFile } from "@/app/actions/capture";
 import { useCaptureStore } from "@/store/capture-store";
 import { FileUp, File as FileIcon } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
+// ----------------------------------------------------------------
+// エラーコードを日本語メッセージへ変換
+// ----------------------------------------------------------------
+type PdfErrorCode = "invalid_file" | "too_large" | "upload" | "parse" | "server";
+
+const PDF_ERROR_MESSAGES: Record<PdfErrorCode, { heading: string; hint: string }> = {
+  invalid_file: {
+    heading: "PDFファイルのみ保存できます。",
+    hint: "拡張子が .pdf のファイルを選んでください。",
+  },
+  too_large: {
+    heading: "ファイルが大きすぎます。",
+    hint: "20MB以下のPDFを選んでください。",
+  },
+  upload: {
+    heading: "アップロードできませんでした。",
+    hint: "ネットワーク状況を確認してから、もう一度お試しください。",
+  },
+  parse: {
+    heading: "PDFの読み取りに問題がありました。",
+    hint: "別のPDFで試してみてください。",
+  },
+  server: {
+    heading: "保存できませんでした。",
+    hint: "しばらくしてからもう一度お試しください。",
+  },
+};
+
+// ----------------------------------------------------------------
+// Inline file validation (client-side, before server round-trip)
+// ----------------------------------------------------------------
+function validateFile(file: File): PdfErrorCode | null {
+  if (file.type !== "application/pdf") return "invalid_file";
+  if (file.size > 20 * 1024 * 1024) return "too_large";
+  return null;
+}
+
+// ----------------------------------------------------------------
+// Component
+// ----------------------------------------------------------------
 export function PdfUploadForm({ onSuccess }: { onSuccess: () => void }) {
   const [file, setFile] = useState<File | null>(null);
   const [reflection, setReflection] = useState("");
   const [isDragging, setIsDragging] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorCode, setErrorCode] = useState<PdfErrorCode | null>(null);
   const showToast = useCaptureStore((state) => state.showToast);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const error = errorCode ? PDF_ERROR_MESSAGES[errorCode] : null;
+
   const handleFile = (selectedFile: File | null) => {
     if (!selectedFile) return;
-    if (selectedFile.type !== "application/pdf") {
-      alert("PDFのみアップロード可能です。");
+    const validationError = validateFile(selectedFile);
+    if (validationError) {
+      setErrorCode(validationError);
       return;
     }
-    if (selectedFile.size > 20 * 1024 * 1024) {
-      alert("20MB以下のPDFを選択してください。");
-      return;
-    }
+    setErrorCode(null);
     setFile(selectedFile);
   };
 
@@ -40,6 +81,8 @@ export function PdfUploadForm({ onSuccess }: { onSuccess: () => void }) {
     if (!file || isSubmitting) return;
 
     setIsSubmitting(true);
+    setErrorCode(null);
+
     const formData = new FormData();
     formData.append("file", file);
     if (reflection.trim()) {
@@ -50,10 +93,10 @@ export function PdfUploadForm({ onSuccess }: { onSuccess: () => void }) {
     setIsSubmitting(false);
 
     if (result.success) {
-      showToast("余白に記録されました");
+      showToast("静かに置かれました。");
       onSuccess();
     } else {
-      alert("保存に失敗しました。");
+      setErrorCode((result.errorCode as PdfErrorCode) ?? "server");
     }
   };
 
@@ -73,7 +116,7 @@ export function PdfUploadForm({ onSuccess }: { onSuccess: () => void }) {
           }`}
         >
           <FileUp className={`w-6 h-6 mb-2 ${isDragging ? "text-brand" : "text-gray-400"}`} />
-          <p className="text-sm text-gray-500">クリックまたはドラッグ＆ドロップ</p>
+          <p className="text-sm text-gray-500 font-light">クリックまたはドラッグ＆ドロップ</p>
           <input
             type="file"
             accept="application/pdf"
@@ -92,12 +135,44 @@ export function PdfUploadForm({ onSuccess }: { onSuccess: () => void }) {
             </div>
           </div>
           {!isSubmitting && (
-            <button type="button" onClick={() => setFile(null)} className="text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 p-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => { setFile(null); setErrorCode(null); }}
+              className="text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 p-2 shrink-0 transition-colors"
+            >
               クリア
             </button>
           )}
         </div>
       )}
+
+      {/* Inline error message */}
+      <AnimatePresence>
+        {error && (
+          <motion.div
+            key="pdf-error"
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.25, ease: [0.23, 1, 0.32, 1] }}
+            className="rounded-xl border border-stone-200 dark:border-white/10 bg-stone-50 dark:bg-white/5 px-4 py-3 space-y-1"
+          >
+            <p className="text-sm text-stone-600 dark:text-stone-300 font-light">
+              {error.heading}
+            </p>
+            <p className="text-xs text-stone-400 dark:text-stone-500 font-light leading-relaxed">
+              {error.hint}
+            </p>
+            <button
+              type="button"
+              onClick={() => setErrorCode(null)}
+              className="mt-1 text-xs text-stone-400 dark:text-stone-500 underline underline-offset-2 hover:text-stone-600 dark:hover:text-stone-300 transition-colors"
+            >
+              もう一度試す
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Reflection */}
       <div>
@@ -121,7 +196,7 @@ export function PdfUploadForm({ onSuccess }: { onSuccess: () => void }) {
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="text-sm text-slate-400"
+              className="text-sm text-slate-400 font-light"
             >
               記録を保存しています...
             </motion.div>

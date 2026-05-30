@@ -205,6 +205,12 @@ export function registerAllDefaultSubscriptions(): void {
       "AIJobCompleted",
       "AIJobFailed",
       "StateChanged",
+      // Starter Journey events
+      "StarterJourneyStarted",
+      "StarterJourneyExpired",
+      "GeminiKeyConnected",
+      "FirstReflectionGeneratedInStarter",
+      "FirstQuietReturnDetectedInStarter",
     ],
     notification: [
       "UserRegistered",

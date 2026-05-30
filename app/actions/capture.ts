@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
 import { processAIAnalysis } from "./ai-processing";
+import { startStarterJourneyIfEligible } from "@/lib/ai/starter-journey";
 
 // ===================================================
 // Helper: Queue AI Job + kick fire-and-forget analysis
@@ -40,19 +41,30 @@ async function queueAndRunAI(contentItemId: string, userId: string) {
 // Save URL Content
 // ===================================================
 
-export async function saveUrlContent(url: string, reflection?: string) {
+export async function saveUrlContent(url: string, reflection?: string): Promise<{
+  success: boolean;
+  data?: object;
+  error?: string;
+  errorCode?: "invalid_url" | "network" | "server";
+}> {
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      throw new Error("Unauthorized");
+      return { success: false, error: "Unauthorized", errorCode: "server" };
     }
 
     // Basic URL validation
-    const parsedUrl = new URL(url);
+    let parsedUrl: URL;
+    try {
+      parsedUrl = new URL(url);
+    } catch {
+      return { success: false, error: "Invalid URL format", errorCode: "invalid_url" };
+    }
     const domain = parsedUrl.hostname;
 
     let title = domain;
     let thumbnailUrl = null;
+    let fetchFailed = false;
 
     try {
       const response = await fetch(url, {
@@ -74,6 +86,16 @@ export async function saveUrlContent(url: string, reflection?: string) {
       }
     } catch {
       // Proceed without OG data — saved content is still valid
+      fetchFailed = true;
+    }
+
+    // If fetch completely failed (DNS / network), the URL may be invalid or unreachable
+    if (fetchFailed && !title) {
+      return {
+        success: false,
+        error: "Could not reach URL",
+        errorCode: "network",
+      };
     }
 
     const contentItem = await prisma.contentItem.create({
@@ -89,6 +111,8 @@ export async function saveUrlContent(url: string, reflection?: string) {
       },
     });
 
+    await startStarterJourneyIfEligible(session.user.id);
+
     // Kick AI analysis in background
     await queueAndRunAI(contentItem.id, session.user.id);
 
@@ -96,7 +120,7 @@ export async function saveUrlContent(url: string, reflection?: string) {
     return { success: true, data: contentItem };
   } catch (error) {
     console.error("saveUrlContent error:", error);
-    return { success: false, error: "Failed to save URL" };
+    return { success: false, error: "Server error", errorCode: "server" };
   }
 }
 
@@ -104,26 +128,39 @@ export async function saveUrlContent(url: string, reflection?: string) {
 // Save PDF File
 // ===================================================
 
-export async function savePdfFile(formData: FormData) {
+export async function savePdfFile(formData: FormData): Promise<{
+  success: boolean;
+  data?: object;
+  error?: string;
+  errorCode?: "invalid_file" | "too_large" | "upload" | "parse" | "server";
+}> {
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      throw new Error("Unauthorized");
+      return { success: false, error: "Unauthorized", errorCode: "server" };
     }
 
     const file = formData.get("file") as File;
     const reflection = formData.get("reflection") as string | null;
 
     if (!file) {
-      throw new Error("No file provided");
+      return { success: false, error: "No file provided", errorCode: "invalid_file" };
     }
 
     if (file.type !== "application/pdf") {
-      throw new Error("Only PDF files are allowed");
+      return {
+        success: false,
+        error: "Only PDF files are allowed",
+        errorCode: "invalid_file",
+      };
     }
 
     if (file.size > 20 * 1024 * 1024) {
-      throw new Error("File size must be less than 20MB");
+      return {
+        success: false,
+        error: "File too large",
+        errorCode: "too_large",
+      };
     }
 
     const userId = session.user.id;
@@ -143,7 +180,7 @@ export async function savePdfFile(formData: FormData) {
 
     if (uploadError) {
       console.error("Supabase upload error:", uploadError);
-      throw new Error("Failed to upload file to storage");
+      return { success: false, error: "Upload failed", errorCode: "upload" };
     }
 
     const {
@@ -163,6 +200,8 @@ export async function savePdfFile(formData: FormData) {
       },
     });
 
+    await startStarterJourneyIfEligible(userId);
+
     // Kick AI analysis in background
     await queueAndRunAI(contentItem.id, userId);
 
@@ -170,6 +209,6 @@ export async function savePdfFile(formData: FormData) {
     return { success: true, data: contentItem };
   } catch (error) {
     console.error("savePdfFile error:", error);
-    return { success: false, error: "Failed to upload PDF" };
+    return { success: false, error: "Server error", errorCode: "server" };
   }
 }

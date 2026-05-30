@@ -39,7 +39,9 @@ export async function middleware(request: NextRequest) {
       (path.startsWith("/api/auth") ||
         path.startsWith("/api/checkout") ||
         path === "/login" ||
-        path === "/register")
+        path === "/register" ||
+        path === "/forgot-password" ||
+        path === "/reset-password")
     ) {
       try {
         const { success } = await ratelimit.limit(`ratelimit_${ip}`);

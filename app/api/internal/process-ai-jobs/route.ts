@@ -18,6 +18,10 @@ import {
   detectReturningThemes,
   extractPhilosophyFragments,
 } from "@/lib/life/life-themes-engine";
+import "@/lib/companion/queue";
+import { registerLifeOSJobHandlers } from "@/lib/lifeos/queue";
+import { registerAmbientJobHandlers } from "@/lib/ambient/queue";
+import { processQueueBatch } from "@/lib/memory/queue";
 
 export const dynamic = "force-dynamic";
 
@@ -61,6 +65,9 @@ export async function GET(request: Request) {
   }
 
   try {
+    registerLifeOSJobHandlers();
+    registerAmbientJobHandlers();
+
     console.log("CRON INVOKED", {
       now: new Date().toISOString(),
       env: process.env.NODE_ENV,
@@ -458,12 +465,16 @@ export async function GET(request: Request) {
       }
     }
 
+    // Process custom registered jobs (5 at a time)
+    const processedCustomQueueCount = await processQueueBatch(5);
+
     return NextResponse.json({ 
       success: true, 
       processedContentCount,
       processedAudioCount,
       processedReturnCount,
       processedLifeOSCount,
+      processedCustomQueueCount,
     });
   } catch (error) {
     console.error("Cron Error:", error);

@@ -8,23 +8,27 @@ import {
   BookOpen,
   User,
   Sparkles,
+  Compass,
+  Activity,
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
-
+ 
 type NavEntry = {
   href: string;
   label: string;
   icon: LucideIcon;
 };
-
+ 
 // YOHAKUらしいナビゲーション文言に統一
 const MEMBER_NAV_ITEMS: NavEntry[] = [
   { href: "/member",             label: "ホーム",    icon: Home },
   { href: "/member/ai",          label: "整理する",  icon: PenLine },
   { href: "/member/ai/history",  label: "記録",      icon: BookMarked },
+  { href: "/life/timeline",      label: "人生の流れ",icon: Activity },
+  { href: "/landscape",          label: "内面の風景",icon: Compass },
   { href: "/knowledge",          label: "小さな実践",icon: BookOpen },
   { href: "/profile",            label: "自分をみる",icon: User },
   { href: "/member/settings",    label: "設定",      icon: Settings },

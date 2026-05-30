@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
 
 export const dynamic = "force-dynamic";
 
@@ -14,9 +15,13 @@ export default function LoginPage({
       ? "メールアドレスとパスワードを入力してください。"
       : searchParams.error === "server-error"
       ? "サーバーエラーが発生しました。時間をおいてお試しください。"
+      : (searchParams.error === "OAuthSignin" || searchParams.error === "OAuthCallback" || searchParams.error === "google-error")
+      ? "Googleとの接続を完了できませんでした。少し時間を空けて、もう一度お試しください。"
       : searchParams.error
       ? "ログインに失敗しました。"
       : null;
+
+  const isGoogleEnabled = !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50">
@@ -52,9 +57,14 @@ export default function LoginPage({
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              パスワード
-            </label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-sm font-medium text-slate-700">
+                パスワード
+              </label>
+              <Link href="/forgot-password" className="text-xs text-slate-500 hover:text-slate-700 underline underline-offset-2">
+                パスワードを忘れましたか？
+              </Link>
+            </div>
             <input
               type="password"
               name="password"
@@ -71,6 +81,12 @@ export default function LoginPage({
             ログイン
           </button>
         </form>
+
+        {isGoogleEnabled && (
+          <div className="mb-6">
+            <GoogleSignInButton label="Googleで続ける" />
+          </div>
+        )}
 
         <div className="relative mb-6">
           <div className="absolute inset-0 flex items-center">

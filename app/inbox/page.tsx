@@ -4,6 +4,9 @@ import { redirect } from "next/navigation";
 import { InboxGrid } from "@/components/capture/InboxGrid";
 import { EmptyInbox } from "@/components/capture/EmptyInbox";
 import { Metadata } from "next";
+import Link from "next/link";
+import { ChevronRight } from "lucide-react";
+import { getStarterJourneyStatus } from "@/lib/ai/starter-journey";
 
 export const metadata: Metadata = {
   title: "Inbox | YOHAKU",
@@ -16,14 +19,23 @@ export default async function InboxPage() {
     redirect("/");
   }
 
+  const userId = session.user.id;
+
   const items = await prisma.contentItem.findMany({
     where: {
-      userId: session.user.id,
+      userId,
     },
     orderBy: {
       createdAt: "desc",
     },
   });
+
+  const [userSettings, starterJourney] = await Promise.all([
+    prisma.userAISettings.findUnique({
+      where: { userId },
+    }),
+    getStarterJourneyStatus(userId),
+  ]);
 
   const today = new Date().toLocaleDateString("ja-JP", {
     weekday: "short",
@@ -31,8 +43,11 @@ export default async function InboxPage() {
     day: "numeric",
   });
 
+  const hasAiAccess = userSettings?.isEnabled || starterJourney.active;
+  const showHiddenFeatures = items.length >= 5 && hasAiAccess;
+
   return (
-    <main className="min-h-screen bg-[#090909] pb-28">
+    <main className="min-h-screen bg-[#090909] pb-28 text-white/80">
       <div className="max-w-5xl mx-auto px-6 pt-14 pb-28">
         <header className="space-y-4 pb-10 border-b border-white/10">
           <div className="text-xs uppercase tracking-[0.35em] text-slate-500">{today}</div>
@@ -51,6 +66,63 @@ export default async function InboxPage() {
             <EmptyInbox />
           )}
         </section>
+
+        {showHiddenFeatures && (
+          <section className="mt-24 pt-16 border-t border-white/5 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-1000 fill-mode-both">
+            <h2 className="text-xs tracking-[0.2em] uppercase text-white/40">
+              今日の余白
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Quiet Return */}
+              <Link 
+                href="/quiet-return"
+                className="group p-8 rounded-2xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.04] transition-colors flex flex-col justify-between min-h-[160px]"
+              >
+                <div className="space-y-2">
+                  <h3 className="text-lg font-light text-white/80">静かな戻り</h3>
+                  <p className="text-sm font-light text-white/40 leading-relaxed">
+                    以前の記録に、<br />もう一度出会ってみる。
+                  </p>
+                </div>
+                <div className="flex justify-end">
+                  <ChevronRight className="w-4 h-4 text-white/20 group-hover:text-white/40 group-hover:translate-x-1 transition-all" />
+                </div>
+              </Link>
+
+              {/* Learning */}
+              <Link 
+                href="/learning"
+                className="group p-8 rounded-2xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.04] transition-colors flex flex-col justify-between min-h-[160px]"
+              >
+                <div className="space-y-2">
+                  <h3 className="text-lg font-light text-white/80">今日の学び</h3>
+                  <p className="text-sm font-light text-white/40 leading-relaxed">
+                    保存した記録から、<br />ゆっくり学びを振り返る。
+                  </p>
+                </div>
+                <div className="flex justify-end">
+                  <ChevronRight className="w-4 h-4 text-white/20 group-hover:text-white/40 group-hover:translate-x-1 transition-all" />
+                </div>
+              </Link>
+
+              {/* Ritual */}
+              <Link 
+                href="/ritual"
+                className="group p-8 rounded-2xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.04] transition-colors flex flex-col justify-between min-h-[160px]"
+              >
+                <div className="space-y-2">
+                  <h3 className="text-lg font-light text-white/80">小さな儀式</h3>
+                  <p className="text-sm font-light text-white/40 leading-relaxed">
+                    考える前に、<br />少しだけ整える。
+                  </p>
+                </div>
+                <div className="flex justify-end">
+                  <ChevronRight className="w-4 h-4 text-white/20 group-hover:text-white/40 group-hover:translate-x-1 transition-all" />
+                </div>
+              </Link>
+            </div>
+          </section>
+        )}
       </div>
     </main>
   );

@@ -116,7 +116,23 @@ export default async function LifePage() {
           </Link>
         </nav>
 
-        {!hasData && (
+        {!aiSettings?.isEnabled ? (
+          <div className="p-8 rounded-2xl border border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.02] space-y-4 max-w-xl">
+            <p className="text-sm text-black/80 dark:text-white/80 leading-relaxed font-light">
+              AI接続がまだ行われていません。
+            </p>
+            <p className="text-xs text-black/50 dark:text-white/50 leading-relaxed font-light">
+              Gemini APIキーを設定すると、保存した記録が静かに整えられ、パーソナルAIとの対話や、内面の風景の描画が始まります。
+            </p>
+            <Link 
+              href="/settings/ai"
+              className="inline-flex items-center text-xs font-light text-black/40 dark:text-white/40 hover:text-black/60 dark:hover:text-white/60 transition-colors group"
+            >
+              AI設定へ
+              <ChevronRight className="w-3 h-3 ml-1 group-hover:translate-x-1 transition-transform" />
+            </Link>
+          </div>
+        ) : !hasData ? (
           <p className="text-sm font-light text-black/60 dark:text-white/60 leading-relaxed">
             人生のテーマを見つけるには、
             <br />
@@ -126,7 +142,7 @@ export default async function LifePage() {
               (現在: {itemCount} / 必要: 20 記録)
             </span>
           </p>
-        )}
+        ) : null}
       </div>
 
       {/* Main content */}
@@ -169,6 +185,13 @@ export default async function LifePage() {
               <PhilosophyFragmentsSection fragments={philosophyFragments} />
             )}
           </>
+        ) : !aiSettings?.isEnabled ? (
+          /* AI disabled simple state */
+          <div className="py-24 text-center space-y-4">
+            <p className="text-sm font-light text-black/30 dark:text-white/30 italic">
+              AI接続設定を完了すると、あなたの人生の層を静かに紐解くことができます。
+            </p>
+          </div>
         ) : (
           /* Empty state */
           <div className="py-24 sm:py-32 text-center space-y-8">

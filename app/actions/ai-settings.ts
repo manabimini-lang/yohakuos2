@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { encryptKey } from "@/lib/encryption";
 import { revalidatePath } from "next/cache";
+import { log } from "@/core/audit/logger";
 
 export type AiSettingsInput = {
   provider: string;
@@ -61,6 +62,21 @@ export async function saveAISettings(data: AiSettingsInput) {
         model: data.model || null,
         isEnabled: data.isEnabled,
         encryptedApiKey: encryptedApiKey || null,
+      },
+    });
+  }
+
+  if (data.isEnabled) {
+    await log({
+      actorId: userId,
+      category: "ai",
+      action: "gemini_connected",
+      targetType: "user_ai_settings",
+      targetId: userId,
+      metadata: {
+        provider: data.provider,
+        model: data.model,
+        method: encryptedApiKey ? "api_key" : "saved_setting",
       },
     });
   }

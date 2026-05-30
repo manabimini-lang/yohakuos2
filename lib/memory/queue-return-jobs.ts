@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { isStarterJourneyActive } from "@/lib/ai/starter-journey";
 import { enqueueArchiveRevisitGeneration } from "./archive-revisit";
 
 /**
@@ -148,16 +149,15 @@ export async function enqueueResurfacingDetection(
  * Smart enqueueing: only if user has enough data and AI is enabled
  */
 export async function maybeEnqueueReturnJobs(userId: string): Promise<void> {
-  // Check if AI is enabled
   const aiSettings = await prisma.userAISettings.findUnique({
     where: { userId },
   });
 
-  if (!aiSettings?.isEnabled) {
-    return; // Skip if AI disabled
+  const starterJourneyActive = isStarterJourneyActive(aiSettings);
+  if (!aiSettings?.isEnabled && !starterJourneyActive) {
+    return; // Skip if AI disabled and no starter journey active
   }
 
-  // Check if user has enough recorded items (>20 for meaningful patterns)
   const itemCount = await prisma.contentItem.count({
     where: {
       userId,
@@ -165,11 +165,24 @@ export async function maybeEnqueueReturnJobs(userId: string): Promise<void> {
     },
   });
 
-  if (itemCount < 20) {
+  if (starterJourneyActive) {
+    if (itemCount < 3) {
+      const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
+      const oldItem = await prisma.contentItem.findFirst({
+        where: {
+          userId,
+          createdAt: { lte: twoDaysAgo },
+        },
+      });
+
+      if (!oldItem) {
+        return;
+      }
+    }
+  } else if (itemCount < 20) {
     return; // Not enough data yet
   }
 
-  // Check if user has been active recently (within 7 days)
   const recentActivity = await prisma.contentItem.findFirst({
     where: {
       userId,
@@ -181,7 +194,6 @@ export async function maybeEnqueueReturnJobs(userId: string): Promise<void> {
     return; // No recent activity
   }
 
-  // Enqueue all return detection jobs
   await Promise.all([
     enqueueReturnFragmentDetection(userId),
     enqueueTemporalEchoDetection(userId),

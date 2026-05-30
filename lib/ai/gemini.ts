@@ -8,7 +8,11 @@ export type AIRequestOptions = string | {
     userId?: string;
     apiKey?: string;
     modelName?: string;
+    allowEnvFallback?: boolean;
 };
+
+const STARTER_GEMINI_API_KEY = process.env.STARTER_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
+const STARTER_GEMINI_MODEL = process.env.STARTER_GEMINI_MODEL || GEMINI_MODEL;
 
 async function incrementTokenUsage(userId: string, tokenCount: number) {
     try {
@@ -24,6 +28,19 @@ async function incrementTokenUsage(userId: string, tokenCount: number) {
     }
 }
 
+function getFallbackApiCredentials(): { apiKey: string; modelName: string } {
+    if (!STARTER_GEMINI_API_KEY) {
+        throw new Error(
+            'GEMINI APIキーが設定されていません。設定画面からAPIキーを入力するか、環境変数を設定してください。'
+        );
+    }
+
+    return {
+        apiKey: STARTER_GEMINI_API_KEY,
+        modelName: STARTER_GEMINI_MODEL,
+    };
+}
+
 export async function getApiCredentials(
     options?: AIRequestOptions
 ): Promise<{ apiKey: string; modelName: string }> {
@@ -33,12 +50,12 @@ export async function getApiCredentials(
 
     if (options && (options.apiKey || options.modelName)) {
         return {
-            apiKey: options.apiKey || process.env.GEMINI_API_KEY || '',
-            modelName: options.modelName || GEMINI_MODEL,
+            apiKey: options.apiKey || STARTER_GEMINI_API_KEY || '',
+            modelName: options.modelName || STARTER_GEMINI_MODEL,
         };
     }
 
-    return getApiCredentialsFromUserId(options?.userId);
+    return getApiCredentialsFromUserId(options?.userId, options?.allowEnvFallback ?? false);
 }
 
 export async function getUserOwnedApiCredentials(
@@ -132,11 +149,15 @@ export async function getUserOwnedApiCredentials(
     return null;
 }
 
-async function getApiCredentialsFromUserId(userId?: string): Promise<{ apiKey: string; modelName: string }> {
+async function getApiCredentialsFromUserId(userId?: string, allowEnvFallback = false): Promise<{ apiKey: string; modelName: string }> {
     if (userId) {
         const credentials = await getUserOwnedApiCredentials(userId);
         if (credentials) {
             return credentials;
+        }
+
+        if (allowEnvFallback) {
+            return getFallbackApiCredentials();
         }
 
         throw new Error(
@@ -144,14 +165,7 @@ async function getApiCredentialsFromUserId(userId?: string): Promise<{ apiKey: s
         );
     }
 
-    const envKey = process.env.GEMINI_API_KEY;
-    if (envKey) {
-        return { apiKey: envKey, modelName: GEMINI_MODEL };
-    }
-
-    throw new Error(
-        'GEMINI_API_KEY が設定されていません。設定画面からAPIキーを入力するか、環境変数を設定してください。'
-    );
+    return getFallbackApiCredentials();
 }
 
 /**

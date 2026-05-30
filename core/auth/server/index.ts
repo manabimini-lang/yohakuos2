@@ -246,6 +246,48 @@ export async function sendMagicLink(email: string): Promise<AuthResult> {
 }
 
 /**
+ * Requests a password reset email.
+ * Always returns success to prevent email enumeration attacks.
+ */
+export async function requestPasswordReset(email: string): Promise<AuthResult> {
+  try {
+    const supabase = getSupabaseClient();
+    const redirectTo = `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/reset-password`;
+
+    await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo,
+    });
+  } catch (error) {
+    // Silently ignore errors to prevent email enumeration
+    console.error("[auth] Password reset request error (silent):", error);
+  }
+
+  // Always return success regardless of outcome
+  return { success: true };
+}
+
+/**
+ * Updates the current user's password.
+ * Requires an active session (set by Supabase when the reset link is clicked).
+ */
+export async function updatePassword(newPassword: string): Promise<AuthResult> {
+  const supabase = getSupabaseClient();
+
+  const { error } = await supabase.auth.updateUser({
+    password: newPassword,
+  });
+
+  if (error) {
+    return {
+      success: false,
+      error: error.message,
+    };
+  }
+
+  return { success: true };
+}
+
+/**
  * Signs out the current user.
  */
 export async function signOut(): Promise<void> {
