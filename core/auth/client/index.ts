@@ -72,7 +72,7 @@ export async function clientSignInWithGoogle(): Promise<void> {
   await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {
-      redirectTo: `${window.location.origin}/auth/callback`,
+      redirectTo: `${window.location.origin}/api/auth/callback`,
     },
   });
 }
@@ -86,7 +86,7 @@ export async function clientSignInWithGithub(): Promise<void> {
   await supabase.auth.signInWithOAuth({
     provider: "github",
     options: {
-      redirectTo: `${window.location.origin}/auth/callback`,
+      redirectTo: `${window.location.origin}/api/auth/callback`,
     },
   });
 }
@@ -101,7 +101,7 @@ export async function clientSendMagicLink(email: string): Promise<AuthResult> {
     email,
     options: {
       shouldCreateUser: true,
-      emailRedirectTo: `${window.location.origin}/auth/callback`,
+      emailRedirectTo: `${window.location.origin}/api/auth/callback`,
     },
   });
 

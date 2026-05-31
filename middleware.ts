@@ -1,12 +1,9 @@
-import NextAuth from "next-auth";
 import { NextResponse, type NextRequest } from "next/server";
-import { authConfig } from "@/lib/auth.config";
+import { auth } from "@/lib/auth";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 import { isPremiumRoute, hasPremiumAccess } from "@/lib/constants/plan";
 import { updateSession } from "@/lib/supabase/middleware";
-
-const { auth } = NextAuth(authConfig);
 
 // Env variables check to prevent server-side crash when not configured
 const hasRedisConfig = !!(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN);

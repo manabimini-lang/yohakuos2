@@ -8,8 +8,19 @@ import {
 import { LEGACY_ROLE_MAP } from "@/lib/permissions/constants";
 import type { Permission, SystemRole } from "@/lib/permissions/types";
 
+// Validate secret configuration (must be set in production)
+const getAuthSecret = () => {
+  const secret = process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET;
+  if (!secret && process.env.NODE_ENV === 'production') {
+    throw new Error('NEXTAUTH_SECRET or AUTH_SECRET environment variable is required in production');
+  }
+  return secret || 'dev-only-fallback-secret-32-char-minimum-!!';
+};
+
 // Edge Runtime互換の設定（Prismaを使わない）
 export const authConfig: NextAuthConfig = {
+  secret: getAuthSecret(),
+  trustHost: true,
   pages: {
     signIn: "/login",
   },
