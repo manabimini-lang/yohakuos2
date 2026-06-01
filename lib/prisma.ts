@@ -20,6 +20,15 @@ const createPrismaClient = () => {
     console.log("[PRISMA_RUNTIME_URL] failed to parse DATABASE_URL");
   }
 
+  console.log(
+    "[PRISMA_RUNTIME_URL]",
+    process.env.DATABASE_URL
+      ? process.env.DATABASE_URL
+          .replace(/:\/\/.*?:/, "://***:")
+          .replace(/:[^:@]+@/, ":***@")
+      : "undefined"
+  );
+
   return new PrismaClient({
     datasources: {
       db: {
