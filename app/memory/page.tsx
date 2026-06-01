@@ -48,9 +48,14 @@ export default async function MemoryPage() {
   });
 
   // 5. Check AI connection status
-  const userSettings = await prisma.userAISettings.findUnique({
-    where: { userId },
-  });
+  const [userSettings, starterJourney] = await Promise.all([
+    prisma.userAISettings.findUnique({
+      where: { userId },
+    }),
+    getStarterJourneyStatus(userId),
+  ]);
+
+  const hasAiAccess = userSettings?.isEnabled || starterJourney.active;
 
   return (
     <div className="max-w-5xl mx-auto py-12 px-6 space-y-24">
@@ -82,21 +87,32 @@ export default async function MemoryPage() {
       </nav>
 
       {/* AI未接続対応 */}
-      {!userSettings?.isEnabled && (
+      {!hasAiAccess && (
         <section className="p-8 rounded-2xl border border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.02] space-y-4">
-          <p className="text-sm text-black/80 dark:text-white/80 leading-relaxed font-light">
-            AI接続がまだ行われていません。
-          </p>
-          <p className="text-xs text-black/50 dark:text-white/50 leading-relaxed font-light">
-            Gemini APIキーを設定すると、保存した記録が静かに整えられ、パーソナルAIとの対話や、内面の風景の描画が始まります。
-          </p>
-          <Link 
-            href="/settings/ai"
-            className="inline-flex items-center text-xs font-light text-black/40 dark:text-white/40 hover:text-black/60 dark:hover:text-white/60 transition-colors group"
-          >
-            AI設定へ
-            <ChevronRight className="w-3 h-3 ml-1 group-hover:translate-x-1 transition-transform" />
-          </Link>
+          {starterJourney.active ? (
+            <>
+              <StarterJourneyBanner
+                remainingHours={starterJourney.remainingHours}
+                remainingMinutes={starterJourney.remainingMinutes}
+              />
+            </>
+          ) : (
+            <>
+              <p className="text-sm text-black/80 dark:text-white/80 leading-relaxed font-light">
+                AI接続がまだ行われていません。
+              </p>
+              <p className="text-xs text-black/50 dark:text-white/50 leading-relaxed font-light">
+                Gemini APIキーを設定すると、保存した記録が静かに整えられ、パーソナルAIとの対話や、内面の風景の描画が始まります。
+              </p>
+              <Link 
+                href="/settings/ai"
+                className="inline-flex items-center text-xs font-light text-black/40 dark:text-white/40 hover:text-black/60 dark:hover:text-white/60 transition-colors group"
+              >
+                AI設定へ
+                <ChevronRight className="w-3 h-3 ml-1 group-hover:translate-x-1 transition-transform" />
+              </Link>
+            </>
+          )}
         </section>
       )}
 

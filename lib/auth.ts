@@ -112,4 +112,36 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       },
     }),
   ],
+  events: {
+    async signIn({ user, account }) {
+      if (account?.provider === "google") {
+        console.log("[GOOGLE_CALLBACK_RECEIVED]", {
+          provider: account.provider,
+          email: user.email,
+          userId: user.id,
+        });
+        console.log("[GOOGLE_USER_FOUND]", {
+          email: user.email,
+          userId: user.id,
+          isNewUser: (user as any).isNewUser ?? false,
+        });
+        console.log("[GOOGLE_SESSION_CREATED]", {
+          userId: user.id,
+          provider: account.provider,
+        });
+      }
+    },
+  },
+  logger: {
+    error(code, ...metadata) {
+      const message = metadata.length > 0 ? metadata : [];
+      console.error("[GOOGLE_SSO_ERROR]", code, ...message);
+    },
+    warn(code, ...metadata) {
+      console.warn(code, ...metadata);
+    },
+    debug(code, ...metadata) {
+      console.debug(code, ...metadata);
+    },
+  },
 });

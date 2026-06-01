@@ -17,6 +17,31 @@ const getAuthSecret = () => {
   return secret || 'dev-only-fallback-secret-32-char-minimum-!!';
 };
 
+const validateAuthEnvironment = () => {
+  const required = [
+    { name: "NEXTAUTH_URL", value: process.env.NEXTAUTH_URL },
+    { name: "GOOGLE_CLIENT_ID", value: process.env.GOOGLE_CLIENT_ID },
+    { name: "GOOGLE_CLIENT_SECRET", value: process.env.GOOGLE_CLIENT_SECRET },
+    { name: "NEXTAUTH_SECRET", value: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET },
+  ];
+
+  const missing = required.filter((item) => !item.value).map((item) => item.name);
+
+  if (missing.length === 0) {
+    return;
+  }
+
+  const message = `[NEXTAUTH_CONFIG] Missing required env vars: ${missing.join(", ")}. Google SSO and NextAuth callback handling may fail.`;
+
+  if (process.env.NODE_ENV === "production") {
+    throw new Error(message);
+  }
+
+  console.warn(message);
+};
+
+validateAuthEnvironment();
+
 // Edge Runtime互換の設定（Prismaを使わない）
 export const authConfig: NextAuthConfig = {
   secret: getAuthSecret(),

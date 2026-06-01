@@ -13,10 +13,11 @@ export function GoogleSignInButton({ label }: GoogleSignInButtonProps) {
 
   const handleSignIn = async () => {
     setLoading(true);
+    console.log("[GOOGLE_SSO_START]", { callbackUrl: "/member" });
     try {
-      await signIn("google", { callbackUrl: "/redirect" });
+      await signIn("google", { callbackUrl: "/member" });
     } catch (err) {
-      console.error("Google sign in failed:", err);
+      console.error("[GOOGLE_SSO_ERROR] Google sign in failed:", err);
       window.location.href = `/login?error=google-error`;
     }
   };
