@@ -13,7 +13,7 @@ if (hasRedisConfig) {
   try {
     ratelimit = new Ratelimit({
       redis: Redis.fromEnv(),
-      limiter: Ratelimit.slidingWindow(5, "1 m"),
+      limiter: Ratelimit.slidingWindow(20, "1 m"),
       analytics: true,
     });
   } catch (e) {
@@ -30,11 +30,15 @@ export async function middleware(request: NextRequest) {
     const ip = req.headers.get("x-forwarded-for") ?? "127.0.0.1";
     const path = req.nextUrl.pathname;
 
+    // NextAuth paths should bypass rate limiting to prevent OAuth failure
+    if (path.startsWith("/api/auth")) {
+      return NextResponse.next();
+    }
+
     // Rate Limiting
     if (
       ratelimit &&
-      (path.startsWith("/api/auth") ||
-        path.startsWith("/api/checkout") ||
+      (path.startsWith("/api/checkout") ||
         path === "/login" ||
         path === "/register" ||
         path === "/forgot-password" ||
