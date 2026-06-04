@@ -26,6 +26,33 @@ export class SubscriptionService {
   }
 
   /**
+   * Updates subscription and synchronizes user role based on status
+   */
+  async handleSubscriptionUpdated(
+    stripeSubscriptionId: string, 
+    status: string, 
+    currentPeriodEnd: Date | null, 
+    stripePriceId?: string
+  ) {
+    const sub = await subscriptionRepository.findByStripeSubscriptionId(stripeSubscriptionId);
+    if (!sub) return;
+
+    await subscriptionRepository.update(stripeSubscriptionId, {
+      status,
+      currentPeriodEnd,
+      stripePriceId,
+    });
+
+    if (["active", "trialing"].includes(status)) {
+      await userRepository.updateRole(sub.userId, ROLE.PAID_MEMBER);
+      await userRepository.updatePlan(sub.userId, PLAN.PREMIUM);
+    } else {
+      await userRepository.updateRole(sub.userId, ROLE.FREE_MEMBER);
+      await userRepository.updatePlan(sub.userId, PLAN.FREE);
+    }
+  }
+
+  /**
    * Promotes user role and saves subscription
    */
   async handleCheckoutCompleted(userId: string, subscriptionData: any) {

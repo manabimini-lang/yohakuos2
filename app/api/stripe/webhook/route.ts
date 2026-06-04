@@ -57,14 +57,50 @@ export async function POST(req: Request) {
       const periodEnd = subscription.current_period_end ?? subscription.items?.data?.[0]?.current_period_end;
       const currentPeriodEnd = periodEnd ? new Date(periodEnd * 1000) : null;
 
-      await subscriptionRepository.update(subscription.id, { 
-        currentPeriodEnd, 
-        status: subscription.status,
-        stripePriceId: subscription.items?.data?.[0]?.price?.id,
-      });
+      await subscriptionService.handleSubscriptionUpdated(
+        subscription.id,
+        subscription.status,
+        currentPeriodEnd,
+        subscription.items?.data?.[0]?.price?.id
+      );
 
       console.log(`[STRIPE_SUBSCRIPTION] Invoice paid: subscriptionId=${subscription.id}, customerId=${subscription.customer}, status=${subscription.status}`);
     }
+  }
+
+  if (event.type === "invoice.payment_failed") {
+    const invoice = eventObject as any;
+    const subscriptionId = invoice.subscription as string;
+    
+    if (subscriptionId) {
+      const subscription = await stripe.subscriptions.retrieve(subscriptionId) as any;
+      const periodEnd = subscription.current_period_end ?? subscription.items?.data?.[0]?.current_period_end;
+      const currentPeriodEnd = periodEnd ? new Date(periodEnd * 1000) : null;
+
+      await subscriptionService.handleSubscriptionUpdated(
+        subscription.id,
+        subscription.status,
+        currentPeriodEnd,
+        subscription.items?.data?.[0]?.price?.id
+      );
+
+      console.log(`[STRIPE_SUBSCRIPTION] Payment failed: subscriptionId=${subscription.id}, customerId=${subscription.customer}, status=${subscription.status}`);
+    }
+  }
+
+  if (event.type === "customer.subscription.updated") {
+    const subscription = eventObject as any;
+    const periodEnd = subscription.current_period_end ?? subscription.items?.data?.[0]?.current_period_end;
+    const currentPeriodEnd = periodEnd ? new Date(periodEnd * 1000) : null;
+
+    await subscriptionService.handleSubscriptionUpdated(
+      subscription.id,
+      subscription.status,
+      currentPeriodEnd,
+      subscription.items?.data?.[0]?.price?.id
+    );
+
+    console.log(`[STRIPE_SUBSCRIPTION] Subscription updated: subscriptionId=${subscription.id}, customerId=${subscription.customer}, status=${subscription.status}`);
   }
   
   if (event.type === "customer.subscription.deleted") {
