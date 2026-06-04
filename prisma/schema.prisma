@@ -197,7 +197,7 @@ model UserAISettings {
   dailyTokenUsage   Int       @default(0) @map("daily_token_usage")
   monthlyTokenUsage Int       @default(0) @map("monthly_token_usage")
   lastUsageReset    DateTime? @map("last_usage_reset")
-  lastValidatedAt   DateTime? @map("last_validated_at")
+  lastValidatedAt   DateTime? @map("last_validated_at") @db.Timestamp(6)
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
