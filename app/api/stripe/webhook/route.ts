@@ -44,6 +44,8 @@ export async function POST(req: Request) {
       status: subscription.status,
       currentPeriodEnd,
     });
+
+    console.log(`[STRIPE_SUBSCRIPTION] Checkout completed: userId=${session.metadata.userId}, subscriptionId=${subscription.id}, customerId=${subscription.customer}, status=${subscription.status}`);
   }
 
   if (event.type === "invoice.payment_succeeded") {
@@ -60,12 +62,15 @@ export async function POST(req: Request) {
         status: subscription.status,
         stripePriceId: subscription.items?.data?.[0]?.price?.id,
       });
+
+      console.log(`[STRIPE_SUBSCRIPTION] Invoice paid: subscriptionId=${subscription.id}, customerId=${subscription.customer}, status=${subscription.status}`);
     }
   }
   
   if (event.type === "customer.subscription.deleted") {
     const subscription = eventObject as Stripe.Subscription;
     await subscriptionService.handleSubscriptionDeleted(subscription.id);
+    console.log(`[STRIPE_SUBSCRIPTION] Subscription deleted: subscriptionId=${subscription.id}, customerId=${subscription.customer}, status=${subscription.status}`);
   }
 
   return new NextResponse(null, { status: 200 });

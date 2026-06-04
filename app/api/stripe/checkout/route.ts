@@ -23,6 +23,11 @@ export async function POST(req: Request) {
     const user = await userRepository.findById(session.user.id);
     const subscription = await subscriptionRepository.findByUserId(session.user.id);
 
+    if (subscription && ["active", "trialing", "past_due"].includes(subscription.status)) {
+      console.warn(`[STRIPE_CHECKOUT] User ${session.user.id} already has an active subscription`);
+      return new NextResponse("You already have an active subscription.", { status: 400 });
+    }
+
     if (!user) {
       return new NextResponse("User not found", { status: 404 });
     }
@@ -69,6 +74,8 @@ export async function POST(req: Request) {
         userId: user.id,
       },
     });
+
+    console.log(`[STRIPE_CHECKOUT] Checkout session created for user ${user.id}, customer ${stripeCustomerId}`);
 
     return NextResponse.json({ url: checkoutSession.url });
   } catch (error) {

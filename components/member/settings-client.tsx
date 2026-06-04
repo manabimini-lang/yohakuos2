@@ -21,6 +21,7 @@ export function SettingsClient({
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
   const [isCheckoutLoading, setIsCheckoutLoading] = useState(false);
+  const [isPortalLoading, setIsPortalLoading] = useState(false);
   const [showUpgradeToast, setShowUpgradeToast] = useState(false);
   const [showConnectToast, setShowConnectToast] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -144,6 +145,25 @@ export function SettingsClient({
       alert("エラーが発生しました。");
     } finally {
       setIsCheckoutLoading(false);
+    }
+  };
+
+  const handleManageSubscription = async () => {
+    setIsPortalLoading(true);
+    try {
+      const res = await fetch("/api/stripe/portal", {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        alert("カスタマーポータルへの移動に失敗しました。");
+      }
+    } catch (error) {
+      alert("エラーが発生しました。");
+    } finally {
+      setIsPortalLoading(false);
     }
   };
 
@@ -283,7 +303,13 @@ export function SettingsClient({
             </button>
           ) : (
             <div className="text-sm text-slate-500">
-              {/* Future: Link to Stripe customer portal */}
+              <button
+                onClick={handleManageSubscription}
+                disabled={isPortalLoading}
+                className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50"
+              >
+                {isPortalLoading ? "準備中..." : "支払い設定・解約"}
+              </button>
             </div>
           )}
         </div>
