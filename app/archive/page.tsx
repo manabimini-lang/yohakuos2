@@ -11,6 +11,7 @@ import {
 } from "@/lib/memory/return-engine";
 import { detectReturningThemes } from "@/lib/life/life-themes-engine";
 import { getLatestPhilosophyFragments } from "@/lib/memory/philosophy";
+import { checkAIAvailability } from "@/lib/ai/gemini";
 import { EchoFragment } from "@/components/memory/EchoFragment";
 import { CalmResurfacingCard } from "@/components/memory/CalmResurfacingCard";
 import { TemporalEchoCard } from "@/components/memory/TemporalEchoCard";
@@ -28,9 +29,7 @@ export default async function ArchivePage() {
   }
 
   const userId = session.user.id;
-  const userAiSettings = await prisma.userAISettings.findUnique({
-    where: { userId },
-  });
+  const aiResult = await checkAIAvailability(userId);
 
   const [resurfacedMemories, fragments, echoes, resurfacings, returningThemes, philosophyFragments] = await Promise.all([
     prisma.memoryResurfacing.findMany({
@@ -87,7 +86,7 @@ export default async function ArchivePage() {
             </Link>
           </div>
 
-          {!userAiSettings?.isEnabled && (
+          {!aiResult.available && (
             <div className="rounded-2xl border border-black/10 dark:border-white/10 bg-black/[0.03] dark:bg-white/[0.03] p-5">
               <p className="text-sm text-black/50 dark:text-white/50">
                 AIが無効になっています。Archiveは過去のしずかな再会を支えるために、AIの静かな処理を使っています。

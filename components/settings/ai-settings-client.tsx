@@ -12,14 +12,16 @@ type AiSettingsClientProps = {
     model: string;
     isEnabled: boolean;
   } | null;
+  aiAvailable?: boolean;
+  aiSource?: string | null;
 };
 
-export function AiSettingsClient({ initialSettings }: AiSettingsClientProps) {
+export function AiSettingsClient({ initialSettings, aiAvailable, aiSource }: AiSettingsClientProps) {
   const [provider, setProvider] = useState(initialSettings?.provider || "gemini");
   const [apiKey, setApiKey] = useState(initialSettings?.hasKey ? "••••••••" : "");
-  const [model, setModel] = useState(initialSettings?.model || "gemini-2.0-flash-lite-preview-02-05");
   const [isEnabled, setIsEnabled] = useState(initialSettings?.isEnabled || false);
 
+  const FIXED_MODEL = "gemini-2.5-flash";
   const [testing, setTesting] = useState(false);
   const [saving, setSaving] = useState(false);
   const [statusMsg, setStatusMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -34,7 +36,6 @@ export function AiSettingsClient({ initialSettings }: AiSettingsClientProps) {
         body: JSON.stringify({
           provider,
           apiKey: apiKey === "••••••••" ? "" : apiKey, // If it's the placeholder, let API use existing key from DB (by omitting/sending blank)
-          model,
         }),
       });
 
@@ -68,7 +69,7 @@ export function AiSettingsClient({ initialSettings }: AiSettingsClientProps) {
       await saveAISettings({
         provider,
         apiKey,
-        model,
+        model: FIXED_MODEL,
         isEnabled,
       });
       setStatusMsg({
@@ -104,8 +105,13 @@ export function AiSettingsClient({ initialSettings }: AiSettingsClientProps) {
           AI接続設定
         </h1>
         <p className="text-xs text-slate-400 leading-relaxed">
-          {isEnabled 
-            ? "静かに接続されています。" 
+          {aiAvailable 
+            ? `接続済み (${
+                aiSource === "gemini_oauth" ? "Gemini OAuth連携" :
+                aiSource === "legacy_api_key" ? "Legacy API Key設定" :
+                aiSource === "user_ai_settings" ? "APIキー設定有効" :
+                aiSource === "starter" ? "Starter Journey利用中" : "接続中"
+              })` 
             : "AIを接続すると、余白に意味がゆっくり積もり始めます。"}
         </p>
       </div>
@@ -203,21 +209,10 @@ export function AiSettingsClient({ initialSettings }: AiSettingsClientProps) {
             </div>
           </div>
 
-          {/* Model Select */}
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-slate-700 block">利用モデル</label>
-            <div className="relative">
-              <Cpu className="absolute left-3.5 top-3 w-4 h-4 text-slate-400" />
-              <select
-                value={model}
-                onChange={(e) => setModel(e.target.value)}
-                className="w-full text-xs rounded-xl border border-slate-200 bg-white pl-10 pr-3.5 py-2.5 text-slate-800 focus:outline-none focus:border-slate-400 transition-colors"
-              >
-                <option value="gemini-2.0-flash-lite-preview-02-05">gemini-2.0-flash-lite (推奨・高速)</option>
-                <option value="gemini-2.0-flash">gemini-2.0-flash</option>
-                <option value="gemini-1.5-flash">gemini-1.5-flash</option>
-                <option value="gemini-1.5-pro">gemini-1.5-pro</option>
-              </select>
+            <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600">
+              gemini-2.5-flash（固定）
             </div>
           </div>
         </div>

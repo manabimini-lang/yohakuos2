@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { AiSettingsClient } from "@/components/settings/ai-settings-client";
 import { Metadata } from "next";
 
+import { checkAIAvailability } from "@/lib/ai/gemini";
+
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
@@ -17,9 +19,12 @@ export default async function AiSettingsPage() {
     redirect("/login");
   }
 
-  const settings = await prisma.userAISettings.findUnique({
-    where: { userId: session.user.id },
-  });
+  const [settings, aiResult] = await Promise.all([
+    prisma.userAISettings.findUnique({
+      where: { userId: session.user.id },
+    }),
+    checkAIAvailability(session.user.id),
+  ]);
 
   return (
     <div className="min-h-screen bg-slate-50/20 selection:bg-slate-100 flex items-center justify-center">
@@ -34,6 +39,8 @@ export default async function AiSettingsPage() {
               }
             : null
         }
+        aiAvailable={aiResult.available}
+        aiSource={aiResult.source}
       />
     </div>
   );
