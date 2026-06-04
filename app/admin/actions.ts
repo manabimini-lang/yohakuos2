@@ -39,8 +39,8 @@ export async function getAdminStats() {
     prisma.sharedKnowledge.count(),
     prisma.suggestedContent.count(),
     prisma.externalContent.count(),
-    prisma.userApiKey.count({
-      where: { apiProvider: "gemini" }
+    prisma.userAISettings.count({
+      where: { isEnabled: true }
     })
   ]);
 

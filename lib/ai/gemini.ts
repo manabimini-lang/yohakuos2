@@ -127,23 +127,6 @@ export async function getUserOwnedApiCredentials(
         }
     }
 
-    const keyRecord = await prisma.userApiKey.findUnique({
-        where: {
-            userId_apiProvider: {
-                userId,
-                apiProvider: "gemini",
-            },
-        },
-    });
-
-    if (keyRecord?.encryptedKey) {
-        console.log("FOUND USER GEMINI KEY FROM LEGACY STORAGE", { userId });
-        return {
-            apiKey: decryptKey(keyRecord.encryptedKey),
-            modelName: GEMINI_MODEL,
-        };
-    }
-
     console.log("NO USER GEMINI CREDENTIALS FOUND", { userId });
     return null;
 }
@@ -303,24 +286,7 @@ export async function validateApiKey(options?: AIRequestOptions): Promise<{
                     where: { userId },
                 });
                 if (settings && settings.isEnabled) {
-                    method = 'apikey';
-                } else {
-                    const oauthRecord = await prisma.userApiKey.findUnique({
-                        where: {
-                            userId_apiProvider: { userId, apiProvider: "gemini_oauth" },
-                        },
-                    });
-                    const legacyRecord = await prisma.userApiKey.findUnique({
-                        where: {
-                            userId_apiProvider: { userId, apiProvider: "gemini" },
-                        },
-                    });
-
-                    if (oauthRecord?.encryptedKey) {
-                        method = 'oauth';
-                    } else if (legacyRecord?.encryptedKey) {
-                        method = 'apikey';
-                    }
+                    method = settings.provider === "gemini_oauth" ? 'oauth' : 'apikey';
                 }
             } catch {
                 method = 'apikey';
@@ -360,22 +326,8 @@ export async function checkAIAvailability(userId: string): Promise<AIAvailabilit
     const settings = await prisma.userAISettings.findUnique({
         where: { userId },
     });
-    if (settings?.isEnabled) {
-        return { available: true, source: "user_ai_settings" };
-    }
-
-    const oauthRecord = await prisma.userApiKey.findUnique({
-        where: { userId_apiProvider: { userId, apiProvider: "gemini_oauth" } },
-    });
-    if (oauthRecord?.encryptedKey) {
-        return { available: true, source: "gemini_oauth" };
-    }
-
-    const legacyRecord = await prisma.userApiKey.findUnique({
-        where: { userId_apiProvider: { userId, apiProvider: "gemini" } },
-    });
-    if (legacyRecord?.encryptedKey) {
-        return { available: true, source: "legacy_api_key" };
+    if (settings?.isEnabled && settings.encryptedApiKey) {
+        return { available: true, source: (settings.provider as AIAvailabilitySource) || "user_ai_settings" };
     }
 
     return { available: false, source: null };

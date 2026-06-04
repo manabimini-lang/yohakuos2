@@ -15,11 +15,10 @@ export async function POST(req: Request) {
     const userId = session.user.id;
 
     const body = await req.json().catch(() => ({}));
-    const { provider, apiKey, model } = body;
+    const { apiKey } = body;
 
     const options: { userId: string; apiKey?: string; modelName?: string } = {
       userId,
-      modelName: model,
     };
 
     if (apiKey && apiKey !== "••••••••") {

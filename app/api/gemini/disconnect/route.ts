@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { apiKeyRepository } from "@/lib/repositories/api-key.repository";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -12,8 +12,14 @@ export async function POST(req: Request) {
     }
     const userId = session.user.id;
 
-    await apiKeyRepository.delete(userId, "gemini_oauth");
-    await apiKeyRepository.delete(userId, "gemini");
+    await prisma.userAISettings.updateMany({
+      where: { userId },
+      data: {
+        encryptedApiKey: null,
+        isEnabled: false,
+        provider: "gemini",
+      },
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {

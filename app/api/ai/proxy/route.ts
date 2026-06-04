@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { decryptKey, encryptKey } from "@/lib/encryption";
-import { apiKeyRepository } from "@/lib/repositories/api-key.repository";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -24,10 +24,11 @@ export async function POST(req: Request) {
       return new NextResponse("Input is required", { status: 400 });
     }
 
-    const oauthKeyRecord = await apiKeyRepository.findByUserIdAndProvider(userId, "gemini_oauth");
-    const legacyKeyRecord = await apiKeyRepository.findByUserIdAndProvider(userId, "gemini");
+    const userAISettings = await prisma.userAISettings.findUnique({
+      where: { userId }
+    });
 
-    if (!oauthKeyRecord && !legacyKeyRecord) {
+    if (!userAISettings?.encryptedApiKey) {
       return new NextResponse(
         JSON.stringify({ error: "Gemini APIキーまたはGoogle連携が設定されていません。" }),
         { status: 401, headers: { "Content-Type": "application/json" } }
@@ -35,11 +36,11 @@ export async function POST(req: Request) {
     }
 
     let accessToken = "";
-    let isOauth = false;
+    let isOauth = userAISettings.provider === "gemini_oauth";
 
-    if (oauthKeyRecord?.encryptedKey) {
+    if (isOauth) {
       try {
-        const decryptedPayload = decryptKey(oauthKeyRecord.encryptedKey);
+        const decryptedPayload = decryptKey(userAISettings.encryptedApiKey);
         const tokenData = JSON.parse(decryptedPayload);
 
         if (Date.now() >= tokenData.expires_at - 60000) {
@@ -68,13 +69,21 @@ export async function POST(req: Request) {
                 }
                 tokenData.expires_at = Date.now() + newTokens.expires_in * 1000;
 
-                await apiKeyRepository.upsert(
-                  userId,
-                  encryptKey(JSON.stringify(tokenData)),
-                  "gemini_oauth"
-                );
+                await prisma.userAISettings.update({
+                  where: { userId },
+                  data: {
+                    encryptedApiKey: encryptKey(JSON.stringify(tokenData))
+                  }
+                });
               } else {
-                await apiKeyRepository.delete(userId, "gemini_oauth");
+                await prisma.userAISettings.update({
+                  where: { userId },
+                  data: {
+                    encryptedApiKey: null,
+                    isEnabled: false,
+                    provider: "gemini",
+                  }
+                });
                 return new NextResponse(
                   JSON.stringify({ error: "Google連携の有効期限が切れました。再接続してください。" }),
                   { status: 401, headers: { "Content-Type": "application/json" } }
@@ -99,9 +108,9 @@ export async function POST(req: Request) {
           { status: 401, headers: { "Content-Type": "application/json" } }
         );
       }
-    } else if (legacyKeyRecord?.encryptedKey) {
+    } else {
       try {
-        accessToken = decryptKey(legacyKeyRecord.encryptedKey);
+        accessToken = decryptKey(userAISettings.encryptedApiKey);
       } catch (e) {
         return new NextResponse(
           JSON.stringify({ error: "APIキーの読み込みに失敗しました。" }),
@@ -136,8 +145,8 @@ ${roadContext || ""}
     };
 
     const apiUrl = isOauth
-      ? "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
-      : `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${accessToken}`;
+      ? "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
+      : `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${accessToken}`;
 
     const headers: Record<string, string> = {
       "Content-Type": "application/json"

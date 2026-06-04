@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { unstable_noStore as noStore } from "next/cache";
 import { encryptKey } from "@/lib/encryption";
-import { apiKeyRepository } from "@/lib/repositories/api-key.repository";
+import { prisma } from "@/lib/prisma";
 import { log } from "@/core/audit/logger";
 
 export const dynamic = "force-dynamic";
@@ -65,7 +65,20 @@ export async function GET(req: Request) {
 
     const encryptedPayload = encryptKey(JSON.stringify(tokenPayload));
 
-    await apiKeyRepository.upsert(userId, encryptedPayload, "gemini_oauth");
+    await prisma.userAISettings.upsert({
+      where: { userId },
+      update: {
+        encryptedApiKey: encryptedPayload,
+        provider: "gemini_oauth",
+        isEnabled: true,
+      },
+      create: {
+        userId,
+        encryptedApiKey: encryptedPayload,
+        provider: "gemini_oauth",
+        isEnabled: true,
+      },
+    });
 
     await log({
       actorId: userId,
