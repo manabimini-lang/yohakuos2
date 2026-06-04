@@ -11,6 +11,7 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { getStarterJourneyStatus } from "@/lib/ai/starter-journey";
 import { StarterJourneyBanner } from "@/components/ai/StarterJourneyBanner";
+import { checkAIAvailability } from "@/lib/ai/gemini";
 
 export const metadata = {
   title: "Memory - YOHAKU",
@@ -48,14 +49,12 @@ export default async function MemoryPage() {
   });
 
   // 5. Check AI connection status
-  const [userSettings, starterJourney] = await Promise.all([
-    prisma.userAISettings.findUnique({
-      where: { userId },
-    }),
+  const [hasAiConnection, starterJourney] = await Promise.all([
+    checkAIAvailability(userId),
     getStarterJourneyStatus(userId),
   ]);
 
-  const hasAiAccess = userSettings?.isEnabled || starterJourney.active;
+  const hasAiAccess = hasAiConnection || starterJourney.active;
 
   return (
     <div className="max-w-5xl mx-auto py-12 px-6 space-y-24">

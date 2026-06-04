@@ -2,7 +2,7 @@ import { GoogleGenerativeAI, GenerativeModel } from '@google/generative-ai';
 import { prisma } from '@/lib/prisma';
 import { decryptKey } from '@/lib/encryption';
 
-const GEMINI_MODEL = 'gemini-2.0-flash-lite-preview-02-05';
+const GEMINI_MODEL = 'gemini-2.5-flash';
 
 export type AIRequestOptions = string | {
     userId?: string;
@@ -12,7 +12,6 @@ export type AIRequestOptions = string | {
 };
 
 const STARTER_GEMINI_API_KEY = process.env.STARTER_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
-const STARTER_GEMINI_MODEL = process.env.STARTER_GEMINI_MODEL || GEMINI_MODEL;
 
 async function incrementTokenUsage(userId: string, tokenCount: number) {
     try {
@@ -37,7 +36,7 @@ function getFallbackApiCredentials(): { apiKey: string; modelName: string } {
 
     return {
         apiKey: STARTER_GEMINI_API_KEY,
-        modelName: STARTER_GEMINI_MODEL,
+        modelName: GEMINI_MODEL,
     };
 }
 
@@ -51,7 +50,7 @@ export async function getApiCredentials(
     if (options && (options.apiKey || options.modelName)) {
         return {
             apiKey: options.apiKey || STARTER_GEMINI_API_KEY || '',
-            modelName: options.modelName || STARTER_GEMINI_MODEL,
+            modelName: GEMINI_MODEL,
         };
     }
 
@@ -118,11 +117,11 @@ export async function getUserOwnedApiCredentials(
                 const decrypted = decryptKey(settings.encryptedApiKey);
                 console.log("FOUND USER GEMINI KEY FROM SETTINGS", {
                     userId,
-                    model: settings.model || GEMINI_MODEL,
+                    model: GEMINI_MODEL,
                 });
                 return {
                     apiKey: decrypted,
-                    modelName: settings.model || GEMINI_MODEL,
+                    modelName: GEMINI_MODEL,
                 };
             }
         }
@@ -172,7 +171,8 @@ async function getApiCredentialsFromUserId(userId?: string, allowEnvFallback = f
  * AIクライアントを取得する。
  */
 async function getClient(options?: AIRequestOptions): Promise<{ client: GenerativeModel; modelName: string }> {
-    const { apiKey, modelName } = await getApiCredentials(options);
+    const { apiKey } = await getApiCredentials(options);
+    const modelName = GEMINI_MODEL;
     console.log("CREATE GEMINI CLIENT", {
         modelName,
         hasApiKey: !!apiKey,
@@ -337,4 +337,27 @@ export async function validateApiKey(options?: AIRequestOptions): Promise<{
             error: error.message || 'APIキーの検証に失敗しました',
         };
     }
+}
+
+/**
+ * ユーザーがAI機能を利用可能か（有効な設定、OAuth、またはレガシーキーを持つか）を軽量に判定する。
+ * Gemini APIへの実際の通信は行わない。
+ */
+export async function checkAIAvailability(userId: string): Promise<boolean> {
+    const settings = await prisma.userAISettings.findUnique({
+        where: { userId },
+    });
+    if (settings?.isEnabled) return true;
+
+    const oauthRecord = await prisma.userApiKey.findUnique({
+        where: { userId_apiProvider: { userId, apiProvider: "gemini_oauth" } },
+    });
+    if (oauthRecord?.encryptedKey) return true;
+
+    const legacyRecord = await prisma.userApiKey.findUnique({
+        where: { userId_apiProvider: { userId, apiProvider: "gemini" } },
+    });
+    if (legacyRecord?.encryptedKey) return true;
+
+    return false;
 }

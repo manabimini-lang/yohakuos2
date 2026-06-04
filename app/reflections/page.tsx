@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { QuietAudioPlayer } from "@/components/audio/QuietAudioPlayer";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
+import { checkAIAvailability } from "@/lib/ai/gemini";
 
 export const dynamic = "force-dynamic";
 
@@ -34,9 +35,7 @@ export default async function ReflectionsPage() {
   const isPremium = session.user.role === "PAID_MEMBER" || session.user.role === "ADMIN";
 
   // Check AI connection status
-  const userSettings = await prisma.userAISettings.findUnique({
-    where: { userId },
-  });
+  const hasAiConnection = await checkAIAvailability(userId);
 
   const audioReflections = await prisma.audioReflection.findMany({
     where: { userId },
@@ -78,7 +77,7 @@ export default async function ReflectionsPage() {
         </section>
 
         {/* AI Not Connected Notice */}
-        {!userSettings?.isEnabled && (
+        {!hasAiConnection && (
           <section className="p-8 rounded-2xl border border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.02] space-y-4">
             <p className="text-sm text-black/80 dark:text-white/80 leading-relaxed font-light">
               AI接続がまだ行われていません。
@@ -249,7 +248,7 @@ export default async function ReflectionsPage() {
           </section>
         )}
 
-        {audioReflections.length === 0 && userSettings?.isEnabled && (
+        {audioReflections.length === 0 && hasAiConnection && (
           <section className="text-center space-y-4">
             <p className="text-sm text-black/30 dark:text-white/30 italic font-light">
               記憶が降り積もるのを待っています...
@@ -266,7 +265,7 @@ export default async function ReflectionsPage() {
         )}
 
         {/* Next actions section */}
-        {userSettings?.isEnabled && audioReflections.length > 0 && (
+        {hasAiConnection && audioReflections.length > 0 && (
           <section className="pt-24 border-t border-black/5 dark:border-white/5 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-1000 fill-mode-both">
             <h2 className="text-xs tracking-[0.2em] uppercase text-black/40 dark:text-white/40">
               次の余白

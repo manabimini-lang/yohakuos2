@@ -8,11 +8,11 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import CompanionChat from "@/components/companion/companion-chat";
-import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { getStarterJourneyStatus } from "@/lib/ai/starter-journey";
 import { StarterJourneyBanner } from "@/components/ai/StarterJourneyBanner";
+import { checkAIAvailability } from "@/lib/ai/gemini";
 
 export const metadata = {
     title: "静かな対話 | YOHAKU Companion",
@@ -26,12 +26,12 @@ export default async function CompanionPage() {
     }
 
     const userId = session.user.id;
-    const userSettings = await prisma.userAISettings.findUnique({
-        where: { userId },
-    });
+    const [hasAiConnection, starterJourney] = await Promise.all([
+        checkAIAvailability(userId),
+        getStarterJourneyStatus(userId),
+    ]);
 
-    const starterJourney = await getStarterJourneyStatus(userId);
-    const hasAiAccess = userSettings?.isEnabled || starterJourney.active;
+    const hasAiAccess = hasAiConnection || starterJourney.active;
 
     if (!hasAiAccess) {
         return (
@@ -61,7 +61,7 @@ export default async function CompanionPage() {
     return (
         <div className="min-h-screen bg-[#090909] text-slate-100">
             <div className="h-screen flex flex-col">
-                {starterJourney.active && !userSettings?.isEnabled && (
+                {starterJourney.active && !hasAiConnection && (
                     <div className="mx-auto my-6 w-full max-w-4xl px-6">
                         <StarterJourneyBanner
                             remainingHours={starterJourney.remainingHours}

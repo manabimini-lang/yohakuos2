@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { checkAIAvailability } from "@/lib/ai/gemini";
 
 /**
  * Queue-based Life OS Job Enqueueing
@@ -412,11 +413,9 @@ export async function enqueueResonanceWeatherGeneration(userId: string): Promise
  */
 export async function maybeEnqueueLifeOSJobs(userId: string): Promise<void> {
   // Check if AI is enabled
-  const aiSettings = await prisma.userAISettings.findUnique({
-    where: { userId },
-  });
+  const hasAiConnection = await checkAIAvailability(userId);
 
-  if (!aiSettings?.isEnabled) {
+  if (!hasAiConnection) {
     return; // Skip if AI disabled
   }
 

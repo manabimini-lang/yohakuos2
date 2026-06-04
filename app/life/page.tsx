@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
+import { checkAIAvailability } from "@/lib/ai/gemini";
 import {
   extractLifeThemes,
   detectReturningThemes,
@@ -31,10 +32,8 @@ export default async function LifePage() {
 
   const userId = session.user.id;
 
-  // Check AI settings
-  const aiSettings = await prisma.userAISettings.findUnique({
-    where: { userId },
-  });
+  // Check AI connection status
+  const hasAiConnection = await checkAIAvailability(userId);
 
   // Check if user has enough data
   const itemCount = await prisma.contentItem.count({
@@ -50,7 +49,7 @@ export default async function LifePage() {
   let philosophyFragments: PhilosophyFragment[] = [];
   let lifeDirection: string = "";
 
-  if (aiSettings?.isEnabled && itemCount >= 20) {
+  if (hasAiConnection && itemCount >= 20) {
     [themes, returningThemes, philosophyFragments, lifeDirection] = await Promise.all([
       extractLifeThemes(userId, 6),
       detectReturningThemes(userId),
@@ -116,7 +115,7 @@ export default async function LifePage() {
           </Link>
         </nav>
 
-        {!aiSettings?.isEnabled ? (
+        {!hasAiConnection ? (
           <div className="p-8 rounded-2xl border border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.02] space-y-4 max-w-xl">
             <p className="text-sm text-black/80 dark:text-white/80 leading-relaxed font-light">
               AI接続がまだ行われていません。
@@ -147,7 +146,7 @@ export default async function LifePage() {
 
       {/* Main content */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-24 sm:space-y-32 pb-24 sm:pb-32">
-        {hasData && aiSettings?.isEnabled ? (
+        {hasData && hasAiConnection ? (
           <>
             {/* Life Direction Section */}
             <LifeDirection
@@ -185,7 +184,7 @@ export default async function LifePage() {
               <PhilosophyFragmentsSection fragments={philosophyFragments} />
             )}
           </>
-        ) : !aiSettings?.isEnabled ? (
+        ) : !hasAiConnection ? (
           /* AI disabled simple state */
           <div className="py-24 text-center space-y-4">
             <p className="text-sm font-light text-black/30 dark:text-white/30 italic">
