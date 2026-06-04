@@ -2,7 +2,7 @@
 
 import { auth } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
-import { apiKeyRepository } from "@/lib/repositories/api-key.repository";
+import { prisma } from "@/lib/prisma";
 
 export async function deleteAiKeyAction() {
   try {
@@ -12,8 +12,11 @@ export async function deleteAiKeyAction() {
     }
     const userId = session.user.id;
 
-    // Delete database record
-    await apiKeyRepository.delete(userId, "gemini");
+    // Remove encrypted key and disable AI in user_ai_settings (source of truth)
+    await prisma.userAISettings.updateMany({
+      where: { userId },
+      data: { encryptedApiKey: null, isEnabled: false },
+    });
 
     revalidatePath("/member/settings");
     return { ok: true };

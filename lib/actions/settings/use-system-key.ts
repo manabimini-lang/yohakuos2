@@ -4,8 +4,8 @@ import { auth } from "@/lib/auth";
 import { encryptKey } from "@/lib/encryption";
 import { revalidatePath } from "next/cache";
 import { userRepository } from "@/lib/repositories/user.repository";
-import { apiKeyRepository } from "@/lib/repositories/api-key.repository";
 import { subscriptionService } from "@/lib/services/subscription.service";
+import { prisma } from "@/lib/prisma";
 
 export async function useSystemApiKeyAction() {
   try {
@@ -26,9 +26,13 @@ export async function useSystemApiKeyAction() {
       systemKey = "AIzaSyDummyGeminiKeyForYohakuOSLocalTesting";
     }
 
-    // Encrypt and save to user DB API keys table
+    // Encrypt and save to user_ai_settings (source of truth)
     const encryptedKey = encryptKey(systemKey);
-    await apiKeyRepository.upsert(userId, encryptedKey, "gemini");
+    await prisma.userAISettings.upsert({
+      where: { userId },
+      update: { encryptedApiKey: encryptedKey, provider: "gemini", isEnabled: true },
+      create: { userId, encryptedApiKey: encryptedKey, provider: "gemini", isEnabled: true },
+    });
 
     revalidatePath("/member/settings");
     return { ok: true, apiKey: systemKey };

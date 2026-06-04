@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { userRepository } from "@/lib/repositories/user.repository";
-import { apiKeyRepository } from "@/lib/repositories/api-key.repository";
 import { subscriptionRepository } from "@/lib/repositories/subscription.repository";
 import { subscriptionService } from "@/lib/services/subscription.service";
 import { prisma } from "@/lib/prisma";
