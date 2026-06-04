@@ -33,7 +33,7 @@ export default async function LifePage() {
   const userId = session.user.id;
 
   // Check AI connection status
-  const hasAiConnection = await checkAIAvailability(userId);
+  const hasAiConnection = (await checkAIAvailability(userId)).available;
 
   // Check if user has enough data
   const itemCount = await prisma.contentItem.count({

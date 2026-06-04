@@ -412,10 +412,16 @@ export async function enqueueResonanceWeatherGeneration(userId: string): Promise
  * Smart enqueueing: only if user has enough data and AI is enabled
  */
 export async function maybeEnqueueLifeOSJobs(userId: string): Promise<void> {
-  // Check if AI is enabled
-  const hasAiConnection = await checkAIAvailability(userId);
+  // Check if AI is enabled: user_ai_settings / OAuth / Legacy 統一判定
+  const aiResult = await checkAIAvailability(userId);
 
-  if (!hasAiConnection) {
+  console.log("[AI_AVAILABILITY]", {
+    userId,
+    available: aiResult.available,
+    source: aiResult.source,
+  });
+
+  if (!aiResult.available) {
     return; // Skip if AI disabled
   }
 

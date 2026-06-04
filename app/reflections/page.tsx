@@ -35,7 +35,7 @@ export default async function ReflectionsPage() {
   const isPremium = session.user.role === "PAID_MEMBER" || session.user.role === "ADMIN";
 
   // Check AI connection status
-  const hasAiConnection = await checkAIAvailability(userId);
+  const hasAiConnection = (await checkAIAvailability(userId)).available;
 
   const audioReflections = await prisma.audioReflection.findMany({
     where: { userId },

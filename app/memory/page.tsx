@@ -49,11 +49,12 @@ export default async function MemoryPage() {
   });
 
   // 5. Check AI connection status
-  const [hasAiConnection, starterJourney] = await Promise.all([
+  const [aiResult, starterJourney] = await Promise.all([
     checkAIAvailability(userId),
     getStarterJourneyStatus(userId),
   ]);
 
+  const hasAiConnection = aiResult.available;
   const hasAiAccess = hasAiConnection || starterJourney.active;
 
   return (

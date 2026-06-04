@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
-import { isStarterJourneyActive } from "@/lib/ai/starter-journey";
+import { getStarterJourneyStatus } from "@/lib/ai/starter-journey";
 import { enqueueArchiveRevisitGeneration } from "./archive-revisit";
+import { checkAIAvailability } from "@/lib/ai/gemini";
 
 /**
  * Queue-based Return Job Enqueueing
@@ -149,12 +150,18 @@ export async function enqueueResurfacingDetection(
  * Smart enqueueing: only if user has enough data and AI is enabled
  */
 export async function maybeEnqueueReturnJobs(userId: string): Promise<void> {
-  const aiSettings = await prisma.userAISettings.findUnique({
-    where: { userId },
+  // Check AI availability: user_ai_settings / OAuth / Legacy 統一判定
+  const aiResult = await checkAIAvailability(userId);
+  const starterJourney = await getStarterJourneyStatus(userId);
+  const starterJourneyActive = starterJourney.active;
+
+  console.log("[AI_AVAILABILITY]", {
+    userId,
+    available: aiResult.available || starterJourneyActive,
+    source: aiResult.available ? aiResult.source : starterJourneyActive ? "starter" : null,
   });
 
-  const starterJourneyActive = isStarterJourneyActive(aiSettings);
-  if (!aiSettings?.isEnabled && !starterJourneyActive) {
+  if (!aiResult.available && !starterJourneyActive) {
     return; // Skip if AI disabled and no starter journey active
   }
 

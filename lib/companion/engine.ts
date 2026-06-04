@@ -13,7 +13,7 @@
 //
 
 import { prisma } from "@/lib/prisma";
-import { generateText } from "@/lib/ai/gemini";
+import { generateText, checkAIAvailability } from "@/lib/ai/gemini";
 import { resolveProvider } from "@/lib/ai/provider-resolver";
 import { buildCompanionContext, buildCompanionContextForPrompt } from "./retrieval";
 import { evaluateSilence } from "./silence";
@@ -183,15 +183,18 @@ export async function generateCompanionResponse(
         throw new Error("AI is unavailable for this account.");
     }
 
-    // 1. Check if user can send companion messages (starter journey limit)
+    // 1. Check if user has AI access (OAuth / Legacy / user_ai_settings 統一判定)
+    const aiResult = await checkAIAvailability(userId);
     const { recordStarterJourneyCompanionMessage } = await import("@/lib/ai/starter-journey");
     const canSendMessage = await recordStarterJourneyCompanionMessage(userId);
 
-    const userSettings = await prisma.userAISettings.findUnique({
-        where: { userId },
+    console.log("[AI_AVAILABILITY]", {
+        userId,
+        available: aiResult.available || canSendMessage,
+        source: aiResult.available ? aiResult.source : canSendMessage ? "starter" : null,
     });
 
-    if (!userSettings?.isEnabled && !canSendMessage) {
+    if (!aiResult.available && !canSendMessage) {
         throw new Error("Companion message limit reached for starter journey.");
     }
 

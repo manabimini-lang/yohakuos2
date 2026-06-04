@@ -34,7 +34,7 @@ export default async function LandscapePage() {
 
     const userId = session.user.id;
 
-    const [landscape, itemCount, latestJob, hasAiConnection] = await Promise.all([
+    const [landscape, itemCount, latestJob, aiResult] = await Promise.all([
         prisma.innerLandscape.findFirst({
             where: { userId },
             orderBy: { generatedAt: "desc" },
@@ -49,6 +49,7 @@ export default async function LandscapePage() {
         }),
         checkAIAvailability(userId),
     ]);
+    const hasAiConnection = aiResult.available;
 
     const hasPendingJob = latestJob ? (latestJob.status === "pending" || latestJob.status === "processing") : false;
     const isFailed = latestJob ? (latestJob.status === "failed") : false;

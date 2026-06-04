@@ -339,25 +339,44 @@ export async function validateApiKey(options?: AIRequestOptions): Promise<{
     }
 }
 
+export type AIAvailabilitySource =
+    | "user_ai_settings"
+    | "gemini_oauth"
+    | "legacy_api_key"
+    | "starter"
+    | null;
+
+export interface AIAvailabilityResult {
+    available: boolean;
+    source: AIAvailabilitySource;
+}
+
 /**
- * ユーザーがAI機能を利用可能か（有効な設定、OAuth、またはレガシーキーを持つか）を軽量に判定する。
+ * ユーザーAI利用可能判定（詳細ソース付き）
+ * user_ai_settings.isEnabled / OAuth / Legacy の3つを書き辞数順で確認する。
  * Gemini APIへの実際の通信は行わない。
  */
-export async function checkAIAvailability(userId: string): Promise<boolean> {
+export async function checkAIAvailability(userId: string): Promise<AIAvailabilityResult> {
     const settings = await prisma.userAISettings.findUnique({
         where: { userId },
     });
-    if (settings?.isEnabled) return true;
+    if (settings?.isEnabled) {
+        return { available: true, source: "user_ai_settings" };
+    }
 
     const oauthRecord = await prisma.userApiKey.findUnique({
         where: { userId_apiProvider: { userId, apiProvider: "gemini_oauth" } },
     });
-    if (oauthRecord?.encryptedKey) return true;
+    if (oauthRecord?.encryptedKey) {
+        return { available: true, source: "gemini_oauth" };
+    }
 
     const legacyRecord = await prisma.userApiKey.findUnique({
         where: { userId_apiProvider: { userId, apiProvider: "gemini" } },
     });
-    if (legacyRecord?.encryptedKey) return true;
+    if (legacyRecord?.encryptedKey) {
+        return { available: true, source: "legacy_api_key" };
+    }
 
-    return false;
+    return { available: false, source: null };
 }
