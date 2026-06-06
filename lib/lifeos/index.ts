@@ -55,6 +55,12 @@ export {
     completeQuietPlan,
 } from "./quiet-planning";
 export {
+    StrategyLearningService,
+} from "./strategy-learning-service";
+export {
+    SafetyPolicyEngine,
+} from "./safety-engine";
+export {
     buildCompressedContext,
 } from "./compression";
 export {

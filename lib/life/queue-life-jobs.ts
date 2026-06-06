@@ -1,5 +1,4 @@
 import { prisma } from "@/lib/prisma";
-import { checkAIAvailability } from "@/lib/ai/gemini";
 
 /**
  * Queue-based Life OS Job Enqueueing
@@ -412,16 +411,12 @@ export async function enqueueResonanceWeatherGeneration(userId: string): Promise
  * Smart enqueueing: only if user has enough data and AI is enabled
  */
 export async function maybeEnqueueLifeOSJobs(userId: string): Promise<void> {
-  // Check if AI is enabled: user_ai_settings / OAuth / Legacy 統一判定
-  const aiResult = await checkAIAvailability(userId);
-
-  console.log("[AI_AVAILABILITY]", {
-    userId,
-    available: aiResult.available,
-    source: aiResult.source,
+  // Check if AI is enabled
+  const aiSettings = await prisma.userAISettings.findUnique({
+    where: { userId },
   });
 
-  if (!aiResult.available) {
+  if (!aiSettings?.isEnabled) {
     return; // Skip if AI disabled
   }
 

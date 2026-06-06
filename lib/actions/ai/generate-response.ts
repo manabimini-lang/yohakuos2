@@ -5,6 +5,7 @@ import { decryptKey } from "@/lib/encryption";
 import { revalidatePath } from "next/cache";
 import { generateAiResponseSchema } from "@/lib/validators/ai.validator";
 import { userRepository } from "@/lib/repositories/user.repository";
+import { apiKeyRepository } from "@/lib/repositories/api-key.repository";
 import { aiService } from "@/lib/services/ai.service";
 import { dailyLogRepository } from "@/lib/repositories/daily-log.repository";
 import { buildUserMessage, extractSmallAction } from "@/lib/prompts/yohaku-system-prompt";
@@ -32,10 +33,13 @@ export async function generateAiResponseAction(input: string, moodTag?: string) 
       return { ok: false, error: "ユーザーが見つかりません。" };
     }
 
-    // 4. Fetch API Key from user_ai_settings (source of truth)
-    const userAiSettings = await prisma.userAISettings.findUnique({ where: { userId } });
+    // 4. Fetch API Key
+    const [apiKeyRecord, userAiSettings] = await Promise.all([
+      apiKeyRepository.findByUserIdAndProvider(userId, "gemini"),
+      prisma.userAISettings.findUnique({ where: { userId } }),
+    ]);
 
-    const encryptedKey = userAiSettings?.encryptedApiKey;
+    const encryptedKey = apiKeyRecord?.encryptedKey || userAiSettings?.encryptedApiKey;
     if (!encryptedKey) {
       return { ok: false, error: "APIキーが設定されていません。設定画面からGemini APIキーを登録してください。" };
     }
@@ -80,6 +84,7 @@ export async function generateAiResponseAction(input: string, moodTag?: string) 
     };
   } catch (error: any) {
     console.error("[GENERATE_AI_RESPONSE]", error);
+    // ユーザーに威圧感を与えないエラーメッセージ
     return { ok: false, error: "AIとの通信がうまくいきませんでした。少し時間を置いて、もう一度試してみてください。" };
   }
 }

@@ -14,7 +14,6 @@ import {
   generateResurfacingNarrative,
   isSignificantReturn,
 } from "@/lib/memory/return-engine";
-import { checkAIAvailability } from "@/lib/ai/gemini";
 import { EchoFragment } from "@/components/memory/EchoFragment";
 import { CalmResurfacingCard } from "@/components/memory/CalmResurfacingCard";
 import { TemporalEchoCard } from "@/components/memory/TemporalEchoCard";
@@ -34,15 +33,17 @@ export default async function QuietReturnPage() {
   const userId = session.user.id;
 
   // In parallel: fetch AI settings, starter journey state and return patterns
-  const [aiResult, starterJourney, fragments, echoes, resurfacings] = await Promise.all([
-    checkAIAvailability(userId),
+  const [userAiSettings, starterJourney, fragments, echoes, resurfacings] = await Promise.all([
+    prisma.userAISettings.findUnique({
+      where: { userId },
+    }),
     getStarterJourneyStatus(userId),
     detectReturningFragments(userId),
     detectTemporalEchoes(userId),
     detectCalmResurfacing(userId),
   ]);
 
-  const hasAiAccess = aiResult.available || starterJourney.active;
+  const hasAiAccess = userAiSettings?.isEnabled || starterJourney.active;
 
   // Filter to only significant returns
   const significantFragments = fragments.filter(isSignificantReturn).slice(0, 4);
@@ -104,14 +105,14 @@ export default async function QuietReturnPage() {
           </div>
 
           {/* AI status */}
-          {starterJourney.active && !aiResult.available ? (
+          {starterJourney.active && !userAiSettings?.isEnabled ? (
             <div className="mt-8 px-6">
               <StarterJourneyBanner
                 remainingHours={starterJourney.remainingHours}
                 remainingMinutes={starterJourney.remainingMinutes}
               />
             </div>
-          ) : !aiResult.available ? (
+          ) : !userAiSettings?.isEnabled ? (
             <div className="mt-8 p-8 rounded-2xl border border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.02] space-y-4">
               <p className="text-sm text-black/80 dark:text-white/80 leading-relaxed font-light">
                 AI接続がまだ行われていません。

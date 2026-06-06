@@ -1,0 +1,853 @@
+
+> yohaku-os@0.0.0 dev
+> next dev
+
+  ▲ Next.js 14.2.33
+  - Local:        http://localhost:3000
+  - Environments: .env.local, .env
+
+ ✓ Starting...
+ ⚠ Invalid next.config.js options detected: 
+ ⚠     Unrecognized key(s) in object: 'fetchCache' at "experimental"
+ ⚠ See more info here: https://nextjs.org/docs/messages/invalid-next-config
+ ⚠ Duplicate page detected. app/api/ai/proxy/route.js and app/api/ai/proxy/route.ts resolve to /api/ai/proxy
+ ⚠ Duplicate page detected. app/api/ai/test-connection/route.js and app/api/ai/test-connection/route.ts resolve to /api/ai/test-connection
+ ⚠ Duplicate page detected. app/api/ai/proxy/route.js and app/api/ai/proxy/route.ts resolve to /api/ai/proxy
+ ⚠ Duplicate page detected. app/api/ai/test-connection/route.js and app/api/ai/test-connection/route.ts resolve to /api/ai/test-connection
+ ✓ Ready in 1232ms
+ ○ Compiling /middleware ...
+ ✓ Compiled /middleware in 651ms (275 modules)
+[PRISMA_RUNTIME_URL] host=db.gubxjsbxolcfecyhtjzn.supabase.co port=6543
+[PRISMA_RUNTIME_URL] postgresql://***:***@db.gubxjsbxolcfecyhtjzn.supabase.co:6543/postgres?pgbouncer=true
+ ○ Compiling /companion ...
+ ⚠ ./app/companion/page.tsx
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./app/companion/page.tsx
+
+./lib/life/queue-life-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/life/queue-life-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+
+./lib/memory/queue-return-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/memory/queue-return-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+[PRISMA_RUNTIME_URL] host=db.gubxjsbxolcfecyhtjzn.supabase.co port=6543
+[PRISMA_RUNTIME_URL] postgresql://***:***@db.gubxjsbxolcfecyhtjzn.supabase.co:6543/postgres?pgbouncer=true
+ GET /companion 307 in 4060ms
+ ⚠ ./app/companion/page.tsx
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./app/companion/page.tsx
+
+./lib/life/queue-life-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/life/queue-life-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+
+./lib/memory/queue-return-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/memory/queue-return-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+ ⚠ ./app/companion/page.tsx
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./app/companion/page.tsx
+
+./lib/life/queue-life-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/life/queue-life-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+
+./lib/memory/queue-return-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/memory/queue-return-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (155kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (101kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (231kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+ ⚠ ./app/companion/page.tsx
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./app/companion/page.tsx
+
+./lib/life/queue-life-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/life/queue-life-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+
+./lib/memory/queue-return-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/memory/queue-return-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+ GET /login 200 in 2267ms
+ ⚠ ./app/companion/page.tsx
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./app/companion/page.tsx
+
+./lib/life/queue-life-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/life/queue-life-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+
+./lib/memory/queue-return-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/memory/queue-return-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+ ⚠ ./app/companion/page.tsx
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./app/companion/page.tsx
+
+./lib/life/queue-life-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/life/queue-life-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+
+./lib/memory/queue-return-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/memory/queue-return-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+[PRISMA_RUNTIME_URL] host=db.gubxjsbxolcfecyhtjzn.supabase.co port=6543
+[PRISMA_RUNTIME_URL] postgresql://***:***@db.gubxjsbxolcfecyhtjzn.supabase.co:6543/postgres?pgbouncer=true
+ GET /api/auth/session 200 in 438ms
+ GET /api/auth/session 200 in 6ms
+[PRISMA_RUNTIME_URL] host=db.gubxjsbxolcfecyhtjzn.supabase.co port=6543
+[PRISMA_RUNTIME_URL] postgresql://***:***@db.gubxjsbxolcfecyhtjzn.supabase.co:6543/postgres?pgbouncer=true
+ ⚠ ./app/companion/page.tsx
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./app/companion/page.tsx
+
+./lib/life/queue-life-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/life/queue-life-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+
+./lib/memory/queue-return-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/memory/queue-return-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+ ⚠ ./app/companion/page.tsx
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./app/companion/page.tsx
+
+./lib/life/queue-life-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/life/queue-life-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+
+./lib/memory/queue-return-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/memory/queue-return-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+ POST /api/auth/login 307 in 810ms
+ POST /login?error=Invalid%20login%20credentials 200 in 63ms
+ GET /api/auth/session 200 in 11ms
+ GET /api/auth/session 200 in 6ms
+[PRISMA_RUNTIME_URL] host=db.gubxjsbxolcfecyhtjzn.supabase.co port=6543
+[PRISMA_RUNTIME_URL] postgresql://***:***@db.gubxjsbxolcfecyhtjzn.supabase.co:6543/postgres?pgbouncer=true
+ ⚠ ./app/companion/page.tsx
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./app/companion/page.tsx
+
+./lib/life/queue-life-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/life/queue-life-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+
+./lib/memory/queue-return-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/memory/queue-return-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+ ⚠ ./app/companion/page.tsx
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./app/companion/page.tsx
+
+./lib/life/queue-life-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/life/queue-life-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+
+./lib/memory/queue-return-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/memory/queue-return-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+ ⚠ ./app/companion/page.tsx
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./app/companion/page.tsx
+
+./lib/life/queue-life-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/life/queue-life-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+
+./lib/memory/queue-return-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/memory/queue-return-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+ ⚠ ./lib/life/queue-life-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/life/queue-life-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+
+./lib/memory/queue-return-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/memory/queue-return-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+ POST /api/auth/signup 307 in 570ms
+ POST /signup?error=Email%20address%20%22testuser%40example.com%22%20is%20invalid 200 in 44ms
+ GET /api/auth/session 200 in 12ms
+ GET /api/auth/session 200 in 7ms
+[PRISMA_RUNTIME_URL] host=db.gubxjsbxolcfecyhtjzn.supabase.co port=6543
+[PRISMA_RUNTIME_URL] postgresql://***:***@db.gubxjsbxolcfecyhtjzn.supabase.co:6543/postgres?pgbouncer=true
+ POST /api/auth/signup 307 in 1660ms
+ ⚠ ./lib/life/queue-life-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/life/queue-life-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+
+./lib/memory/queue-return-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/memory/queue-return-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+ ⚠ ./lib/life/queue-life-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/life/queue-life-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+
+./lib/memory/queue-return-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/memory/queue-return-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+ POST /onboarding 200 in 3607ms
+ GET /api/auth/session 200 in 19ms
+ GET /api/auth/session 200 in 16ms
+[PRISMA_RUNTIME_URL] host=db.gubxjsbxolcfecyhtjzn.supabase.co port=6543
+[PRISMA_RUNTIME_URL] postgresql://***:***@db.gubxjsbxolcfecyhtjzn.supabase.co:6543/postgres?pgbouncer=true
+ ⚠ ./lib/life/queue-life-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/life/queue-life-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+
+./lib/memory/queue-return-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/memory/queue-return-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+ ⚠ ./lib/life/queue-life-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/life/queue-life-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+
+./lib/memory/queue-return-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/memory/queue-return-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+ GET /member?_rsc=e3bn2 200 in 42ms
+ ⚠ ./lib/life/queue-life-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/life/queue-life-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+
+./lib/memory/queue-return-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/memory/queue-return-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+ ⚠ ./lib/life/queue-life-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/life/queue-life-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+
+./lib/memory/queue-return-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/memory/queue-return-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+ POST /api/auth/login 307 in 839ms
+ POST /login?error=Email%20not%20confirmed 200 in 79ms
+ ⚠ ./lib/life/queue-life-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/life/queue-life-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+
+./lib/memory/queue-return-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/memory/queue-return-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+ ⚠ ./lib/life/queue-life-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/life/queue-life-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+
+./lib/memory/queue-return-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/memory/queue-return-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+ GET /api/auth/session 200 in 233ms
+ GET /api/auth/session 200 in 6ms
+[PRISMA_RUNTIME_URL] host=db.gubxjsbxolcfecyhtjzn.supabase.co port=6543
+[PRISMA_RUNTIME_URL] postgresql://***:***@db.gubxjsbxolcfecyhtjzn.supabase.co:6543/postgres?pgbouncer=true
+ ⚠ ./lib/life/queue-life-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/life/queue-life-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+
+./lib/memory/queue-return-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/memory/queue-return-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+ ⚠ ./app/companion/page.tsx
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./app/companion/page.tsx
+
+./lib/life/queue-life-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/life/queue-life-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+
+./lib/memory/queue-return-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/memory/queue-return-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+ GET /companion 307 in 411ms
+ GET /login 200 in 22ms
+ GET /api/auth/session 200 in 9ms
+ GET /api/auth/session 200 in 6ms
+[PRISMA_RUNTIME_URL] host=db.gubxjsbxolcfecyhtjzn.supabase.co port=6543
+[PRISMA_RUNTIME_URL] postgresql://***:***@db.gubxjsbxolcfecyhtjzn.supabase.co:6543/postgres?pgbouncer=true
+ GET /login 200 in 22ms
+ GET /api/auth/session 200 in 8ms
+ GET /api/auth/session 200 in 9ms
+[PRISMA_RUNTIME_URL] host=db.gubxjsbxolcfecyhtjzn.supabase.co port=6543
+[PRISMA_RUNTIME_URL] postgresql://***:***@db.gubxjsbxolcfecyhtjzn.supabase.co:6543/postgres?pgbouncer=true
+ ⚠ ./lib/life/queue-life-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/life/queue-life-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+
+./lib/memory/queue-return-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/memory/queue-return-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+ ⚠ Duplicate page detected. app/api/ai/proxy/route.js and app/api/ai/proxy/route.ts resolve to /api/ai/proxy
+ ⚠ Duplicate page detected. app/api/ai/test-connection/route.js and app/api/ai/test-connection/route.ts resolve to /api/ai/test-connection
+ ⚠ ./lib/life/queue-life-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/life/queue-life-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+
+./lib/memory/queue-return-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/memory/queue-return-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+ ⚠ Duplicate page detected. app/api/ai/proxy/route.js and app/api/ai/proxy/route.ts resolve to /api/ai/proxy
+ ⚠ Duplicate page detected. app/api/ai/test-connection/route.js and app/api/ai/test-connection/route.ts resolve to /api/ai/test-connection
+ ⚠ ./lib/life/queue-life-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/life/queue-life-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+
+./lib/memory/queue-return-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/memory/queue-return-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+ ⚠ Duplicate page detected. app/api/ai/proxy/route.js and app/api/ai/proxy/route.ts resolve to /api/ai/proxy
+ ⚠ Duplicate page detected. app/api/ai/test-connection/route.js and app/api/ai/test-connection/route.ts resolve to /api/ai/test-connection
+ ⚠ ./lib/life/queue-life-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/life/queue-life-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+
+./lib/memory/queue-return-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/memory/queue-return-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+ ⚠ Duplicate page detected. app/api/ai/proxy/route.js and app/api/ai/proxy/route.ts resolve to /api/ai/proxy
+ ⚠ Duplicate page detected. app/api/ai/test-connection/route.js and app/api/ai/test-connection/route.ts resolve to /api/ai/test-connection
+ ⚠ ./lib/life/queue-life-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/life/queue-life-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+
+./lib/memory/queue-return-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/memory/queue-return-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+ ⚠ Duplicate page detected. app/api/ai/proxy/route.js and app/api/ai/proxy/route.ts resolve to /api/ai/proxy
+ ⚠ Duplicate page detected. app/api/ai/test-connection/route.js and app/api/ai/test-connection/route.ts resolve to /api/ai/test-connection
+ ⚠ ./lib/life/queue-life-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/life/queue-life-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+
+./lib/memory/queue-return-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/memory/queue-return-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+ ⚠ ./lib/life/queue-life-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/life/queue-life-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+
+./lib/memory/queue-return-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/memory/queue-return-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (155kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (101kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (231kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+ ⚠ ./lib/life/queue-life-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/life/queue-life-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+
+./lib/memory/queue-return-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/memory/queue-return-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+ ⚠ Duplicate page detected. app/api/ai/proxy/route.js and app/api/ai/proxy/route.ts resolve to /api/ai/proxy
+ ⚠ Duplicate page detected. app/api/ai/test-connection/route.js and app/api/ai/test-connection/route.ts resolve to /api/ai/test-connection
+ ⚠ ./lib/life/queue-life-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/life/queue-life-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+
+./lib/memory/queue-return-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/memory/queue-return-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+ ⚠ Duplicate page detected. app/api/ai/proxy/route.js and app/api/ai/proxy/route.ts resolve to /api/ai/proxy
+ ⚠ Duplicate page detected. app/api/ai/test-connection/route.js and app/api/ai/test-connection/route.ts resolve to /api/ai/test-connection
+ ⚠ ./lib/life/queue-life-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/life/queue-life-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+
+./lib/memory/queue-return-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/memory/queue-return-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+ ⚠ Duplicate page detected. app/api/ai/proxy/route.js and app/api/ai/proxy/route.ts resolve to /api/ai/proxy
+ ⚠ Duplicate page detected. app/api/ai/test-connection/route.js and app/api/ai/test-connection/route.ts resolve to /api/ai/test-connection
+ ⚠ ./lib/life/queue-life-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/life/queue-life-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+
+./lib/memory/queue-return-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/memory/queue-return-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+ ⚠ Duplicate page detected. app/api/ai/proxy/route.js and app/api/ai/proxy/route.ts resolve to /api/ai/proxy
+ ⚠ Duplicate page detected. app/api/ai/test-connection/route.js and app/api/ai/test-connection/route.ts resolve to /api/ai/test-connection
+ ⚠ ./lib/life/queue-life-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/life/queue-life-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+
+./lib/memory/queue-return-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/memory/queue-return-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+ ⚠ Duplicate page detected. app/api/ai/proxy/route.js and app/api/ai/proxy/route.ts resolve to /api/ai/proxy
+ ⚠ Duplicate page detected. app/api/ai/test-connection/route.js and app/api/ai/test-connection/route.ts resolve to /api/ai/test-connection
+ ⚠ ./lib/life/queue-life-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/life/queue-life-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+
+./lib/memory/queue-return-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/memory/queue-return-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+ ⚠ Duplicate page detected. app/api/ai/proxy/route.js and app/api/ai/proxy/route.ts resolve to /api/ai/proxy
+ ⚠ Duplicate page detected. app/api/ai/test-connection/route.js and app/api/ai/test-connection/route.ts resolve to /api/ai/test-connection
+ ⚠ ./lib/life/queue-life-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/life/queue-life-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+
+./lib/memory/queue-return-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/memory/queue-return-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+ ⚠ Duplicate page detected. app/api/ai/proxy/route.js and app/api/ai/proxy/route.ts resolve to /api/ai/proxy
+ ⚠ Duplicate page detected. app/api/ai/test-connection/route.js and app/api/ai/test-connection/route.ts resolve to /api/ai/test-connection
+ ⚠ ./lib/memory/queue-return-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/memory/queue-return-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+ ⚠ ./lib/memory/queue-return-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/memory/queue-return-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+ ⚠ ./lib/memory/queue-return-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/memory/queue-return-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+ ⚠ Duplicate page detected. app/api/ai/proxy/route.js and app/api/ai/proxy/route.ts resolve to /api/ai/proxy
+ ⚠ Duplicate page detected. app/api/ai/test-connection/route.js and app/api/ai/test-connection/route.ts resolve to /api/ai/test-connection
+ ⚠ ./lib/memory/queue-return-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/memory/queue-return-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+ ⚠ Duplicate page detected. app/api/ai/proxy/route.js and app/api/ai/proxy/route.ts resolve to /api/ai/proxy
+ ⚠ Duplicate page detected. app/api/ai/test-connection/route.js and app/api/ai/test-connection/route.ts resolve to /api/ai/test-connection
+ ⚠ ./lib/memory/queue-return-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/memory/queue-return-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+ ⚠ Duplicate page detected. app/api/ai/proxy/route.js and app/api/ai/proxy/route.ts resolve to /api/ai/proxy
+ ⚠ Duplicate page detected. app/api/ai/test-connection/route.js and app/api/ai/test-connection/route.ts resolve to /api/ai/test-connection
+ ⚠ ./lib/memory/queue-return-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/memory/queue-return-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+ ⚠ Duplicate page detected. app/api/ai/proxy/route.js and app/api/ai/proxy/route.ts resolve to /api/ai/proxy
+ ⚠ Duplicate page detected. app/api/ai/test-connection/route.js and app/api/ai/test-connection/route.ts resolve to /api/ai/test-connection
+ ⚠ ./lib/memory/queue-return-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/memory/queue-return-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+ ⚠ Duplicate page detected. app/api/ai/proxy/route.js and app/api/ai/proxy/route.ts resolve to /api/ai/proxy
+ ⚠ Duplicate page detected. app/api/ai/test-connection/route.js and app/api/ai/test-connection/route.ts resolve to /api/ai/test-connection
+ ⚠ ./lib/memory/queue-return-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/memory/queue-return-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+ ⚠ Duplicate page detected. app/api/ai/proxy/route.js and app/api/ai/proxy/route.ts resolve to /api/ai/proxy
+ ⚠ Duplicate page detected. app/api/ai/test-connection/route.js and app/api/ai/test-connection/route.ts resolve to /api/ai/test-connection
+ ⚠ ./lib/memory/queue-return-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/memory/queue-return-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+ ⚠ Duplicate page detected. app/api/ai/proxy/route.js and app/api/ai/proxy/route.ts resolve to /api/ai/proxy
+ ⚠ Duplicate page detected. app/api/ai/test-connection/route.js and app/api/ai/test-connection/route.ts resolve to /api/ai/test-connection
+ ⚠ ./lib/memory/queue-return-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/memory/queue-return-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (155kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (101kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (231kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+ ⚠ ./lib/memory/queue-return-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/memory/queue-return-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+ ⚠ Duplicate page detected. app/api/ai/proxy/route.js and app/api/ai/proxy/route.ts resolve to /api/ai/proxy
+ ⚠ Duplicate page detected. app/api/ai/test-connection/route.js and app/api/ai/test-connection/route.ts resolve to /api/ai/test-connection
+ ⚠ ./lib/memory/queue-return-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/memory/queue-return-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+ ⚠ Duplicate page detected. app/api/ai/proxy/route.js and app/api/ai/proxy/route.ts resolve to /api/ai/proxy
+ ⚠ Duplicate page detected. app/api/ai/test-connection/route.js and app/api/ai/test-connection/route.ts resolve to /api/ai/test-connection
+ ⚠ ./lib/memory/queue-return-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/memory/queue-return-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+ ⚠ Duplicate page detected. app/api/ai/proxy/route.js and app/api/ai/proxy/route.ts resolve to /api/ai/proxy
+ ⚠ Duplicate page detected. app/api/ai/test-connection/route.js and app/api/ai/test-connection/route.ts resolve to /api/ai/test-connection
+ ⚠ ./lib/memory/queue-return-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/memory/queue-return-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+ ⚠ Duplicate page detected. app/api/ai/proxy/route.js and app/api/ai/proxy/route.ts resolve to /api/ai/proxy
+ ⚠ Duplicate page detected. app/api/ai/test-connection/route.js and app/api/ai/test-connection/route.ts resolve to /api/ai/test-connection
+ ⚠ Duplicate page detected. app/api/ai/proxy/route.js and app/api/ai/proxy/route.ts resolve to /api/ai/proxy
+ ⚠ Duplicate page detected. app/api/ai/test-connection/route.js and app/api/ai/test-connection/route.ts resolve to /api/ai/test-connection
+ ⚠ Duplicate page detected. app/api/ai/proxy/route.js and app/api/ai/proxy/route.ts resolve to /api/ai/proxy
+ ⚠ Duplicate page detected. app/api/ai/test-connection/route.js and app/api/ai/test-connection/route.ts resolve to /api/ai/test-connection
+ ⚠ ./lib/memory/queue-return-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/memory/queue-return-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts
+ ⚠ Duplicate page detected. app/api/ai/proxy/route.js and app/api/ai/proxy/route.ts resolve to /api/ai/proxy
+ ⚠ Duplicate page detected. app/api/ai/test-connection/route.js and app/api/ai/test-connection/route.ts resolve to /api/ai/test-connection
+ ⚠ ./lib/memory/queue-return-jobs.ts
+Attempted import error: 'checkAIAvailability' is not exported from '@/lib/ai/gemini' (imported as 'checkAIAvailability').
+
+Import trace for requested module:
+./lib/memory/queue-return-jobs.ts
+./app/actions/ai-processing.ts
+./app/actions/capture.ts

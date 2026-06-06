@@ -1,11 +1,11 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { userRepository } from "@/lib/repositories/user.repository";
+import { apiKeyRepository } from "@/lib/repositories/api-key.repository";
 import { subscriptionRepository } from "@/lib/repositories/subscription.repository";
 import { subscriptionService } from "@/lib/services/subscription.service";
 import { prisma } from "@/lib/prisma";
 import { SettingsClient } from "@/components/member/settings-client";
-import { checkAIAvailability } from "@/lib/ai/gemini";
 
 export const dynamic = "force-dynamic";
 
@@ -23,14 +23,18 @@ export default async function MemberSettingsPage() {
     redirect("/login");
   }
 
-  const [aiResult, subscription] = await Promise.all([
-    checkAIAvailability(userId),
+  const [apiKeyRecord, userAiSettings, subscription] = await Promise.all([
+    apiKeyRepository.findByUserIdAndProvider(userId, "gemini"),
+    prisma.userAISettings.findUnique({ where: { userId } }),
     subscriptionRepository.findByUserId(userId),
   ]);
 
   const isAdmin = user.role === "ADMIN" || user.role === "SUPER_ADMIN";
   const isPaidMember = isAdmin || await subscriptionService.hasActiveSubscription(userId);
-  const hasKey = aiResult.available;
+  const hasKey = !!(
+    apiKeyRecord?.encryptedKey ||
+    userAiSettings?.encryptedApiKey
+  );
   const stripePriceId = subscription?.stripePriceId;
 
   return (

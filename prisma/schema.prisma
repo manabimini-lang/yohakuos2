@@ -10,6 +10,14 @@ datasource db {
   extensions = [vector]
 }
 
+enum RecommendationStrategy {
+  SMALL_WIN
+  RECOVERY
+  CHALLENGE
+  EXPLORATION
+  REFLECTION
+}
+
 enum UserRole {
   SUPER_ADMIN
   ADMIN

@@ -2,9 +2,9 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { AiChatClient } from "@/components/member/ai-chat-client";
 import { userRepository } from "@/lib/repositories/user.repository";
+import { apiKeyRepository } from "@/lib/repositories/api-key.repository";
 import { prisma } from "@/lib/prisma";
 import { PremiumInvitation } from "@/components/member/premium-invitation";
-import { checkAIAvailability } from "@/lib/ai/gemini";
 
 export const metadata = {
   title: "思考の整理 - YOHAKU",
@@ -33,8 +33,15 @@ export default async function AiPage() {
     }
     isPremium = hasPremiumAccess(user.plan, user.role);
 
-    const aiResult = await checkAIAvailability(userId);
-    hasKey = aiResult.available;
+    const [apiKeyRecord, userAiSettings] = await Promise.all([
+      apiKeyRepository.findByUserIdAndProvider(userId, "gemini"),
+      prisma.userAISettings.findUnique({ where: { userId } }),
+    ]);
+
+    hasKey = !!(
+      apiKeyRecord?.encryptedKey ||
+      userAiSettings?.encryptedApiKey
+    );
   } catch (error) {
     console.warn("Database connection failed, falling back to mock session for frontend demonstration:", error);
     isPremium = hasPremiumAccess(session.user.plan, session.user.role);

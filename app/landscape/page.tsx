@@ -4,7 +4,6 @@ import { prisma } from "@/lib/prisma";
 import LandscapeTrigger from "@/components/landscape/landscape-trigger";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
-import { checkAIAvailability } from "@/lib/ai/gemini";
 
 export const metadata = {
     title: "内面の風景 — YOHAKU",
@@ -34,7 +33,7 @@ export default async function LandscapePage() {
 
     const userId = session.user.id;
 
-    const [landscape, itemCount, latestJob, aiResult] = await Promise.all([
+    const [landscape, itemCount, latestJob, userSettings] = await Promise.all([
         prisma.innerLandscape.findFirst({
             where: { userId },
             orderBy: { generatedAt: "desc" },
@@ -47,9 +46,10 @@ export default async function LandscapePage() {
             },
             orderBy: { createdAt: "desc" },
         }),
-        checkAIAvailability(userId),
+        prisma.userAISettings.findUnique({
+            where: { userId },
+        }),
     ]);
-    const hasAiConnection = aiResult.available;
 
     const hasPendingJob = latestJob ? (latestJob.status === "pending" || latestJob.status === "processing") : false;
     const isFailed = latestJob ? (latestJob.status === "failed") : false;
@@ -78,7 +78,7 @@ export default async function LandscapePage() {
                 </header>
 
                 {/* AI status / Unified guidance card */}
-                {!hasAiConnection && (
+                {!userSettings?.isEnabled && (
                     <div className="p-8 rounded-2xl border border-stone-200 bg-white space-y-4">
                         <p className="text-sm text-stone-700 leading-relaxed font-light">
                             AI接続がまだ行われていません。
@@ -99,7 +99,7 @@ export default async function LandscapePage() {
                 )}
 
                 {/* AI Failure Recovery UX Card */}
-                {hasAiConnection && isFailed && (
+                {userSettings?.isEnabled && isFailed && (
                     <div className="p-8 rounded-2xl border border-stone-200 bg-white space-y-4">
                         <p className="text-sm text-stone-700 leading-relaxed font-light">
                             AIは今夜、静かに休んでいます。
@@ -129,7 +129,7 @@ export default async function LandscapePage() {
                 )}
 
                 {/* Landscape content */}
-                {hasAiConnection && landscape ? (
+                {userSettings?.isEnabled && landscape ? (
                     <div className="space-y-8">
 
                         {/* Seasonal Air */}
@@ -248,7 +248,7 @@ export default async function LandscapePage() {
                 ) : null}
 
                 {/* Manual Trigger */}
-                {hasAiConnection && (
+                {userSettings?.isEnabled && (
                     <LandscapeTrigger
                         hasLandscape={!!landscape}
                         hasPendingJob={hasPendingJob}

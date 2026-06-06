@@ -1,0 +1,18 @@
+ENV CHECK:
+DATABASE_URL= true
+GOOGLE_CLIENT_ID= true
+GOOGLE_CLIENT_SECRET= true
+NEXTAUTH_URL= true
+NEXTAUTH_SECRET= true
+SUPABASE_URL= true
+SUPABASE_ANON_KEY= true
+SUPABASE_SERVICE_ROLE_KEY= true
+ERROR: PrismaClientInitializationError: Can't reach database server at `db.gubxjsbxolcfecyhtjzn.supabase.co:5432`
+
+Please make sure your database server is running at `db.gubxjsbxolcfecyhtjzn.supabase.co:5432`.
+    at r (/Users/matsumotoyouhei/Documents/YOHAKUOS2/node_modules/@prisma/client/runtime/library.js:112:2565)
+    at async /Users/matsumotoyouhei/Documents/YOHAKUOS2/yohaku_audit.js:16:5 {
+  clientVersion: '6.9.0',
+  errorCode: 'P1001',
+  retryable: undefined
+}

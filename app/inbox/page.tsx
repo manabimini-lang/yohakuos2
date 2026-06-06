@@ -7,7 +7,6 @@ import { Metadata } from "next";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { getStarterJourneyStatus } from "@/lib/ai/starter-journey";
-import { checkAIAvailability } from "@/lib/ai/gemini";
 
 export const metadata: Metadata = {
   title: "Inbox | YOHAKU",
@@ -31,8 +30,10 @@ export default async function InboxPage() {
     },
   });
 
-  const [aiResult, starterJourney] = await Promise.all([
-    checkAIAvailability(userId),
+  const [userSettings, starterJourney] = await Promise.all([
+    prisma.userAISettings.findUnique({
+      where: { userId },
+    }),
     getStarterJourneyStatus(userId),
   ]);
 
@@ -42,7 +43,7 @@ export default async function InboxPage() {
     day: "numeric",
   });
 
-  const hasAiAccess = aiResult.available || starterJourney.active;
+  const hasAiAccess = userSettings?.isEnabled || starterJourney.active;
   const showHiddenFeatures = items.length >= 5 && hasAiAccess;
 
   return (
