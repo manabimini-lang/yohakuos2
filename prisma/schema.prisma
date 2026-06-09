@@ -3,6 +3,28 @@ generator client {
   previewFeatures = ["postgresqlExtensions"]
 }
 
+enum SnapshotStatus {
+  GENERATED
+  EMPTY_WEEK
+  AI_FAILED
+}
+
+enum WisdomInsightType {
+  ALIGNMENT
+  DIVERGENCE
+  EMERGING_PATTERN
+  COMMUNITY_SIGNAL
+}
+
+enum ReflectionTheme {
+  GROWTH
+  RESTORATION
+  CONNECTION
+  EXPLORATION
+  STABILITY
+  CREATIVITY
+}
+
 datasource db {
   provider   = "postgresql"
   url        = env("DATABASE_URL")
@@ -141,6 +163,7 @@ model User {
   reflections    Reflection[]
   userMemories   UserMemory[]
   knowledgeCards KnowledgeCard[]
+  wisdomInsights WisdomInsight[]
 
   // Life OS Layer relations
   ambientInsights        AmbientInsight[]
@@ -1374,4 +1397,51 @@ model AudioReflection {
   @@index([userId])
   @@index([status])
   @@map("audio_reflections")
+}
+
+model CommunityReflectionSnapshot {
+  id                        String           @id @default(cuid())
+
+  periodStart               DateTime         @map("period_start")
+  periodEnd                 DateTime         @map("period_end")
+
+  summary                   String           @db.Text
+
+  dominantTheme             ReflectionTheme? @map("dominant_theme")
+  dominantThemeConfidence   Float?           @map("dominant_theme_confidence")
+
+  restorationScore          Float            @default(0) @map("restoration_score")
+  growthScore               Float            @default(0) @map("growth_score")
+  connectionScore           Float            @default(0) @map("connection_score")
+
+  momentCount               Int              @default(0) @map("moment_count")
+  inspiredCount             Int              @default(0) @map("inspired_count")
+
+  trendDirection            Int              @default(0) @map("trend_direction")
+
+  status                    SnapshotStatus   @default(GENERATED)
+
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@unique([periodStart, periodEnd])
+  @@index([createdAt])
+  @@index([status])
+  @@map("community_reflection_snapshots")
+}
+
+model WisdomInsight {
+  id          String   @id @default(cuid())
+  userId      String   @map("user_id")
+  title       String
+  content     String   @db.Text
+  insightType WisdomInsightType
+  score       Float?
+  metadata    Json?    @db.JsonB
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("wisdom_insights")
 }
