@@ -5,16 +5,8 @@ import { CaptureLayer } from "@/components/capture/CaptureLayer";
 import BottomNav from "@/components/ui/BottomNav";
 
 export const dynamic = "force-dynamic";
-import { Noto_Sans_JP } from "next/font/google";
 
 import "./globals.css";
-
-const notoSansJP = Noto_Sans_JP({
-  subsets: ["latin"],
-  weight: ["300", "400", "500"],
-  variable: "--font-sans",
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   title: {
@@ -48,13 +40,13 @@ export default async function RootLayout({
   const session = await auth();
 
   return (
-    <html lang="ja" className={notoSansJP.variable}>
+    <html lang="ja">
       <head>
         <meta name="theme-color" content="#111111" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
       </head>
-      <body className={`${notoSansJP.className} min-h-screen bg-[#090909] text-slate-100 antialiased`}> 
+      <body className="min-h-screen bg-[#090909] text-slate-100 antialiased">
         <SessionProvider session={session}>
           <PWAProvider>
             <div className="min-h-screen">

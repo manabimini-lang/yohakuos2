@@ -25,7 +25,7 @@ export async function processAIAnalysis(
   // 1. Mark as processing
   await prisma.contentItem.update({
     where: { id: contentItemId },
-    data: { aiStatus: "processing" },
+    data: { aiProcessedAt: null },
   });
 
   try {
@@ -51,7 +51,7 @@ export async function processAIAnalysis(
     if (!textForAnalysis) {
       await prisma.contentItem.update({
         where: { id: contentItemId },
-        data: { aiStatus: "completed", aiProcessedAt: new Date() },
+        data: { aiProcessedAt: new Date() },
       });
       return;
     }
@@ -66,7 +66,7 @@ export async function processAIAnalysis(
       // AI is disabled / not connected
       await prisma.contentItem.update({
         where: { id: contentItemId },
-        data: { aiStatus: "disabled", aiProcessedAt: new Date() },
+        data: { aiProcessedAt: new Date() },
       });
       await prisma.aIJob.updateMany({
         where: {
@@ -90,7 +90,9 @@ export async function processAIAnalysis(
     ]);
 
     const resolvedSummary =
-      summary.status === "fulfilled" ? summary.value : null;
+      summary.status === "fulfilled" ? summary.value.summary : null;
+    const resolvedSuggestedTitle =
+      summary.status === "fulfilled" ? summary.value.suggestedTitle : null;
     const resolvedTags =
       tags.status === "fulfilled" ? tags.value : [];
     const resolvedContentType =
@@ -105,6 +107,7 @@ export async function processAIAnalysis(
         contentItemId,
         userId,
         summary: resolvedSummary.slice(0, 120),
+        suggestedTitle: resolvedSuggestedTitle,
       });
     } else {
       console.log("SUMMARY FAILED TO GENERATE", { contentItemId, userId });
@@ -113,10 +116,11 @@ export async function processAIAnalysis(
     // 6. Build update payload
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const updateData: any = {
-      aiStatus: "completed",
       aiVersion: AI_VERSION,
       aiProcessedAt: new Date(),
       ...(resolvedSummary !== null && { summary: resolvedSummary }),
+      ...(resolvedSuggestedTitle !== null &&
+        !item.title?.trim() && { title: resolvedSuggestedTitle }),
       ...(resolvedTags.length > 0 && { aiTags: resolvedTags }),
       ...(resolvedContentType !== null && { contentType: resolvedContentType }),
     };
@@ -235,7 +239,7 @@ export async function processAIAnalysis(
 
     await prisma.contentItem.update({
       where: { id: contentItemId },
-      data: { aiStatus: "failed" },
+      data: { aiProcessedAt: new Date() },
     });
 
     await prisma.aIJob.updateMany({

@@ -20,12 +20,6 @@ export async function GET(
     });
 
     if (item && item.userId === session.user.id) {
-      // Re-mark the item's aiStatus as "pending"
-      await prisma.contentItem.update({
-        where: { id: contentItemId },
-        data: { aiStatus: "pending" },
-      });
-
       // Find corresponding content_analysis AIJob and reset it
       await prisma.aIJob.updateMany({
         where: {

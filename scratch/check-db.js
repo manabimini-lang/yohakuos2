@@ -20,7 +20,7 @@ async function main() {
       console.log(`ID: ${item.id}`);
       console.log(`Title: ${item.title}`);
       console.log(`Type: ${item.type}`);
-      console.log(`AI Status: ${item.aiStatus}`);
+      console.log(`AI Processed At: ${item.aiProcessedAt}`);
       console.log(`Has Summary: ${!!item.summary}`);
       console.log(`Has AI Tags: ${item.aiTags && item.aiTags.length > 0}`);
       console.log(`Has Embedding: ${item.embeddingDimensions !== null}`);

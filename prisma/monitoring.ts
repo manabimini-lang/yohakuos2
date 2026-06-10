@@ -1,49 +1,80 @@
+import { WisdomInsightType } from "@prisma/client";
+
 import { prisma } from "@/lib/prisma";
-import { ShareStatus, WisdomInsightType } from "@prisma/client";
 
 export async function getCommunityHealthMetrics() {
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-  
-  const [total, successCount, failedCount, types, recentCount, moments, inspired, topMoments] = await Promise.all([
-    prisma.communityShare.count(),
-    prisma.communityShare.count({ where: { status: 'POSTED' } }),
-    prisma.communityShare.count({ where: { status: 'FAILED' } }),
-    prisma.communityShare.groupBy({ by: ['type'], _count: true }),
-    prisma.communityShare.count({ where: { createdAt: { gte: sevenDaysAgo } } }),
-    prisma.communityMoment.count(),
-    prisma.communityInspiredEvent.count(),
-    prisma.communityMoment.findMany({
-      where: { isVisible: true },
-      orderBy: { inspiredCount: 'desc' },
-      take: 5,
-      select: { content: true, inspiredCount: true }
-    }),
-    prisma.wisdomInsight.count(),
-    prisma.wisdomInsight.groupBy({
-      by: ['insightType'],
-      _count: true
-    })
-  ]);
 
-  const successRate = total > 0 ? (successCount / total) * 100 : 0;
-  const totalJobs = await prisma.shareJob.count();
-  const completedJobs = await prisma.shareJob.count({ where: { status: ShareStatus.COMPLETED } });
+  const [snapshots, recentSnapshots, snapshotGroups, insightGroups, totalInsights] =
+    await Promise.all([
+      prisma.communityReflectionSnapshot.findMany({
+        orderBy: { createdAt: "desc" },
+        take: 20,
+        select: {
+          summary: true,
+          inspiredCount: true,
+          status: true,
+          createdAt: true,
+        },
+      }),
+      prisma.communityReflectionSnapshot.count({
+        where: { createdAt: { gte: sevenDaysAgo } },
+      }),
+      prisma.communityReflectionSnapshot.groupBy({
+        by: ["status"],
+        _count: true,
+      }),
+      prisma.wisdomInsight.groupBy({
+        by: ["insightType"],
+        _count: true,
+      }),
+      prisma.wisdomInsight.count(),
+    ]);
 
-  const alignmentCount = insightsGroup.find(g => g.insightType === WisdomInsightType.ALIGNMENT)?._count || 0;
-  const alignmentRate = insightsCount > 0 ? `${((alignmentCount / insightsCount) * 100).toFixed(1)}%` : "0%";
+  const generatedSnapshots = snapshotGroups.find(
+    (group) => group.status === "GENERATED"
+  )?._count ?? 0;
+  const failedSnapshots = snapshotGroups.find(
+    (group) => group.status === "AI_FAILED"
+  )?._count ?? 0;
+  const totalSnapshots = snapshotGroups.reduce(
+    (sum, group) => sum + group._count,
+    0
+  );
+  const alignmentCount =
+    insightGroups.find(
+      (group) => group.insightType === WisdomInsightType.ALIGNMENT
+    )?._count ?? 0;
+  const alignmentRate =
+    totalInsights > 0 ? `${((alignmentCount / totalInsights) * 100).toFixed(1)}%` : "0%";
 
   return {
-    totalShares: total,
-    discordSuccessRate: totalJobs > 0 ? `${((completedJobs / totalJobs) * 100).toFixed(1)}%` : "0%",
-    typeDistribution: types.map(t => ({ type: t.type, count: t._count })),
-    shareFailures7d: failedCount,
-    last7DaysShares: recentCount,
-    totalMoments: moments,
-    totalInspiredEvents: inspired,
-    topMoments: topMoments,
-    retryRate: totalJobs > 0 ? (await prisma.shareJob.aggregate({ _sum: { retryCount: true } }))._sum.retryCount : 0,
-    totalWisdomInsights: insightsCount,
-    insightDistribution: insightsGroup.map(g => ({ type: g.insightType, count: g._count })),
-    alignmentRate
+    totalShares: totalSnapshots,
+    discordSuccessRate:
+      totalSnapshots > 0
+        ? `${((generatedSnapshots / totalSnapshots) * 100).toFixed(1)}%`
+        : "0%",
+    typeDistribution: snapshotGroups.map((group) => ({
+      type: group.status,
+      count: group._count,
+    })),
+    shareFailures7d: failedSnapshots,
+    last7DaysShares: recentSnapshots,
+    totalMoments: snapshots.length,
+    totalInspiredEvents: snapshots.reduce(
+      (sum, snapshot) => sum + snapshot.inspiredCount,
+      0
+    ),
+    topMoments: snapshots.map((snapshot) => ({
+      content: snapshot.summary,
+      inspiredCount: snapshot.inspiredCount,
+    })),
+    retryRate: 0,
+    totalWisdomInsights: totalInsights,
+    insightDistribution: insightGroups.map((group) => ({
+      type: group.insightType,
+      count: group._count,
+    })),
+    alignmentRate,
   };
 }

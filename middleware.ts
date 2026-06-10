@@ -30,6 +30,8 @@ export async function middleware(request: NextRequest) {
     const ip = req.headers.get("x-forwarded-for") ?? "127.0.0.1";
     const path = req.nextUrl.pathname;
 
+    const protectedRoutes = ["/settings"];
+
     // NextAuth paths should bypass rate limiting to prevent OAuth failure
     if (path.startsWith("/api/auth")) {
       return NextResponse.next();

@@ -3,10 +3,6 @@
     {
       "path": "/api/internal/process-ai-jobs",
       "schedule": "0 0 * * *"
-    },
-    {
-      "path": "/api/internal/process-collective-wisdom",
-      "schedule": "30 0 * * 0"
     }
   ]
 }

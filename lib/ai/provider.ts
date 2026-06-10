@@ -17,6 +17,11 @@ export interface SummarizeOptions {
   language?: "ja" | "en"; // Default: "ja"
 }
 
+export interface SummarizeResult {
+  summary: string;
+  suggestedTitle: string;
+}
+
 export interface TagOptions {
   maxTags?: number; // Default: 5
   minTags?: number; // Default: 3
@@ -36,7 +41,7 @@ export interface AIProvider {
    * 短文要約（最大120文字）
    * トーン：落ち着いた、誇張しない、知的
    */
-  summarize(text: string, options?: SummarizeOptions): Promise<string>;
+  summarize(text: string, options?: SummarizeOptions): Promise<SummarizeResult>;
 
   /**
    * タグ生成（3〜5個）

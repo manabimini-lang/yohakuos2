@@ -1260,7 +1260,6 @@ model ContentItem {
   aiTags              String[]                    @map("ai_tags")
   contentType         String?                     @map("content_type")
   reflection          String?                     @db.Text
-  aiStatus            String                      @default("pending") @map("ai_status")
   embedding           Unsupported("vector(768)")?
   embeddingModel      String?                     @map("embedding_model")
   embeddingDimensions Int?                        @map("embedding_dimensions")

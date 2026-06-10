@@ -131,9 +131,7 @@ export default async function InboxDetailPage({ params }: { params: { id: string
         </section>
 
         <section className="space-y-4 rounded-3xl border border-white/10 bg-white/5 p-6">
-          {item.aiStatus === "pending" || item.aiStatus === "processing" ? (
-            <p className="text-sm leading-relaxed text-slate-400">まだ静かに整理されています。</p>
-          ) : item.aiStatus === "failed" ? (
+          {lastError ? (
             <div className="space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-500">
               <p className="text-sm leading-relaxed text-slate-300">{errorDetails.message}</p>
               <p className="text-xs leading-relaxed text-slate-500 font-light leading-relaxed">
@@ -158,22 +156,8 @@ export default async function InboxDetailPage({ params }: { params: { id: string
                 </Link>
               </div>
             </div>
-          ) : item.aiStatus === "disabled" ? (
-            <div className="space-y-3">
-              <p className="text-sm leading-relaxed text-slate-300">AI接続がまだ行われていません。</p>
-              <p className="text-xs leading-relaxed text-slate-500 font-light">
-                Gemini APIキーを設定すると、保存した記録が静かに整えられ、パーソナルAIとの対話や、内面の風景の描画が始まります。
-              </p>
-              <div className="pt-1">
-                <Link
-                  href="/settings/ai"
-                  className="inline-flex items-center text-xs font-light text-slate-400 hover:text-slate-200 transition-colors group"
-                >
-                  AI設定へ
-                  <ChevronRight className="w-3 h-3 ml-1 group-hover:translate-x-1 transition-transform" />
-                </Link>
-              </div>
-            </div>
+          ) : !item.summary ? (
+            <p className="text-sm leading-relaxed text-slate-400">まだ静かに整理されています。</p>
           ) : null}
 
           {item.summary ? (

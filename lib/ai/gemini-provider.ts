@@ -3,6 +3,7 @@ import type {
   AIProvider,
   ContentItemType,
   SummarizeOptions,
+  SummarizeResult,
   TagOptions,
 } from "./provider";
 
@@ -27,7 +28,9 @@ const SUMMARIZE_SYSTEM = `あなたは静かな知識整理の補助AIです。
 - YouTube的な煽り表現（「衝撃」「神回」「必見」等）を使わない
 - 知的で落ち着いたトーンで記述する
 - 日本語で出力する
-- 要約のみを出力し、余計な説明を加えない`;
+- JSONのみを出力する
+- 形式は {"summary":"...","suggestedTitle":"..."} とする
+- summary は要約のみ、suggestedTitle は短い題名候補とする`;
 
 // Tagger system prompt
 const TAGGER_SYSTEM = `あなたは静かな知識整理の補助AIです。
@@ -82,16 +85,26 @@ export class GeminiProvider implements AIProvider {
     };
   }
 
-  async summarize(text: string, options?: SummarizeOptions): Promise<string> {
+  async summarize(text: string, options?: SummarizeOptions): Promise<SummarizeResult> {
     const maxChars = options?.maxChars ?? 120;
-    const prompt = `以下のテキストを最大${maxChars}文字で要約してください：\n\n${text.slice(0, 3000)}`;
+    const prompt = `以下のテキストを最大${maxChars}文字で要約してください。要約と題名候補を返してください。\n\n${text.slice(0, 3000)}`;
 
     try {
-      const result = await generateText(prompt, SUMMARIZE_SYSTEM, this.getRequestOptions());
-      return result.text.trim().slice(0, maxChars);
+      const result = await generateJSON<{
+        summary?: string;
+        suggestedTitle?: string;
+      }>(prompt, SUMMARIZE_SYSTEM, this.getRequestOptions());
+      const summary = this.normalizeSummary(result.data?.summary ?? text, maxChars);
+      const suggestedTitle = this.normalizeSuggestedTitle(
+        result.data?.suggestedTitle ?? summary
+      );
+      return { summary, suggestedTitle };
     } catch (error) {
       console.error("[GeminiProvider.summarize] error:", error);
-      return "";
+      return {
+        summary: this.normalizeSummary(text, maxChars),
+        suggestedTitle: this.normalizeSuggestedTitle(text),
+      };
     }
   }
 
@@ -197,6 +210,17 @@ export class GeminiProvider implements AIProvider {
       console.error("[GeminiProvider.generateInsight] error:", error);
       return "";
     }
+  }
+
+  private normalizeSummary(text: string, maxChars: number): string {
+    return text.trim().replace(/\s+/g, " ").slice(0, maxChars);
+  }
+
+  private normalizeSuggestedTitle(text: string): string {
+    return text
+      .trim()
+      .replace(/\s+/g, " ")
+      .slice(0, 48);
   }
 }
 

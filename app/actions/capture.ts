@@ -107,7 +107,6 @@ export async function saveUrlContent(url: string, reflection?: string): Promise<
         domain,
         thumbnailUrl,
         reflection: reflection?.trim() || null,
-        aiStatus: "pending",
       },
     });
 
@@ -196,7 +195,6 @@ export async function savePdfFile(formData: FormData): Promise<{
         fileSize: file.size,
         title: file.name.replace(/\.pdf$/i, ""),
         reflection: reflection?.trim() || null,
-        aiStatus: "pending",
       },
     });
 
