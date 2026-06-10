@@ -1271,9 +1271,34 @@ model ContentItem {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  resurfacings MemoryResurfacing[] // E-4A: Relation to MemoryResurfacing
+  // E-3: Memory Linkage
+  linksFrom MemoryLink[] @relation("SourceLink")
+  linksTo   MemoryLink[] @relation("TargetLink")
+
   @@index([userId])
   @@index([createdAt])
   @@map("content_items")
+}
+
+// ===================================================
+// YOHAKU Memory Layer
+// ===================================================
+
+model MemoryLink {
+  id         String   @id @default(cuid())
+  sourceId   String   @map("source_id")
+  targetId   String   @map("target_id")
+  similarity Float
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  source ContentItem @relation("SourceLink", fields: [sourceId], references: [id], onDelete: Cascade)
+  target ContentItem @relation("TargetLink", fields: [targetId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceId, targetId])
+  @@index([sourceId])
+  @@index([targetId])
+  @@map("memory_links")
 }
 
 // ===================================================
