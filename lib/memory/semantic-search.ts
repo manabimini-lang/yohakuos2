@@ -1,5 +1,4 @@
 import { prisma } from "@/lib/prisma";
-import { Prisma } from "@prisma/client"; // Import Prisma for raw SQL safety
 
 export interface SimilarContentResult {
   id: string;
@@ -25,31 +24,41 @@ export async function findSimilarContent(
 
   const vectorString = `[${embedding.join(",")}]`;
   
-  // Security: Construct dynamic SQL clause using Prisma.sql for injection safety
-  const excludeClause = excludeId 
-    ? Prisma.sql`AND id != ${excludeId}` 
-    : Prisma.empty;
+  const results = excludeId
+    ? await prisma.$queryRaw<any[]>`
+        SELECT
+          id,
+          title,
+          summary,
+          (1 - (embedding <=> ${vectorString}::vector)) as "similarityScore"
+        FROM content_items
+        WHERE user_id = ${userId}
+          AND memory_state = 'active'
+          AND embedding IS NOT NULL
+          AND id != ${excludeId}
+          AND (1 - (embedding <=> ${vectorString}::vector)) >= ${threshold}
+        ORDER BY "similarityScore" DESC
+        LIMIT ${limit}
+      `
+    : await prisma.$queryRaw<any[]>`
+        SELECT
+          id,
+          title,
+          summary,
+          (1 - (embedding <=> ${vectorString}::vector)) as "similarityScore"
+        FROM content_items
+        WHERE user_id = ${userId}
+          AND memory_state = 'active'
+          AND embedding IS NOT NULL
+          AND (1 - (embedding <=> ${vectorString}::vector)) >= ${threshold}
+        ORDER BY "similarityScore" DESC
+        LIMIT ${limit}
+      `;
 
-  const results = await prisma.$queryRaw<any[]>`
-    SELECT 
-      id, 
-      title, 
-      summary,
-      (1 - (embedding <=> ${vectorString}::vector)) as "similarityScore"
-    FROM content_items
-    WHERE user_id = ${userId}
-      AND status = 'PROCESSED'
-      AND embedding IS NOT NULL
-      ${excludeClause}
-      AND (1 - (embedding <=> ${vectorString}::vector)) >= ${threshold}
-    ORDER BY "similarityScore" DESC
-    LIMIT ${limit}
-  `;
-
-  return results.map(r => ({
+  return results.map((r: { id: string; title: string | null; summary: string | null; similarityScore: number | string }) => ({
     id: r.id,
     title: r.title,
     summary: r.summary,
-    similarityScore: Number(r.similarityScore) // Ensure number type
+    similarityScore: Number(r.similarityScore)
   }));
 }

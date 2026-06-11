@@ -192,6 +192,7 @@ model User {
   mfaEnabled          Boolean   @default(false) @map("mfa_enabled")
 
   contentItems ContentItem[]
+  memoryResurfacings MemoryResurfacing[]
 
   @@map("users")
 }
@@ -1271,7 +1272,9 @@ model ContentItem {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  resurfacings MemoryResurfacing[] // E-4A: Relation to MemoryResurfacing
+  // resurfacings MemoryResurfacing[] // E-4A: Relation to MemoryResurfacing - Removed duplicate
+  sourceResurfacings MemoryResurfacing[] @relation("SourceResurfacing")
+  relatedResurfacings MemoryResurfacing[] @relation("RelatedResurfacing")
   // E-3: Memory Linkage
   linksFrom MemoryLink[] @relation("SourceLink")
   linksTo   MemoryLink[] @relation("TargetLink")
@@ -1314,6 +1317,10 @@ model MemoryResurfacing {
   similarityScore  Float     @map("similarity_score")
   createdAt        DateTime  @default(now()) @map("created_at")
   expiresAt        DateTime? @map("expires_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sourceContent  ContentItem? @relation("SourceResurfacing", fields: [sourceContentId], references: [id], onDelete: Cascade)
+  relatedContent ContentItem? @relation("RelatedResurfacing", fields: [relatedContentId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([userId, createdAt])

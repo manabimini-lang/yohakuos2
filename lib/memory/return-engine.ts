@@ -90,13 +90,13 @@ export async function detectReturningFragments(
     const returningFragments: ReturningFragment[] = [];
 
     // Filter items that have tags
-    const pastItemsWithTags = pastItems.filter((item) => item.aiTags.length > 0);
-    const recentItemsWithTags = recentItems.filter((item) => item.aiTags.length > 0);
+    const pastItemsWithTags = pastItems.filter((item: any) => item.aiTags.length > 0);
+    const recentItemsWithTags = recentItems.filter((item: any) => item.aiTags.length > 0);
 
     // Check for tag echoes: old tags reappearing after long silence
     const pastTags = new Map<string, Date>();
-    pastItemsWithTags.forEach((item) => {
-      item.aiTags.forEach((tag) => {
+    pastItemsWithTags.forEach((item: any) => {
+      item.aiTags.forEach((tag: string) => {
         if (!pastTags.has(tag) || pastTags.get(tag)! > item.createdAt) {
           pastTags.set(tag, item.createdAt);
         }
@@ -104,8 +104,8 @@ export async function detectReturningFragments(
     });
 
     const recentTags = new Set<string>();
-    recentItemsWithTags.forEach((item) => {
-      item.aiTags.forEach((tag) => {
+    recentItemsWithTags.forEach((item: any) => {
+      item.aiTags.forEach((tag: string) => {
         recentTags.add(tag);
       });
     });
@@ -180,7 +180,7 @@ export async function detectTemporalEchoes(
 
         // Count shared tags
         const tags1 = new Set(item1.aiTags);
-        const shared = item2.aiTags.filter((tag) => tags1.has(tag));
+        const shared = item2.aiTags.filter((tag: string) => tags1.has(tag));
         
         if (shared.length > 0) {
           const gapDays = Math.floor(
@@ -260,8 +260,8 @@ export async function detectCalmResurfacing(
     const pastThemes = new Map<string, Date>();
 
     // Build map of past themes
-    pastItems.forEach((item) => {
-      item.aiTags.forEach((tag) => {
+    pastItems.forEach((item: any) => {
+      item.aiTags.forEach((tag: string) => {
         const existing = pastThemes.get(tag);
         if (!existing || existing < item.createdAt) {
           pastThemes.set(tag, item.createdAt);
@@ -271,8 +271,8 @@ export async function detectCalmResurfacing(
 
     // Find themes that have now reappeared
     const now = new Date();
-    recentItems.forEach((item) => {
-      item.aiTags.forEach((tag) => {
+    recentItems.forEach((item: any) => {
+      item.aiTags.forEach((tag: string) => {
         const fadedDate = pastThemes.get(tag);
         if (fadedDate) {
           const silenceLength = Math.floor(
@@ -321,7 +321,7 @@ export function generateReturnNarrative(fragment: ReturningFragment): string {
  */
 export function generateResurfacingNarrative(resurfacing: CalmResurfacing): string {
   const months = Math.floor(resurfacing.silenceLength / 30);
-  
+
   const narratives = [
     `${months}ヶ月の沈黙のあと、「${resurfacing.content}」が静かに戻ってきました。`,
     `長い空白を越えて、「${resurfacing.content}」という言葉がまた静かに現れています。`,

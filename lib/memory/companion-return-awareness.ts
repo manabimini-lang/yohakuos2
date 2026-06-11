@@ -3,7 +3,6 @@ import {
   detectReturningFragments,
   detectTemporalEchoes,
   detectCalmResurfacing,
-  generateReturnNarrative,
 } from "@/lib/memory/return-engine";
 
 /**
@@ -43,7 +42,7 @@ export async function getCompanionReturnContext(userId: string): Promise<{
     }
 
     const mostSignificant = fragments[0];
-    const narrative = generateReturnNarrative(mostSignificant);
+    const narrative = `「${mostSignificant.content}」が、${Math.floor(mostSignificant.daysSinceFading / 30)}ヶ月の沈黙のあと、静かに戻っています。`; // Simplified narrative due to schema limitations
 
     return {
       isAware: true,

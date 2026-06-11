@@ -1,12 +1,8 @@
 import { prisma } from "@/lib/prisma";
-import { KnowledgeStatus } from "@prisma/client";
 import { generateReflectionPrompt } from "./reflection-generator";
-import { findSimilarContent } from "./semantic-search";
-import { getDefaultProvider } from "@/lib/ai/provider";
 
 const RESURFACING_EXCLUSION_DAYS = 30;
 const OLDER_THAN_DAYS = 14;
-const SEMANTIC_CONNECTIVITY_THRESHOLD = 0.7; // Example threshold for "high semantic connectivity"
 
 /**
  * Sprint E-4C: Resurfacing Selection Engine
@@ -22,8 +18,8 @@ export async function generateDailyResurfacing(
   const existingResurfacing = await prisma.memoryResurfacing.findFirst({
     where: {
       userId,
-      surfacedAt: { gte: today },
-      status: { not: "DISMISSED" },
+      createdAt: { gte: today },
+      expiresAt: { gt: new Date() },
     },
   });
 
@@ -39,23 +35,29 @@ export async function generateDailyResurfacing(
   const olderThanDate = new Date();
   olderThanDate.setDate(today.getDate() - OLDER_THAN_DAYS);
 
-  const candidates = await prisma.contentItem.findMany({
-    where: {
-      userId,
-      status: KnowledgeStatus.PROCESSED,
-      embedding: { not: null },
-      createdAt: { lte: olderThanDate }, // Older than 14 days
-      resurfacings: {
-        none: {
-          // Not resurfaced within the exclusion period
-          surfacedAt: { gte: exclusionDate },
-          status: { not: "DISMISSED" },
-        },
-      },
-    },
-    orderBy: { createdAt: "asc" }, // Prefer older items
-    take: 50, // Fetch a reasonable number of candidates
-  });
+  const candidateRows = await prisma.$queryRaw<Array<{ id: string }>>`
+    SELECT ci.id
+    FROM content_items ci
+    WHERE ci.user_id = ${userId}
+      AND ci.memory_state = 'active'
+      AND ci.embedding IS NOT NULL
+      AND ci.created_at <= ${olderThanDate}
+      AND NOT EXISTS (
+        SELECT 1
+        FROM memory_resurfacings mr
+        WHERE mr.source_content_id = ci.id
+          AND mr.created_at >= ${exclusionDate}
+          AND mr.expires_at > NOW()
+      )
+    ORDER BY ci.created_at ASC
+    LIMIT 50
+  `;
+
+  const candidates = candidateRows.length
+    ? await prisma.contentItem.findMany({
+        where: { id: { in: candidateRows.map((row) => row.id) } },
+      })
+    : [];
 
   if (candidates.length === 0) {
     console.log(`[RESURFACING_ENGINE] No eligible candidates for user ${userId}.`);
@@ -63,7 +65,7 @@ export async function generateDailyResurfacing(
   }
 
   // Score candidates (simple scoring for now, can be expanded)
-  const scoredCandidates = await Promise.all(candidates.map(async (item) => {
+  const scoredCandidates = await Promise.all(candidates.map(async (item: any) => {
     // Simulate high semantic connectivity by checking for existing links
     const linkCount = await prisma.memoryLink.count({
       where: {
@@ -83,7 +85,7 @@ export async function generateDailyResurfacing(
   }));
 
   // Select one (randomize among top candidates)
-  scoredCandidates.sort((a, b) => b.score - a.score);
+  scoredCandidates.sort((a: any, b: any) => b.score - a.score);
   const topCandidates = scoredCandidates.slice(0, Math.min(5, scoredCandidates.length)); // Top 5
   const selectedCandidate = topCandidates[Math.floor(Math.random() * topCandidates.length)];
 
@@ -103,11 +105,10 @@ export async function generateDailyResurfacing(
   await prisma.memoryResurfacing.create({
     data: {
       userId,
-      contentItemId: selectedCandidate.item.id,
-      reason: "daily_resurfacing",
-      reflectionPrompt,
-      status: "PENDING", // User needs to see it
-      surfacedAt: new Date(),
+      sourceContentId: selectedCandidate.item.id,
+      message: reflectionPrompt,
+      similarityScore: selectedCandidate.score,
+      expiresAt: new Date(Date.now() + RESURFACING_EXCLUSION_DAYS * 24 * 60 * 60 * 1000),
     },
   });
   console.log(`[RESURFACING_ENGINE] Generated resurfacing for user ${userId}, item ${selectedCandidate.item.id}`);
