@@ -13,30 +13,42 @@ export async function GET(req: Request) {
   }
 
   try {
-    const [totalResurfacings, pendingCount, dismissedCount, meaningfulCount, avgDailyGenerationResult, latestGenerated] = await Promise.all([
+    const [totalResurfacings, avgDailyGenerationResult, latestGenerated] = await Promise.all([
       prisma.memoryResurfacing.count(),
-      prisma.memoryResurfacing.count({ where: { status: "PENDING" } }),
-      prisma.memoryResurfacing.count({ where: { status: "DISMISSED" } }),
-      prisma.memoryResurfacing.count({ where: { feedback: "meaningful" } }),
       prisma.$queryRaw<any[]>`
-        SELECT COUNT(*)::int as count, DATE_TRUNC('day', "surfacedAt") as day
+        SELECT COUNT(*)::int as count, DATE_TRUNC('day', "created_at") as day
         FROM memory_resurfacings
-        WHERE "surfacedAt" >= NOW() - INTERVAL '7 day'
+        WHERE "created_at" >= NOW() - INTERVAL '7 day'
         GROUP BY day
         ORDER BY day DESC
       `,
-      prisma.memoryResurfacing.findFirst({ orderBy: { surfacedAt: "desc" }, select: { surfacedAt: true } }),
+      prisma.memoryResurfacing.findFirst({ orderBy: { createdAt: "desc" }, select: { createdAt: true } }),
     ]);
 
-    const averageDailyGeneration = avgDailyGenerationResult.length > 0 ? avgDailyGenerationResult.reduce((sum, r) => sum + r.count, 0) / avgDailyGenerationResult.length : 0;
+    const averageDailyGeneration =
+      avgDailyGenerationResult.length > 0
+        ? avgDailyGenerationResult.reduce(
+            (sum: number, r: { count: number }) => sum + r.count,
+            0
+          ) / avgDailyGenerationResult.length
+        : 0;
 
     return NextResponse.json({
       totalResurfacings,
-      pendingCount,
-      dismissedCount,
-      meaningfulCount,
+      pendingCount: {
+        supported: false,
+        reason: "MemoryResurfacing model does not expose a 'status' field."
+      },
+      dismissedCount: {
+        supported: false,
+        reason: "MemoryResurfacing model does not expose a 'feedback' field."
+      },
+      meaningfulCount: {
+        supported: false,
+        reason: "MemoryResurfacing model does not expose a 'feedback' field."
+      },
       averageDailyGeneration: parseFloat(averageDailyGeneration.toFixed(2)),
-      latestGeneratedAt: latestGenerated?.surfacedAt?.toISOString() || null,
+      latestGeneratedAt: latestGenerated?.createdAt?.toISOString() || null,
       timestamp: new Date().toISOString(),
     });
   } catch (error) {

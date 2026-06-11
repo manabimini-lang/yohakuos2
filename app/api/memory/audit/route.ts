@@ -16,7 +16,11 @@ export async function GET(req: Request) {
   try {
     const [totalItems, embeddedItems, memoryLinks, avgSimilarity] = await Promise.all([
       prisma.contentItem.count(),
-      prisma.contentItem.count({ where: { NOT: { embedding: null } } }),
+      prisma.$queryRaw<Array<{ count: number }>>`
+        SELECT COUNT(*)::int as count
+        FROM content_items
+        WHERE embedding IS NOT NULL
+      `.then((rows) => rows[0]?.count ?? 0),
       prisma.memoryLink.count(),
       prisma.memoryLink.aggregate({ _avg: { similarity: true } }),
     ]);
