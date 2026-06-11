@@ -11,32 +11,34 @@ import {
   Compass,
   Activity,
   type LucideIcon,
+  Download,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
- 
+import { useEffect, useState } from "react";
+
+import { hasPremiumAccess } from "@/lib/constants/plan";
+
 type NavEntry = {
   href: string;
   label: string;
   icon: LucideIcon;
 };
- 
-// YOHAKUらしいナビゲーション文言に統一
+
 const MEMBER_NAV_ITEMS: NavEntry[] = [
-  { href: "/member",             label: "ホーム",    icon: Home },
-  { href: "/member/ai",          label: "整理する",  icon: PenLine },
-  { href: "/member/ai/history",  label: "記録",      icon: BookMarked },
-  { href: "/life/timeline",      label: "人生の流れ",icon: Activity },
-  { href: "/landscape",          label: "内面の風景",icon: Compass },
-  { href: "/knowledge",          label: "小さな実践",icon: BookOpen },
-  { href: "/profile",            label: "自分をみる",icon: User },
-  { href: "/member/settings",    label: "設定",      icon: Settings },
+  { href: "/member", label: "ホーム", icon: Home },
+  { href: "/member/ai", label: "整理する", icon: PenLine },
+  { href: "/member/ai/history", label: "記録", icon: BookMarked },
+  { href: "/life/timeline", label: "人生の流れ", icon: Activity },
+  { href: "/landscape", label: "内面の風景", icon: Compass },
+  { href: "/knowledge", label: "小さな実践", icon: BookOpen },
+  { href: "/profile", label: "自分をみる", icon: User },
+  { href: "/member/settings", label: "設定", icon: Settings },
 ];
 
 function SidebarNavItem({ href, label, icon: Icon }: NavEntry) {
   const pathname = usePathname();
-  // /member/ai/history は /member/ai より先にチェック
   const isActive =
     href === "/member"
       ? pathname === "/member"
@@ -58,11 +60,6 @@ function SidebarNavItem({ href, label, icon: Icon }: NavEntry) {
   );
 }
 
-import { useEffect, useState } from "react";
-import { Download } from "lucide-react";
-
-import { hasPremiumAccess } from "@/lib/constants/plan";
-
 export function MemberSidebarNav() {
   const { data: session } = useSession();
   const [installPromptEvent, setInstallPromptEvent] = useState<any>(null);
@@ -77,7 +74,7 @@ export function MemberSidebarNav() {
       if ((window as any).deferredPrompt) {
         setInstallPromptEvent((window as any).deferredPrompt);
       }
-      
+
       const handleInstallReady = () => {
         setInstallPromptEvent((window as any).deferredPrompt);
       };
@@ -140,22 +137,5 @@ export function MemberSidebarNav() {
 }
 
 export function MemberSidebar() {
-  return (
-    <aside
-      aria-label="サイドバー"
-      className="hidden w-56 border-r border-slate-100 bg-white lg:flex lg:flex-col"
-    >
-      {/* ロゴエリア */}
-      <div className="px-5 py-6 border-b border-slate-100">
-        <p className="text-base font-medium tracking-widest text-slate-800">
-          YOHAKU
-        </p>
-        <p className="mt-0.5 text-xs text-slate-400">止まっても、戻れる場所</p>
-      </div>
-      {/* ナビ */}
-      <div className="flex-1 p-3">
-        <MemberSidebarNav />
-      </div>
-    </aside>
-  );
+  return null;
 }
