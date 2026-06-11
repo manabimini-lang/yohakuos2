@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { hasPremiumAccess } from "@/lib/constants/plan";
+import { log as logAuditEvent } from "@/core/audit/logger";
 
 export const dynamic = "force-dynamic";
 
@@ -52,6 +53,17 @@ ${tagString}`;
     if (!response.ok) {
       throw new Error(`Discord API error: ${response.statusText}`);
     }
+
+    // Record Discord share audit log
+    await logAuditEvent({
+      actorId: session.user.id,
+      category: "admin",
+      action: "discord.share",
+      targetType: "content",
+      targetId: road || "unknown",
+      severity: "info",
+      metadata: { title, summary, tags, road },
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {
