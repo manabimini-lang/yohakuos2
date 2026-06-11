@@ -9,7 +9,7 @@ const navItems = [
   { href: "/reflection", label: "Reflection", icon: Moon },
   { href: "/companion", label: "Companion", icon: MessageCircle },
   { href: "/memory", label: "Memory", icon: BookOpen },
-  { href: "/settings", label: "Settings", icon: Settings },
+  { href: "/member/settings", label: "Settings", icon: Settings },
 ];
 
 export default function BottomNav() {

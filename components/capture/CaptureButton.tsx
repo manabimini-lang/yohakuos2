@@ -10,7 +10,7 @@ export function CaptureButton() {
   return (
     <motion.button
       onClick={openCapture}
-      className="fixed bottom-6 right-6 md:bottom-10 md:right-10 z-[100] flex items-center gap-2 px-5 py-3 rounded-full bg-white/70 dark:bg-black/70 backdrop-blur-xl border border-notion-border dark:border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.08)] text-sm font-medium text-notion-text dark:text-white transition-colors hover:bg-white/90 dark:hover:bg-white/10"
+      className="fixed bottom-[calc(5.75rem+env(safe-area-inset-bottom))] right-6 md:bottom-10 md:right-10 z-[100] flex items-center gap-2 px-5 py-3 rounded-full bg-white/70 dark:bg-black/70 backdrop-blur-xl border border-notion-border dark:border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.08)] text-sm font-medium text-notion-text dark:text-white transition-colors hover:bg-white/90 dark:hover:bg-white/10"
       whileHover={{ y: -2, scale: 1.02, boxShadow: "0 12px 40px rgba(0,0,0,0.12)" }}
       whileTap={{ scale: 0.98 }}
       initial={{ opacity: 0, y: 20 }}

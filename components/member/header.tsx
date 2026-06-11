@@ -1,6 +1,5 @@
-import { Menu, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { signOut } from "@/lib/auth";
-import { MemberSidebarNav } from "@/components/member/sidebar";
 import { GeminiStatusIndicator } from "@/components/member/gemini-status-indicator";
 
 import Link from "next/link";
@@ -25,17 +24,6 @@ export function MemberHeader({ user }: MemberHeaderProps) {
   return (
     <header className="sticky top-0 z-20 border-b border-slate-100 bg-white/95 backdrop-blur-sm">
       <div className="flex h-12 items-center justify-between gap-4 px-4 lg:px-8">
-        {/* モバイルのみ：ハンバーガー */}
-        <details className="relative lg:hidden">
-          <summary className="flex h-9 w-9 cursor-pointer list-none items-center justify-center rounded-xl text-slate-400 hover:bg-slate-50 transition-colors">
-            <Menu className="h-4 w-4" aria-hidden="true" />
-            <span className="sr-only">メニューを開く</span>
-          </summary>
-          <div className="absolute left-0 top-11 w-64 rounded-2xl border border-slate-100 bg-white p-3 shadow-lg">
-            <MemberSidebarNav />
-          </div>
-        </details>
-
         {/* モバイルのみ：ロゴ */}
         <span className="text-sm font-medium tracking-widest text-slate-600 lg:hidden">
           YOHAKU

@@ -170,7 +170,7 @@ export default function CompanionChat() {
     }
 
     return (
-        <div className="flex flex-col h-full max-w-2xl mx-auto">
+        <div className="flex flex-col h-full max-w-2xl mx-auto pb-28 md:pb-24">
             {/* Header */}
             <div className="px-6 py-4 border-b border-white/10 bg-[#090909]">
                 <h2 className="text-lg font-light text-white">静かな対話</h2>
@@ -257,7 +257,7 @@ export default function CompanionChat() {
             )}
 
             {/* Input */}
-            <div className="px-6 py-4 border-t border-gray-100">
+            <div className="px-6 py-4 border-t border-gray-100 pb-[calc(1rem+env(safe-area-inset-bottom))]">
                 <div className="flex items-end space-x-2">
                     <textarea
                         value={input}
