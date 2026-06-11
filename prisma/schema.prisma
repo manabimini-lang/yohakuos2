@@ -491,6 +491,7 @@ model AuditLog {
   @@index([action])
   @@index([createdAt])
   @@index([category, createdAt])
+  @@index([action, createdAt])
   @@index([actorId, createdAt])
   @@map("audit_logs")
 }

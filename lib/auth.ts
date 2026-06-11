@@ -70,6 +70,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             return null;
           }
 
+          // Check if account is suspended/locked
+          if (user.lockedUntil && user.lockedUntil > new Date()) {
+            console.warn(`Suspended user attempt to login: ${user.email}`);
+            return null;
+          }
+
           const isValid = await bcrypt.compare(
             credentials.password as string,
             user.password

@@ -4,25 +4,26 @@ import { useState, useEffect } from "react";
 import { 
   Users, 
   Sparkles, 
-  MessageSquare, 
   BookOpen, 
   Plus, 
   ArrowRight,
   Check,
   X,
-  Link2,
   ExternalLink,
   ChevronRight,
-  TrendingUp,
   Cpu,
-  Hash
+  Activity,
+  AlertTriangle,
+  Clock,
+  ArrowUpRight
 } from "lucide-react";
 import Link from "next/link";
 import { 
   getAdminStats, 
   getSuggestedContents, 
   deleteSuggestedContent, 
-  promoteSuggestedContent 
+  promoteSuggestedContent,
+  getDashboardStatsAndRecentEvents
 } from "@/app/admin/actions";
 
 type SuggestedContent = {
@@ -38,6 +39,7 @@ type SuggestedContent = {
 
 export function AdminDashboardView() {
   const [stats, setStats] = useState<any>(null);
+  const [dashboardData, setDashboardData] = useState<any>(null);
   const [suggestions, setSuggestions] = useState<SuggestedContent[]>([]);
   const [loading, setLoading] = useState(true);
   const [actioningId, setActioningId] = useState<string | null>(null);
@@ -50,12 +52,14 @@ export function AdminDashboardView() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [statsData, suggestionsData] = await Promise.all([
+      const [statsData, suggestionsData, sprint2Data] = await Promise.all([
         getAdminStats(),
-        getSuggestedContents()
+        getSuggestedContents(),
+        getDashboardStatsAndRecentEvents()
       ]);
       setStats(statsData);
       setSuggestions(suggestionsData as any);
+      setDashboardData(sprint2Data);
     } catch (e) {
       console.error(e);
       showToast("データの取得に失敗しました");
@@ -80,6 +84,8 @@ export function AdminDashboardView() {
       setSuggestions(suggestionsData as any);
       const statsData = await getAdminStats();
       setStats(statsData);
+      const sprint2Data = await getDashboardStatsAndRecentEvents();
+      setDashboardData(sprint2Data);
     } catch (e) {
       console.error(e);
       showToast("採用処理に失敗しました");
@@ -100,6 +106,8 @@ export function AdminDashboardView() {
       setSuggestions(suggestionsData as any);
       const statsData = await getAdminStats();
       setStats(statsData);
+      const sprint2Data = await getDashboardStatsAndRecentEvents();
+      setDashboardData(sprint2Data);
     } catch (e) {
       console.error(e);
       showToast("削除処理に失敗しました");
@@ -108,7 +116,7 @@ export function AdminDashboardView() {
     }
   };
 
-  if (loading || !stats) {
+  if (loading || !stats || !dashboardData) {
     return (
       <div className="flex min-h-[400px] flex-col items-center justify-center text-slate-400 space-y-2">
         <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-200 border-t-slate-800" />
@@ -118,7 +126,7 @@ export function AdminDashboardView() {
   }
 
   return (
-    <div className="space-y-10 max-w-5xl mx-auto">
+    <div className="space-y-8 max-w-5xl mx-auto">
       {/* Toast Notification */}
       {toast && (
         <div className="fixed bottom-6 right-6 z-50 rounded-xl bg-slate-900 px-4 py-3 text-sm font-medium text-white shadow-lg animate-in slide-in-from-bottom-4 fade-in duration-300">
@@ -132,6 +140,23 @@ export function AdminDashboardView() {
         <p className="text-sm text-slate-400">YOHAKU OSの現在の全体状況を静かに確認します。</p>
       </div>
 
+      {/* Contract Alert */}
+      {dashboardData.stats.suspiciousSubscriptionsCount > 0 && (
+        <div className="bg-amber-50/60 border border-amber-200/80 rounded-2xl p-4 flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />
+            <div>
+              <h4 className="text-xs font-semibold text-amber-800">お支払いや期限の確認が必要な契約があります</h4>
+              <p className="text-[11px] text-amber-700 mt-0.5">決済失敗、解約、またはトライアル終了間近の契約が {dashboardData.stats.suspiciousSubscriptionsCount} 件あります。</p>
+            </div>
+          </div>
+          <Link href="/admin/billing" className="text-xs font-medium text-amber-800 hover:underline inline-flex items-center gap-1 shrink-0 bg-white border border-amber-200 px-3 py-1.5 rounded-xl shadow-sm">
+            <span>確認する</span>
+            <ChevronRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+      )}
+
       {/* ① 今日の状態 (Notion-style simple metrics) */}
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white border border-slate-200/60 rounded-xl p-5 shadow-sm space-y-2">
@@ -140,41 +165,64 @@ export function AdminDashboardView() {
             <Users className="w-4 h-4 stroke-[1.5]" />
           </div>
           <div className="flex items-baseline space-x-1.5">
-            <span className="text-2xl font-semibold tracking-tight text-slate-800">{stats.stats.totalUsers}</span>
+            <span className="text-2xl font-semibold tracking-tight text-slate-800">{dashboardData.stats.totalUsers}</span>
             <span className="text-xs text-slate-400">名</span>
           </div>
         </div>
 
         <div className="bg-white border border-slate-200/60 rounded-xl p-5 shadow-sm space-y-2">
           <div className="flex items-center justify-between text-slate-400">
-            <span className="text-xs font-medium">Premium会員数</span>
+            <span className="text-xs font-medium">有料会員数</span>
             <Sparkles className="w-4 h-4 text-amber-500 stroke-[1.5]" />
           </div>
           <div className="flex items-baseline space-x-1.5">
-            <span className="text-2xl font-semibold tracking-tight text-slate-800">{stats.stats.premiumUsers}</span>
+            <span className="text-2xl font-semibold tracking-tight text-slate-800">{dashboardData.stats.premiumUsers}</span>
             <span className="text-xs text-slate-400">名</span>
           </div>
         </div>
 
         <div className="bg-white border border-slate-200/60 rounded-xl p-5 shadow-sm space-y-2">
           <div className="flex items-center justify-between text-slate-400">
-            <span className="text-xs font-medium">Discord共有数</span>
-            <MessageSquare className="w-4 h-4 text-indigo-500 stroke-[1.5]" />
+            <span className="text-xs font-medium">今日のアクティブ</span>
+            <Activity className="w-4 h-4 text-indigo-500 stroke-[1.5]" />
           </div>
           <div className="flex items-baseline space-x-1.5">
-            <span className="text-2xl font-semibold tracking-tight text-slate-800">{stats.stats.discordShares}</span>
-            <span className="text-xs text-slate-400">件</span>
+            <span className="text-2xl font-semibold tracking-tight text-slate-800">{dashboardData.stats.activeUsersToday}</span>
+            <span className="text-xs text-slate-400">名</span>
           </div>
         </div>
 
         <div className="bg-white border border-slate-200/60 rounded-xl p-5 shadow-sm space-y-2">
           <div className="flex items-center justify-between text-slate-400">
-            <span className="text-xs font-medium">推奨コンテンツ提案</span>
-            <BookOpen className="w-4 h-4 text-emerald-500 stroke-[1.5]" />
+            <span className="text-xs font-medium">AI解析失敗件数</span>
+            <AlertTriangle className="w-4 h-4 text-rose-500 stroke-[1.5]" />
           </div>
           <div className="flex items-baseline space-x-1.5">
-            <span className="text-2xl font-semibold tracking-tight text-slate-800">{stats.stats.suggestedCount}</span>
+            <span className="text-2xl font-semibold tracking-tight text-slate-800">{dashboardData.stats.aiFailedCount}</span>
             <span className="text-xs text-slate-400">件</span>
+          </div>
+        </div>
+      </section>
+
+      {/* ② 今日のYOHAKU (Saves, logs, etc.) */}
+      <section className="bg-slate-50 border border-slate-200/60 rounded-2xl p-6 space-y-4">
+        <h2 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">今日のYOHAKU (余白の創出状況)</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="bg-white border border-slate-200/40 rounded-xl p-4 shadow-sm space-y-1">
+            <span className="text-[10px] text-slate-400 font-medium">本日の保存数</span>
+            <span className="text-lg font-semibold text-slate-800">{dashboardData.todayYohaku.savesToday} 件</span>
+          </div>
+          <div className="bg-white border border-slate-200/40 rounded-xl p-4 shadow-sm space-y-1">
+            <span className="text-[10px] text-slate-400 font-medium">本日の振り返り</span>
+            <span className="text-lg font-semibold text-slate-800">{dashboardData.todayYohaku.logsToday} 件</span>
+          </div>
+          <div className="bg-white border border-slate-200/40 rounded-xl p-4 shadow-sm space-y-1">
+            <span className="text-[10px] text-slate-400 font-medium">本日の提案閲覧</span>
+            <span className="text-lg font-semibold text-slate-800">{dashboardData.todayYohaku.suggestionsViewedToday} 件</span>
+          </div>
+          <div className="bg-white border border-slate-200/40 rounded-xl p-4 shadow-sm space-y-1">
+            <span className="text-[10px] text-slate-400 font-medium">Discord共有</span>
+            <span className="text-lg font-semibold text-slate-800">{dashboardData.todayYohaku.discordSharesToday} 件</span>
           </div>
         </div>
       </section>
@@ -182,9 +230,10 @@ export function AdminDashboardView() {
       {/* Main content area */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        {/* Left column: Suggested contents & Shortcuts */}
+        {/* Left column: Suggested contents & Recent Events */}
         <div className="lg:col-span-2 space-y-8">
-          {/* ② ユーザーからの知見共有（suggested_contents）管理 */}
+          
+          {/* ③ 未承認のコンテンツ提案 */}
           <section className="bg-white border border-slate-200/60 rounded-2xl shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
               <div className="flex items-center space-x-2">
@@ -277,42 +326,66 @@ export function AdminDashboardView() {
             )}
           </section>
 
-          {/* ② コンテンツ管理への導線 */}
-          <section className="bg-white border border-slate-200/60 rounded-2xl p-6 shadow-sm space-y-4">
-            <h2 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">コンテンツ管理</h2>
-            <p className="text-xs text-slate-500">
-              各ロード（初任者・副業・退職）に紐づく公式の学習コンテンツ・外部コンテンツ（YouTube, note等）を編集します。
-            </p>
-            <div className="grid grid-cols-2 gap-4">
-              <Link 
-                href="/admin/contents" 
-                className="flex items-center justify-between p-4 rounded-xl border border-slate-100 hover:bg-slate-50 transition-colors text-left group"
-              >
-                <div>
-                  <h3 className="text-sm font-medium text-slate-800">コンテンツ編集</h3>
-                  <span className="text-[10px] text-slate-400">{stats.stats.externalCount} 件のリンク</span>
-                </div>
-                <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
-              </Link>
-
-              <Link 
-                href="/admin/tags" 
-                className="flex items-center justify-between p-4 rounded-xl border border-slate-100 hover:bg-slate-50 transition-colors text-left group"
-              >
-                <div>
-                  <h3 className="text-sm font-medium text-slate-800">タグ管理</h3>
-                  <span className="text-[10px] text-slate-400">教材の分類タグ設定</span>
-                </div>
-                <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
-              </Link>
+          {/* ④ 最近の出来事 (Notion-style timeline feed) */}
+          <section className="bg-white border border-slate-200/60 rounded-2xl shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Clock className="w-4 h-4 text-slate-400" />
+                <h2 className="text-sm font-medium text-slate-800">最近の出来事</h2>
+              </div>
             </div>
+
+            {dashboardData.recentEvents.length === 0 ? (
+              <div className="p-10 text-center text-slate-400 space-y-1">
+                <p className="text-xs font-medium text-slate-500">今日も静かな一日でした。</p>
+                <p className="text-[10px] text-slate-400">これから余白が育っていきます。</p>
+              </div>
+            ) : (
+              <div className="p-6 space-y-6">
+                <div className="flow-root">
+                  <ul className="-mb-8">
+                    {dashboardData.recentEvents.map((event: any, eventIdx: number) => (
+                      <li key={event.id}>
+                        <div className="relative pb-8">
+                          {eventIdx !== dashboardData.recentEvents.length - 1 ? (
+                            <span className="absolute top-4 left-4 -ml-px h-full w-0.5 bg-slate-100" aria-hidden="true" />
+                          ) : null}
+                          <div className="relative flex space-x-3">
+                            <div>
+                              <span className="h-8 w-8 rounded-full flex items-center justify-center ring-8 ring-white bg-slate-50 text-slate-500">
+                                <Clock className="w-3.5 h-3.5" />
+                              </span>
+                            </div>
+                            <div className="flex-1 min-w-0 pt-1.5 flex justify-between space-x-4">
+                              <div>
+                                <p className="text-xs text-slate-700">{event.message}</p>
+                              </div>
+                              <div className="text-right text-[10px] whitespace-nowrap text-slate-400">
+                                <time dateTime={new Date(event.timestamp).toISOString()}>
+                                  {new Date(event.timestamp).toLocaleDateString("ja-JP", {
+                                    month: "short",
+                                    day: "numeric",
+                                    hour: "2-digit",
+                                    minute: "2-digit"
+                                  })}
+                                </time>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            )}
           </section>
         </div>
 
         {/* Right column: Road list, Discord Status, AI Stats */}
         <div className="space-y-8">
           
-          {/* ③ ロード管理 */}
+          {/* ロード管理 */}
           <section className="bg-white border border-slate-200/60 rounded-2xl p-6 shadow-sm space-y-4">
             <h2 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">ロード管理</h2>
             <div className="space-y-3">
@@ -330,7 +403,7 @@ export function AdminDashboardView() {
             </div>
           </section>
 
-          {/* ④ Discord状態 */}
+          {/* Discord状態 */}
           <section className="bg-white border border-slate-200/60 rounded-2xl p-6 shadow-sm space-y-4">
             <h2 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Discord 状態</h2>
             <div className="space-y-3">
@@ -358,7 +431,7 @@ export function AdminDashboardView() {
             </div>
           </section>
 
-          {/* ⑤ AI接続状況 */}
+          {/* AI接続状況 */}
           <section className="bg-white border border-slate-200/60 rounded-2xl p-6 shadow-sm space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">AI 接続状況</h2>
