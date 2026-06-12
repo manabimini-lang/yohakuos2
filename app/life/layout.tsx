@@ -7,7 +7,7 @@
 //
 
 import Link from "next/link";
-import { BottomNav } from "@/components/navigation/BottomNav";
+import BottomNav from "@/components/ui/BottomNav";
 
 export default function LifeLayout({
     children,
