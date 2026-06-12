@@ -86,7 +86,7 @@ export default async function ReflectionsPage() {
               Gemini APIキーを設定すると、保存した記録が静かに整えられ、パーソナルAIとの対話や、内面の風景の描画が始まります。
             </p>
             <Link 
-              href="/settings/ai"
+              href="/member/settings"
               className="inline-flex items-center text-xs font-light text-black/40 dark:text-white/40 hover:text-black/60 dark:hover:text-white/60 transition-colors group"
             >
               AI設定へ
@@ -143,7 +143,7 @@ export default async function ReflectionsPage() {
                     <div className="flex gap-4 pt-1">
                       {latestReflectionErrorDetails.showSettings && (
                         <Link
-                          href="/settings/ai"
+                          href="/member/settings"
                           className="inline-flex items-center text-xs font-light text-black/40 dark:text-white/40 hover:text-black/60 dark:hover:text-white/60 transition-colors group"
                         >
                           AI設定を確認する

@@ -104,7 +104,7 @@ export async function saveAISettings(data: AiSettingsInput) {
       });
     }
 
-    revalidatePath("/settings/ai");
+    revalidatePath("/member/settings");
     return { success: true };
   } catch (error) {
     console.log("[AI_SAVE_DB_ERROR_RAW]", error)

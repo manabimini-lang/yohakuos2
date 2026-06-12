@@ -265,7 +265,7 @@ export function ProfileClient() {
 
           {/* Discord Connection Settings */}
           <Link 
-            href="/settings/account"
+            href="/member/settings"
             className="flex items-center justify-between p-4 text-slate-650 hover:bg-slate-50 transition-colors"
           >
             <div className="flex items-center space-x-2.5">
@@ -289,7 +289,7 @@ export function ProfileClient() {
 
           {/* Local Data Management */}
           <Link 
-            href="/settings/data"
+            href="/member/settings"
             className="flex items-center justify-between p-4 text-slate-650 hover:bg-slate-50 transition-colors"
           >
             <div className="flex items-center space-x-2.5">

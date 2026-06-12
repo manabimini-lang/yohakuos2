@@ -88,7 +88,7 @@ export default async function LandscapePage() {
                         </p>
                         <div className="pt-2">
                             <Link
-                                href="/settings/ai"
+                                href="/member/settings"
                                 className="inline-flex items-center text-xs font-light text-stone-500 hover:text-stone-700 transition-colors group"
                             >
                                 AI設定へ
@@ -110,7 +110,7 @@ export default async function LandscapePage() {
                         <div className="flex gap-4 pt-2">
                             {errorDetails.showSettings && (
                                 <Link
-                                    href="/settings/ai"
+                                    href="/member/settings"
                                     className="inline-flex items-center text-xs font-light text-stone-500 hover:text-stone-700 transition-colors group"
                                 >
                                     AI設定を確認する

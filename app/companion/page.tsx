@@ -46,7 +46,7 @@ export default async function CompanionPage() {
                     </p>
                     <div className="pt-2">
                         <Link 
-                            href="/settings/ai"
+                            href="/member/settings"
                             className="inline-flex items-center text-xs font-light text-slate-400 hover:text-slate-200 transition-colors group"
                         >
                             AI設定へ

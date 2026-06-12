@@ -128,7 +128,7 @@ function saveAISettings(data) {
                     _b.sent();
                     _b.label = 8;
                 case 8:
-                    (0, cache_1.revalidatePath)("/settings/ai");
+                    (0, cache_1.revalidatePath)("/member/settings");
                     return [2 /*return*/, { success: true }];
             }
         });
