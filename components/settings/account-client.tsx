@@ -46,6 +46,9 @@ export function AccountClient({
         <p className="text-xs text-slate-400 leading-relaxed">
           YOHAKUと外部のコミュニケーションスペースをつなぐ設定を行います。
         </p>
+        <p className="text-xs text-slate-500 leading-relaxed">
+          設定した連携は、Inbox にも案内として表示されます。
+        </p>
       </div>
 
       {/* Success Notification */}

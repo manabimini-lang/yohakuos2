@@ -5,7 +5,7 @@ import { InboxGrid } from "@/components/capture/InboxGrid";
 import { EmptyInbox } from "@/components/capture/EmptyInbox";
 import { Metadata } from "next";
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, MessageSquare, ArrowRight } from "lucide-react";
 import { getStarterJourneyStatus } from "@/lib/ai/starter-journey";
 
 export const metadata: Metadata = {
@@ -58,6 +58,30 @@ export default async function InboxPage() {
             </p>
           </div>
         </header>
+
+        <section className="mt-8 rounded-3xl border border-white/10 bg-white/[0.03] p-6 sm:p-7">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-white/55">
+                <MessageSquare className="h-4 w-4" />
+                <p className="text-xs tracking-[0.22em] uppercase">Discord Connection</p>
+              </div>
+              <h2 className="text-lg font-light text-white/90">
+                コミュニティとのつながりを、設定から整えましょう。
+              </h2>
+              <p className="max-w-2xl text-sm leading-relaxed text-slate-400">
+                Discord連携は設定画面で行えます。連携すると、小さな実践の共有やコミュニティの声を静かに受け取れます。
+              </p>
+            </div>
+            <Link
+              href="/settings/account"
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-white/10 bg-white text-slate-900 px-5 py-3 text-sm font-medium transition-transform hover:-translate-y-0.5"
+            >
+              Discordを設定する
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+        </section>
 
         <section className="mt-10 space-y-8">
           {items.length > 0 ? (
