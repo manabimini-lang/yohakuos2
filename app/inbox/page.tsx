@@ -74,7 +74,7 @@ export default async function InboxPage() {
               </p>
             </div>
             <Link
-              href="/settings/account"
+              href="/member/settings/account"
               className="inline-flex items-center justify-center gap-2 rounded-full border border-white/10 bg-white text-slate-900 px-5 py-3 text-sm font-medium transition-transform hover:-translate-y-0.5"
             >
               Discordを設定する

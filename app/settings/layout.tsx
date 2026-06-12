@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 
 export default function SettingsLayout({
@@ -6,5 +5,5 @@ export default function SettingsLayout({
 }: {
   children: ReactNode;
 }) {
-  redirect("/member/settings");
+  return children;
 }
