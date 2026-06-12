@@ -1,5 +1,15 @@
 import Link from "next/link";
-import { ArrowRight, Sparkles, Brain, Feather, ShieldCheck } from "lucide-react";
+import {
+  ArrowRight,
+  Sparkles,
+  Brain,
+  Feather,
+  ShieldCheck,
+  PenLine,
+  BookMarked,
+  Compass,
+  MessageCircle,
+} from "lucide-react";
 
 const highlights = [
   {
@@ -16,6 +26,33 @@ const highlights = [
     icon: ShieldCheck,
     title: "安心の設計",
     description: "ログイン後の体験を、落ち着いた導線で安全に進められます。",
+  },
+];
+
+const experiences = [
+  {
+    icon: PenLine,
+    title: "記録を残す",
+    description: "今日の気分や思考を、静かな入力欄にそっと置いておけます。",
+    accent: "from-slate-950 to-slate-700",
+  },
+  {
+    icon: BookMarked,
+    title: "振り返りを整える",
+    description: "過去のメモや気づきを、ひとつの流れとして読み返せます。",
+    accent: "from-stone-700 to-stone-500",
+  },
+  {
+    icon: Compass,
+    title: "内面の風景を見る",
+    description: "人生の流れや小さな変化を、やわらかく見つめられます。",
+    accent: "from-slate-800 to-slate-500",
+  },
+  {
+    icon: MessageCircle,
+    title: "対話でほどく",
+    description: "AI Companion が、考えを急がず少しずつ整える手伝いをします。",
+    accent: "from-zinc-900 to-zinc-600",
   },
 ];
 
@@ -80,6 +117,48 @@ export default function LandingPage() {
                 </div>
               );
             })}
+          </div>
+
+          <div className="mt-20">
+            <div className="flex items-end justify-between gap-4">
+              <div>
+                <p className="text-xs font-medium tracking-[0.22em] text-slate-400 uppercase">
+                  What you can do
+                </p>
+                <h2 className="mt-3 text-2xl font-light tracking-[-0.03em] text-slate-950 sm:text-3xl">
+                  YOHAKUでできること
+                </h2>
+              </div>
+              <Link
+                href="/login"
+                className="hidden sm:inline-flex items-center gap-2 text-sm font-medium text-slate-500 transition-colors hover:text-slate-900"
+              >
+                はじめる
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+
+            <div className="mt-6 grid gap-4 md:grid-cols-2">
+              {experiences.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <div
+                    key={item.title}
+                    className="group rounded-[1.75rem] border border-slate-200/80 bg-white/75 p-6 shadow-[0_10px_40px_rgba(15,23,42,0.04)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_14px_50px_rgba(15,23,42,0.08)]"
+                  >
+                    <div className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${item.accent} text-white shadow-sm`}>
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <h3 className="mt-5 text-lg font-medium tracking-[-0.02em] text-slate-950">
+                      {item.title}
+                    </h3>
+                    <p className="mt-2 text-sm leading-7 text-slate-600">
+                      {item.description}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       </section>

@@ -54,9 +54,8 @@ export function YohakuHomeClient({
     e.preventDefault();
     if (!input.trim()) return;
     
-    // Optional: store the drafted input in sessionStorage or pass via query to AI page
     sessionStorage.setItem("yohaku_draft_input", input);
-    router.push("/member/ai");
+    router.push("/inbox");
   };
 
   const dateFmt = new Intl.DateTimeFormat("ja-JP", {

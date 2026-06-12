@@ -85,7 +85,7 @@ export function OnboardingClient() {
     localStorage.setItem("yohaku_onboarding_completed", "true");
     setStep(5);
     setTimeout(() => {
-      router.push("/member");
+      router.push("/inbox");
     }, 1500);
   };
 

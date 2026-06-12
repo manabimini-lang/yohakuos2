@@ -61,7 +61,7 @@ export default async function MemberAiHistoryPage({ searchParams }: Props) {
 
   const isAdmin = user.role === "ADMIN" || user.role === "SUPER_ADMIN";
   const hasActiveSub = isAdmin || await subscriptionService.hasActiveSubscription(user.id);
-  if (!hasActiveSub) redirect("/member/ai");
+  if (!hasActiveSub) redirect("/inbox");
 
   const page = Math.max(1, parseInt(searchParams.page || "1", 10));
   const activeMood = searchParams.mood || "";
@@ -153,7 +153,7 @@ export default async function MemberAiHistoryPage({ searchParams }: Props) {
               </p>
               <p className="text-sm text-slate-400">最初の整理を書いてみましょう。</p>
               <Link
-                href="/member/ai"
+                href="/inbox"
                 className="inline-block text-sm text-slate-500 underline underline-offset-4 hover:text-slate-700 transition-colors"
               >
                 思考を整理しにいく
@@ -211,7 +211,7 @@ export default async function MemberAiHistoryPage({ searchParams }: Props) {
       {/* 下部導線 */}
       <div className="text-center pt-4">
         <Link
-          href="/member/ai"
+          href="/inbox"
           className="inline-block text-sm text-slate-400 hover:text-slate-600 transition-colors py-3"
         >
           今日の整理へ
