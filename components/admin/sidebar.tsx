@@ -11,6 +11,7 @@ import {
   Flag,
   CreditCard,
   Shield,
+  Link2,
   type LucideIcon,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
@@ -31,6 +32,7 @@ const ADMIN_NAV_ITEMS: NavEntry[] = [
   { href: "/admin", label: "ダッシュボード", icon: LayoutDashboard },
   { href: "/admin/contents", label: "コンテンツ管理", icon: BookOpen },
   { href: "/admin/tags", label: "タグ管理", icon: Tags },
+  { href: "/admin/external-resources", label: "外部リソース管理", icon: Link2 },
   { href: "/admin/members", label: "メンバー管理", icon: Users, requiredPermission: "manage_users" },
   { href: "/admin/prompts", label: "AI整理文脈管理", icon: Sparkles, requiredPermission: "manage_ai" },
   { href: "/admin/moderation", label: "モデレーション", icon: Flag, requiredRole: "moderator" },

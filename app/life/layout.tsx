@@ -7,18 +7,7 @@
 //
 
 import Link from "next/link";
-
-const NAV_ITEMS = [
-    { href: "/life/timeline", label: "タイムライン", icon: "⊞" },
-    { href: "/landscape", label: "内面の風景", icon: "⚏" },
-    { href: "/life/areas", label: "人生領域", icon: "◎" },
-    { href: "/life/meaning", label: "意味の兆し", icon: "◇" },
-    { href: "/life/energy", label: "エネルギー", icon: "〜" },
-    { href: "/life/seasonal", label: "季節の振り返り", icon: "◈" },
-    { href: "/life/balance", label: "バランス", icon: "☯" },
-    { href: "/life/planning", label: "静かな計画", icon: "·" },
-    { href: "/life/direction", label: "方向性", icon: "→" },
-];
+import { BottomNav } from "@/components/navigation/BottomNav";
 
 export default function LifeLayout({
     children,
@@ -26,11 +15,11 @@ export default function LifeLayout({
     children: React.ReactNode;
 }) {
     return (
-        <div className="min-h-screen bg-stone-50">
-            <div className="max-w-5xl mx-auto px-4 py-8">
+        <div className="min-h-screen bg-stone-50 relative">
+            <div className="max-w-5xl mx-auto px-4 pt-8 pb-24">
                 {/* Header */}
                 <header className="mb-8">
-                    <Link href="/life/timeline" className="inline-block">
+                    <Link href="/member" className="inline-block">
                         <h1 className="text-2xl font-light tracking-wider text-stone-700">
                             Life OS
                         </h1>
@@ -39,22 +28,6 @@ export default function LifeLayout({
                         </p>
                     </Link>
                 </header>
-
-                {/* Navigation */}
-                <nav className="mb-8 border-b border-stone-200 pb-2">
-                    <div className="flex flex-wrap gap-1">
-                        {NAV_ITEMS.map((item) => (
-                            <Link
-                                key={item.href}
-                                href={item.href}
-                                className="px-3 py-1.5 text-sm text-stone-500 hover:text-stone-800 hover:bg-stone-100 rounded transition-colors"
-                            >
-                                <span className="mr-1.5 text-stone-300">{item.icon}</span>
-                                {item.label}
-                            </Link>
-                        ))}
-                    </div>
-                </nav>
 
                 {/* Content */}
                 <main className="min-h-[60vh]">
@@ -68,6 +41,9 @@ export default function LifeLayout({
                     </p>
                 </footer>
             </div>
+
+            {/* Bottom Navigation */}
+            <BottomNav />
         </div>
     );
 }

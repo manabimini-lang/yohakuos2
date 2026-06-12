@@ -193,6 +193,7 @@ model User {
 
   contentItems ContentItem[]
   memoryResurfacings MemoryResurfacing[]
+  externalContents ExternalContent[]
 
   @@map("users")
 }
@@ -509,7 +510,7 @@ model SharedKnowledge {
 }
 
 model ExternalContent {
-  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id           String   @id @default(cuid())
   title        String
   url          String
   thumbnailUrl String?  @map("thumbnail_url")
@@ -518,7 +519,8 @@ model ExternalContent {
   tags         Json     @default("[]")
   description  String?
   createdAt    DateTime @default(now()) @map("created_at")
-  createdBy    String   @map("created_by") @db.Uuid
+  createdBy    String   @map("created_by")
+  author       User     @relation(fields: [createdBy], references: [id])
 
   @@map("external_contents")
 }

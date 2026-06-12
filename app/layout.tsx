@@ -2,11 +2,10 @@ import type { Metadata } from "next";
 import { PWAProvider } from "@/components/pwa-provider";
 import { SessionProvider } from "next-auth/react";
 import { CaptureLayer } from "@/components/capture/CaptureLayer";
-import BottomNav from "@/components/ui/BottomNav";
+import { auth } from "@/lib/auth";
+import "./globals.css";
 
 export const dynamic = "force-dynamic";
-
-import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
@@ -30,8 +29,6 @@ export const metadata: Metadata = {
   },
 };
 
-import { auth } from "@/lib/auth";
-
 export default async function RootLayout({
   children,
 }: {
@@ -52,7 +49,6 @@ export default async function RootLayout({
             <div className="min-h-screen">
               {children}
               {session && <CaptureLayer />}
-              {session && <BottomNav />}
             </div>
           </PWAProvider>
         </SessionProvider>

@@ -46,6 +46,7 @@ export function ExternalContentsManager() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Form states
@@ -125,28 +126,34 @@ export function ExternalContentsManager() {
       .filter(Boolean);
 
     try {
-      const res = await fetch("/api/external-contents/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: title.trim(),
-          url: url.trim(),
-          thumbnailUrl: thumbnailUrl.trim() || null,
-          type,
-          road,
-          tags,
-          description: description.trim() || null,
-        }),
-      });
+      const payload = {
+        title: title.trim(),
+        url: url.trim(),
+        thumbnailUrl: thumbnailUrl.trim() || null,
+        type,
+        road,
+        tags,
+        description: description.trim() || null,
+      };
+
+      const res = await fetch(
+        editingId ? `/api/external-contents/${editingId}` : "/api/external-contents/create",
+        {
+          method: editingId ? "PATCH" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }
+      );
 
       if (res.ok) {
-        showToast("コンテンツを追加しました");
+        showToast(editingId ? "コンテンツを更新しました" : "コンテンツを追加しました");
         // Reset form
         setTitle("");
         setUrl("");
         setThumbnailUrl("");
         setDescription("");
         setTagsInput("");
+        setEditingId(null);
         // Reload list
         fetchContents();
       } else {
@@ -182,6 +189,34 @@ export function ExternalContentsManager() {
     }
   };
 
+  const handleEdit = (item: ExternalContent) => {
+    setEditingId(item.id);
+    setTitle(item.title);
+    setUrl(item.url);
+    setThumbnailUrl(item.thumbnailUrl || "");
+    setDescription(item.description || "");
+    setType(item.type);
+    setRoad(item.road);
+
+    try {
+      const parsedTags = typeof item.tags === "string" ? JSON.parse(item.tags) : item.tags;
+      setTagsInput(Array.isArray(parsedTags) ? parsedTags.join(" ") : "");
+    } catch {
+      setTagsInput("");
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setTitle("");
+    setUrl("");
+    setThumbnailUrl("");
+    setDescription("");
+    setType("note");
+    setRoad(roads[0]?.title || "初任者ロード");
+    setTagsInput("");
+  };
+
   const getTypeIcon = (typeStr: string) => {
     const target = TYPES.find(t => t.id === typeStr);
     if (!target) return Link2;
@@ -215,7 +250,9 @@ export function ExternalContentsManager() {
         <div className="lg:col-span-5 bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm space-y-5">
           <div className="flex items-center space-x-2 pb-2 border-b border-slate-100">
             <Link2 className="w-4 h-4 text-slate-400" />
-            <h2 className="text-sm font-medium text-slate-800">新しいリンクを置く</h2>
+            <h2 className="text-sm font-medium text-slate-800">
+              {editingId ? "リンクを編集する" : "新しいリンクを置く"}
+            </h2>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4 text-sm">
@@ -335,6 +372,15 @@ export function ExternalContentsManager() {
                 </>
               )}
             </button>
+            {editingId && (
+              <button
+                type="button"
+                onClick={handleCancelEdit}
+                className="w-full rounded-xl border border-slate-200 bg-white text-slate-600 font-medium py-2.5 transition-colors hover:bg-slate-50"
+              >
+                編集をキャンセル
+              </button>
+            )}
           </form>
         </div>
 
@@ -420,18 +466,27 @@ export function ExternalContentsManager() {
                     </div>
 
                     {/* Delete Action Button */}
-                    <button
-                      onClick={() => handleDelete(item.id)}
-                      disabled={deletingId === item.id}
-                      className="text-slate-300 hover:text-rose-500 hover:bg-rose-50 p-1.5 rounded-lg transition-all duration-255 shrink-0 opacity-0 group-hover:opacity-100"
-                      title="このリンクを削除"
-                    >
-                      {deletingId === item.id ? (
-                        <Loader2 className="w-4 h-4 animate-spin text-rose-500" />
-                      ) : (
-                        <Trash2 className="w-4 h-4" />
-                      )}
-                    </button>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => handleEdit(item)}
+                        className="text-slate-300 hover:text-slate-600 hover:bg-slate-100 p-1.5 rounded-lg transition-all duration-255 shrink-0 opacity-0 group-hover:opacity-100"
+                        title="このリンクを編集"
+                      >
+                        <Plus className="w-4 h-4 rotate-45" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(item.id)}
+                        disabled={deletingId === item.id}
+                        className="text-slate-300 hover:text-rose-500 hover:bg-rose-50 p-1.5 rounded-lg transition-all duration-255 shrink-0 opacity-0 group-hover:opacity-100"
+                        title="このリンクを削除"
+                      >
+                        {deletingId === item.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin text-rose-500" />
+                        ) : (
+                          <Trash2 className="w-4 h-4" />
+                        )}
+                      </button>
+                    </div>
                   </div>
                 );
               })}
