@@ -36,9 +36,19 @@ export default function LifeLayout({
 
                 {/* Footer */}
                 <footer className="mt-16 pt-8 border-t border-stone-200">
-                    <p className="text-xs text-stone-300 text-center font-light">
-                        静かな知的空間 — YOHAKU Life OS
-                    </p>
+                    <div className="flex flex-col items-center space-y-4">
+                        <p className="text-xs text-stone-300 text-center font-light">
+                            静かな知的空間 — YOHAKU Life OS
+                        </p>
+                        <a 
+                            href="https://discord.gg/your-invite-link" 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-[11px] text-stone-400 hover:text-stone-600 transition-colors border border-stone-200 rounded-full px-4 py-1.5"
+                        >
+                            Discordコミュニティに参加する
+                        </a>
+                    </div>
                 </footer>
             </div>
 
