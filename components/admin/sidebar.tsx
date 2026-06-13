@@ -78,10 +78,10 @@ export function AdminSidebar() {
   return (
     <aside className="hidden w-64 border-r border-slate-200 bg-white lg:flex lg:flex-col">
       <div className="border-b border-slate-200 px-5 py-5">
-        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
           YOHAKU OS
         </p>
-        <p className="mt-1 text-sm font-medium text-slate-800">管理画面</p>
+        <p className="mt-1 text-sm font-medium text-foreground">管理画面</p>
       </div>
       <div className="p-4">
         <SidebarNav />

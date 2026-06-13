@@ -18,13 +18,13 @@ export function StarterJourneyBanner({ remainingHours, remainingMinutes }: Start
   const timeLabel = `${remainingHours}時間${remainingMinutes.toString().padStart(2, "0")}分`;
 
   return (
-    <div className="rounded-3xl border border-slate-200/60 bg-slate-50/90 p-6 text-slate-900 shadow-sm">
+    <div className="rounded-2xl border border-slate-200/60 bg-slate-50/90 p-6 text-foreground shadow-sm">
       <div className="flex flex-col gap-3">
         <div className="text-sm font-semibold tracking-wide uppercase text-slate-700">
           {title}
         </div>
         <p className="text-sm leading-relaxed text-slate-600">{message}</p>
-        <div className="inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 text-xs font-medium text-white">
+        <div className="inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 text-xs font-medium text-foreground">
           <span>残り</span>
           <span className="font-mono">{timeLabel}</span>
         </div>

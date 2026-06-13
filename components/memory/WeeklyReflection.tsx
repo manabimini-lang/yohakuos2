@@ -10,7 +10,7 @@ export function WeeklyReflection({ reflection }: WeeklyReflectionProps) {
   if (!reflection) return null;
 
   return (
-    <div className="mb-12 p-6 rounded-2xl bg-gray-50/50 dark:bg-white/[0.02] border border-gray-100 dark:border-white/5">
+    <div className="mb-12 p-6 rounded-2xl bg-gray-50/50 dark:bg-card border border-gray-100 dark:border-border/50">
       <div className="flex items-center gap-2 mb-3 text-sm text-gray-500">
         <BookOpen className="w-4 h-4 opacity-70" />
         <span className="font-medium">今週の余白</span>

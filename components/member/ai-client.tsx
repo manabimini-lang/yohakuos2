@@ -12,11 +12,11 @@ export function AiClient({ isPaidMember, hasKey }: { isPaidMember: boolean; hasK
   if (!isPaidMember) {
     return (
       <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center max-w-2xl">
-        <h2 className="text-lg font-medium text-slate-900 mb-2">AIとの対話機能</h2>
+        <h2 className="text-lg font-medium text-foreground mb-2">AIとの対話機能</h2>
         <p className="text-slate-600 text-sm mb-6">
           思考を整理するためのAIアシスタント機能は、有料会員向けのサービスです。
         </p>
-        <a href="/member/settings" className="inline-block rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white">
+        <a href="/member/settings" className="inline-block rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-foreground">
           設定画面でプランを確認する
         </a>
       </div>
@@ -26,7 +26,7 @@ export function AiClient({ isPaidMember, hasKey }: { isPaidMember: boolean; hasK
   if (!hasKey) {
     return (
       <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center max-w-2xl">
-        <h2 className="text-lg font-medium text-slate-900 mb-2">APIキーの登録が必要です</h2>
+        <h2 className="text-lg font-medium text-foreground mb-2">APIキーの登録が必要です</h2>
         <p className="text-slate-600 text-sm mb-6">
           この機能を利用するには、ご自身のGemini APIキーを設定していただく必要があります。
         </p>
@@ -80,7 +80,7 @@ export function AiClient({ isPaidMember, hasKey }: { isPaidMember: boolean; hasK
           <button
             type="submit"
             disabled={isGenerating || !input.trim()}
-            className="rounded-full bg-slate-900 px-6 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+            className="rounded-full bg-slate-900 px-6 py-2.5 text-sm font-medium text-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
           >
             {isGenerating ? "YOHAKUが考えています..." : "言葉を預ける"}
           </button>

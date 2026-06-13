@@ -93,7 +93,7 @@ export function PromptsManager() {
   if (loading) {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
-        <p className="text-sm text-slate-400 font-mono tracking-widest animate-pulse">
+        <p className="text-sm text-muted-foreground font-mono tracking-widest animate-pulse">
           文脈データを読み込んでいます...
         </p>
       </div>
@@ -104,7 +104,7 @@ export function PromptsManager() {
     <div className="mx-auto max-w-3xl space-y-6">
       {/* Toast notifications */}
       {success && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-sm font-medium text-white shadow-lg animate-in slide-in-from-bottom-4 fade-in duration-300">
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-sm font-medium text-foreground shadow-lg animate-in slide-in-from-bottom-4 fade-in duration-300">
           <CheckCircle2 className="w-4 h-4 text-emerald-400" />
           <span>プロンプト文脈を保存しました</span>
         </div>
@@ -119,26 +119,26 @@ export function PromptsManager() {
 
       {/* Header */}
       <div className="space-y-1">
-        <h1 className="text-xl font-serif text-slate-800 tracking-wide flex items-center gap-2">
-          <Sparkles className="w-5 h-5 text-slate-400 stroke-[1.5]" />
+        <h1 className="text-xl font-serif text-foreground tracking-wide flex items-center gap-2">
+          <Sparkles className="w-5 h-5 text-muted-foreground stroke-[1.5]" />
           <span>AI整理文脈管理</span>
         </h1>
-        <p className="text-xs text-slate-400 leading-relaxed">
+        <p className="text-xs text-muted-foreground leading-relaxed">
           ロードごとのAIによる状態整理の文脈（システムプロンプト）を管理・編集します。
         </p>
       </div>
 
-      <div className="bg-white border border-slate-100 rounded-3xl p-6 md:p-8 shadow-sm space-y-6">
+      <div className="bg-white border border-slate-100 rounded-2xl p-6 md:p-8 shadow-sm space-y-6">
         {/* Road selector dropdown */}
         <div className="space-y-2">
-          <label htmlFor="road-select" className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider font-mono">
+          <label htmlFor="road-select" className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider font-mono">
             対象のロードを選択
           </label>
           <select
             id="road-select"
             value={selectedRoadId}
             onChange={(e) => handleRoadChange(e.target.value)}
-            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 focus:border-slate-350 focus:outline-none focus:ring-0 transition-colors"
+            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-foreground focus:border-slate-350 focus:outline-none focus:ring-0 transition-colors"
           >
             {roads.map((r) => (
               <option key={r.id} value={r.id}>
@@ -151,7 +151,7 @@ export function PromptsManager() {
         {/* Selected road details */}
         {selectedRoad && (
           <div className="rounded-2xl bg-slate-50/50 border border-slate-100/50 p-4 space-y-1">
-            <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider font-mono">ロードの説明</span>
+            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider font-mono">ロードの説明</span>
             <p className="text-xs text-slate-650 leading-relaxed">{selectedRoad.description}</p>
           </div>
         )}
@@ -159,7 +159,7 @@ export function PromptsManager() {
         {/* Prompt editor */}
         <div className="space-y-2">
           <div className="flex justify-between items-center">
-            <label htmlFor="prompt-textarea" className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider font-mono">
+            <label htmlFor="prompt-textarea" className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider font-mono">
               AI整理用システムプロンプト
             </label>
             {!systemPrompt && (
@@ -174,10 +174,10 @@ export function PromptsManager() {
             onChange={(e) => setSystemPrompt(e.target.value)}
             placeholder={`例：${selectedRoad?.title || "このロード"}の文脈において、ユーザーが教育現場で抱える特有の感情や悩みに対して、共感的かつ客観的に状態を整理してください。`}
             rows={10}
-            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-4 text-sm text-slate-800 placeholder:text-slate-350 focus:border-slate-350 focus:outline-none focus:ring-0 resize-y leading-relaxed font-mono"
+            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-4 text-sm text-foreground placeholder:text-slate-350 focus:border-slate-350 focus:outline-none focus:ring-0 resize-y leading-relaxed font-mono"
             disabled={saving}
           />
-          <p className="text-[10px] text-slate-400 leading-relaxed">
+          <p className="text-[10px] text-muted-foreground leading-relaxed">
             ※ 未設定の場合は、デフォルトの文脈（「<code>[ロード名]としての文脈（[ロード説明]）を理解してください。</code>」）が自動的に適用されます。
           </p>
         </div>
@@ -187,7 +187,7 @@ export function PromptsManager() {
           <button
             onClick={handleSave}
             disabled={saving || !selectedRoadId}
-            className="inline-flex items-center gap-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-medium px-5 py-2.5 text-xs shadow-sm transition-colors disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-foreground font-medium px-5 py-2.5 text-xs shadow-sm transition-colors disabled:opacity-50"
           >
             <Save className="w-3.5 h-3.5" />
             <span>{saving ? "保存中..." : "保存する"}</span>

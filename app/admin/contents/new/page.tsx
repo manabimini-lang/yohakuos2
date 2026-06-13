@@ -19,7 +19,7 @@ export default async function NewContentPage() {
     <section className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-semibold text-slate-900">新規コンテンツ作成</h1>
+          <h1 className="text-lg font-semibold text-foreground">新規コンテンツ作成</h1>
           <p className="text-sm text-slate-600">新しいコンテンツを作成します。</p>
         </div>
         <Link

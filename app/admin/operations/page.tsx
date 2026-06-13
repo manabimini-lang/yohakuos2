@@ -25,8 +25,8 @@ export default async function AdminOperationsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-slate-800">オペレーション</h1>
-        <div className="text-xs text-slate-400">
+        <h1 className="text-2xl font-semibold text-foreground">オペレーション</h1>
+        <div className="text-xs text-muted-foreground">
           キュー状態
         </div>
       </div>
@@ -54,12 +54,12 @@ export default async function AdminOperationsPage() {
         <h2 className="mb-3 text-sm font-medium text-slate-700">ジョブタイプ別</h2>
         <div className="space-y-2">
           {Object.entries(health.byJobType).length === 0 ? (
-            <p className="text-xs text-slate-400">ジョブがありません</p>
+            <p className="text-xs text-muted-foreground">ジョブがありません</p>
           ) : (
             Object.entries(health.byJobType).map(([jobType, count]) => (
               <div key={jobType} className="flex items-center justify-between text-xs">
                 <span className="font-mono text-slate-600">{jobType}</span>
-                <span className="text-slate-400">{count}件</span>
+                <span className="text-muted-foreground">{count}件</span>
               </div>
             ))
           )}
@@ -86,7 +86,7 @@ function StatusCard({
 }) {
   return (
     <div className="rounded-xl border border-slate-100 bg-white p-4 shadow-sm">
-      <p className="text-xs font-medium text-slate-500">{label}</p>
+      <p className="text-xs font-medium text-muted-foreground">{label}</p>
       <p className={`mt-1 text-2xl font-semibold ${color}`}>{count}</p>
     </div>
   );

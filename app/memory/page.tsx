@@ -60,10 +60,10 @@ export default async function MemoryPage() {
   return (
     <div className="max-w-5xl mx-auto py-12 px-6 space-y-24">
       <header className="space-y-4">
-        <h1 className="text-3xl md:text-4xl font-light tracking-widest text-black/90 dark:text-white/90">
+        <h1 className="text-3xl md:text-4xl font-light tracking-widest text-black/90 dark:text-foreground/90">
           記憶の地層
         </h1>
-        <p className="text-sm md:text-base text-black/50 dark:text-white/50 leading-relaxed font-light">
+        <p className="text-sm md:text-base text-black/50 dark:text-foreground/50 leading-relaxed font-light">
           過去の余白が、時間とともに静かに沈殿する空間。
         </p>
       </header>
@@ -72,23 +72,23 @@ export default async function MemoryPage() {
       <nav className="flex flex-col sm:flex-row gap-3">
         <Link 
           href="/memory"
-          className="flex-1 px-6 py-4 rounded-lg border border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.02] hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition-colors text-center"
+          className="flex-1 px-6 py-4 rounded-lg border border-black/10 dark:border-border bg-black/[0.02] dark:bg-card hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition-colors text-center"
         >
-          <p className="text-xs font-light tracking-widest text-black/40 dark:text-white/40 uppercase">現在地</p>
-          <p className="text-sm font-light text-black/70 dark:text-white/70 mt-1">記憶の積み重ね</p>
+          <p className="text-xs font-light tracking-widest text-black/40 dark:text-foreground/40 uppercase">現在地</p>
+          <p className="text-sm font-light text-black/70 dark:text-foreground/70 mt-1">記憶の積み重ね</p>
         </Link>
         <Link 
           href="/quiet-return"
-          className="flex-1 px-6 py-4 rounded-lg border border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.02] hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition-colors text-center group"
+          className="flex-1 px-6 py-4 rounded-lg border border-black/10 dark:border-border bg-black/[0.02] dark:bg-card hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition-colors text-center group"
         >
-          <p className="text-xs font-light tracking-widest text-black/40 dark:text-white/40 uppercase group-hover:text-black/60 dark:group-hover:text-white/60 transition-colors">静かな戻り</p>
-          <p className="text-sm font-light text-black/70 dark:text-white/70 mt-1 group-hover:text-black/80 dark:group-hover:text-white/80 transition-colors">遠い断片が戻ってくる</p>
+          <p className="text-xs font-light tracking-widest text-black/40 dark:text-foreground/40 uppercase group-hover:text-black/60 dark:group-hover:text-foreground/60 transition-colors">静かな戻り</p>
+          <p className="text-sm font-light text-black/70 dark:text-foreground/70 mt-1 group-hover:text-black/80 dark:group-hover:text-foreground/80 transition-colors">遠い断片が戻ってくる</p>
         </Link>
       </nav>
 
       {/* AI未接続対応 */}
       {!hasAiAccess && (
-        <section className="p-8 rounded-2xl border border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.02] space-y-4">
+        <section className="p-8 rounded-2xl border border-black/10 dark:border-border bg-black/[0.02] dark:bg-card space-y-4">
           {starterJourney.active ? (
             <>
               <StarterJourneyBanner
@@ -98,15 +98,15 @@ export default async function MemoryPage() {
             </>
           ) : (
             <>
-              <p className="text-sm text-black/80 dark:text-white/80 leading-relaxed font-light">
+              <p className="text-sm text-black/80 dark:text-foreground/80 leading-relaxed font-light">
                 AI接続がまだ行われていません。
               </p>
-              <p className="text-xs text-black/50 dark:text-white/50 leading-relaxed font-light">
+              <p className="text-xs text-black/50 dark:text-foreground/50 leading-relaxed font-light">
                 Gemini APIキーを設定すると、保存した記録が静かに整えられ、パーソナルAIとの対話や、内面の風景の描画が始まります。
               </p>
               <Link 
                 href="/member/settings"
-                className="inline-flex items-center text-xs font-light text-black/40 dark:text-white/40 hover:text-black/60 dark:hover:text-white/60 transition-colors group"
+                className="inline-flex items-center text-xs font-light text-black/40 dark:text-foreground/40 hover:text-black/60 dark:hover:text-foreground/60 transition-colors group"
               >
                 AI設定へ
                 <ChevronRight className="w-3 h-3 ml-1 group-hover:translate-x-1 transition-transform" />
@@ -125,11 +125,11 @@ export default async function MemoryPage() {
       {weeklyReflection?.reflection ? (
         <WeeklyReflection reflection={weeklyReflection.reflection} />
       ) : (
-        <section className="p-8 rounded-2xl bg-black/[0.02] dark:bg-white/[0.02] border border-black/5 dark:border-white/5 text-center space-y-3">
-          <p className="text-sm text-black/40 dark:text-white/40 font-light">
+        <section className="p-8 rounded-2xl bg-black/[0.02] dark:bg-card border border-black/5 dark:border-border/50 text-center space-y-3">
+          <p className="text-sm text-black/40 dark:text-foreground/40 font-light">
             週の振り返りはまだ生成されていません
           </p>
-          <p className="text-xs text-black/25 dark:text-white/25 leading-relaxed font-light">
+          <p className="text-xs text-black/25 dark:text-foreground/25 leading-relaxed font-light">
             記録が積み重なると、
             <br />
             毎週の思考の流れが見えてきます。

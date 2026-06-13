@@ -1,3 +1,7 @@
+import { InteractionTracker } from "@/components/capture/InteractionTracker";
+import { ExternalLink } from "@/components/capture/ExternalLink";
+import { RelatedMemoryCard } from "@/components/memory/RelatedMemoryCard";
+import { getRelatedMemories } from "@/lib/memory/related-memory";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
@@ -77,26 +81,7 @@ export default async function InboxDetailPage({ params }: { params: { id: string
 
   const errorDetails = classifyAiError(lastError);
 
-  const relatedFilters: any[] = [];
-  if (item.aiTags && item.aiTags.length > 0) {
-    relatedFilters.push({ aiTags: { hasSome: item.aiTags } });
-  }
-  if (item.contentType) {
-    relatedFilters.push({ contentType: item.contentType });
-  }
-
-  const relatedItems =
-    relatedFilters.length > 0
-      ? await prisma.contentItem.findMany({
-          where: {
-            userId: session.user.id,
-            id: { not: item.id },
-            OR: relatedFilters,
-          },
-          take: 5,
-          orderBy: { createdAt: "desc" },
-        })
-      : [];
+  const relatedItems = await getRelatedMemories(item.id, session.user.id);
 
   const isPdf = item.type === "pdf";
   const originalLink = item.url || item.fileUrl;
@@ -109,39 +94,41 @@ export default async function InboxDetailPage({ params }: { params: { id: string
   });
 
   return (
-    <main className="min-h-screen bg-[#090909] pb-28 text-slate-100">
-      <div className="max-w-4xl mx-auto px-6 pt-14 pb-28 space-y-10">
+    <main className="min-h-screen bg-background pb-24 text-foreground">
+      <InteractionTracker itemId={item.id} type="view" />
+      <div className="max-w-4xl mx-auto px-6 pt-14 pb-24 space-y-10">
         <section className="space-y-4">
-          <div className="text-xs uppercase tracking-[0.35em] text-slate-500">余白の詳細</div>
-          <h1 className="text-3xl font-light leading-tight text-white">{displayTitle}</h1>
-          <div className="flex flex-wrap items-center gap-3 text-sm text-slate-500">
+          <div className="text-xs uppercase tracking-[0.35em] text-muted-foreground">余白の詳細</div>
+          <h1 className="text-3xl font-light leading-tight text-foreground">{displayTitle}</h1>
+          <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
             <span>{savedAt}</span>
-            <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">{sourceLabel}</span>
+            <span className="rounded-full border border-border bg-card px-3 py-1">{sourceLabel}</span>
           </div>
 
           {item.aiTags && item.aiTags.length > 0 ? (
             <div className="flex flex-wrap gap-2">
               {item.aiTags.slice(0, 4).map((tag) => (
-                <span key={tag} className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-300">
-                  {tag}
+                <span key={tag} className="rounded-full border border-border bg-card px-3 py-1 text-xs text-muted-foreground">
+                  #{tag.replace(/^#/, '')}
                 </span>
               ))}
             </div>
           ) : null}
         </section>
 
-        <section className="space-y-4 rounded-3xl border border-white/10 bg-white/5 p-6">
+        <section className="space-y-4 rounded-2xl border border-border bg-card p-6">
+          <div className="text-xs uppercase tracking-[0.35em] text-muted-foreground">内容の要約</div>
           {lastError ? (
             <div className="space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-500">
-              <p className="text-sm leading-relaxed text-slate-300">{errorDetails.message}</p>
-              <p className="text-xs leading-relaxed text-slate-500 font-light leading-relaxed">
+              <p className="text-sm leading-relaxed text-muted-foreground">{errorDetails.message}</p>
+              <p className="text-xs leading-relaxed text-muted-foreground font-light leading-relaxed">
                 {errorDetails.subMessage}
               </p>
               <div className="flex gap-4 pt-1">
                 {errorDetails.showSettings && (
                   <Link
                     href="/member/settings"
-                    className="inline-flex items-center text-xs font-light text-slate-400 hover:text-slate-200 transition-colors group"
+                    className="inline-flex items-center text-xs font-light text-muted-foreground hover:text-foreground transition-colors group"
                   >
                     AI設定を確認する
                     <ChevronRight className="w-3 h-3 ml-1 group-hover:translate-x-1 transition-transform" />
@@ -149,7 +136,7 @@ export default async function InboxDetailPage({ params }: { params: { id: string
                 )}
                 <Link
                   href={`/inbox/${item.id}/retry`}
-                  className="inline-flex items-center text-xs font-light text-slate-400 hover:text-slate-200 transition-colors group"
+                  className="inline-flex items-center text-xs font-light text-muted-foreground hover:text-foreground transition-colors group"
                 >
                   もう一度試す
                   <ChevronRight className="w-3 h-3 ml-1 group-hover:translate-x-1 transition-transform" />
@@ -157,66 +144,63 @@ export default async function InboxDetailPage({ params }: { params: { id: string
               </div>
             </div>
           ) : !item.summary ? (
-            <p className="text-sm leading-relaxed text-slate-400">まだ静かに整理されています。</p>
+            <p className="text-sm leading-relaxed text-muted-foreground">まだ静かに整理されています。</p>
           ) : null}
 
           {item.summary ? (
-            <p className="text-base leading-relaxed text-slate-100">{item.summary}</p>
+            <p className="text-base leading-relaxed text-foreground">{item.summary}</p>
           ) : null}
         </section>
 
         {item.reflection ? (
-          <section className="space-y-3 rounded-3xl border border-white/10 bg-white/5 p-6">
-            <div className="text-xs uppercase tracking-[0.35em] text-slate-500">なぜ残したかったか</div>
-            <p className="text-sm leading-relaxed text-slate-200">{item.reflection}</p>
+          <section className="space-y-3 rounded-2xl border border-border bg-card p-6">
+            <div className="text-xs uppercase tracking-[0.35em] text-muted-foreground">なぜ残したのか</div>
+            <p className="text-sm leading-relaxed text-foreground">{item.reflection}</p>
           </section>
         ) : null}
 
-        {relatedItems.length > 0 ? (
-          <section className="space-y-4 rounded-3xl border border-white/10 bg-white/5 p-6">
-            <div className="text-xs uppercase tracking-[0.35em] text-slate-500">関連する余白</div>
+        <section className="space-y-4 rounded-2xl border border-border bg-card p-6">
+          <div className="space-y-1">
+            <div className="text-xs uppercase tracking-[0.35em] text-muted-foreground">この記録に近い余白</div>
+            <p className="text-[11px] text-muted-foreground font-light">以前のあなたが近いテーマで残していた記録です</p>
+          </div>
+
+          {relatedItems.length > 0 ? (
             <div className="grid grid-cols-1 gap-3">
               {relatedItems.map((related) => (
-                <Link
-                  key={related.id}
-                  href={`/inbox/${related.id}`}
-                  className="rounded-3xl border border-white/10 bg-[#0B0B0B] px-4 py-3 text-sm text-slate-200 transition-colors hover:border-white/15"
-                >
-                  <div className="line-clamp-2">{related.title || related.fileName || related.url}</div>
-                  <div className="mt-2 text-xs text-slate-500">
-                    {related.aiTags && related.aiTags.length > 0 ? related.aiTags.slice(0, 2).join(" • ") : related.contentType || "記録"}
-                  </div>
-                </Link>
+                <RelatedMemoryCard key={related.id} item={related} />
               ))}
             </div>
-          </section>
-        ) : null}
+          ) : (
+            <div className="py-6 text-center text-sm font-light text-muted-foreground bg-card rounded-2xl border border-dashed border-border">
+              まだ近い余白は見つかっていません
+            </div>
+          )}
+        </section>
 
-        <section className="space-y-4 rounded-3xl border border-white/10 bg-white/5 p-6">
-          <div className="text-xs uppercase tracking-[0.35em] text-slate-500">元の記事を開く</div>
+        <section className="space-y-4 rounded-2xl border border-border bg-card p-6">
+          <div className="text-xs uppercase tracking-[0.35em] text-muted-foreground">元の記事を開く</div>
           {originalLink ? (
             <div className="flex flex-wrap gap-3">
-              <a
+              <ExternalLink
                 href={originalLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-100 transition-colors hover:bg-white/10"
+                itemId={item.id}
+                className="rounded-full border border-border bg-card px-4 py-2 text-sm text-foreground transition-colors hover:bg-white/10"
               >
                 続きを読む
-              </a>
+              </ExternalLink>
               {isPdf && item.fileUrl ? (
-                <a
+                <ExternalLink
                   href={item.fileUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-100 transition-colors hover:bg-white/10"
+                  itemId={item.id}
+                  className="rounded-full border border-border bg-card px-4 py-2 text-sm text-foreground transition-colors hover:bg-white/10"
                 >
                   別タブで開く
-                </a>
+                </ExternalLink>
               ) : null}
             </div>
           ) : (
-            <p className="text-sm text-slate-500">この記録には外部リンクが含まれていません。</p>
+            <p className="text-sm text-muted-foreground">この記録には外部リンクが含まれていません。</p>
           )}
         </section>
       </div>

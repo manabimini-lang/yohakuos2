@@ -20,10 +20,10 @@ export function PhilosophyFragmentsSection({
   return (
     <section className="space-y-6">
       <div className="space-y-2">
-        <h2 className="text-2xl sm:text-3xl font-light tracking-wide text-black/80 dark:text-white/80">
+        <h2 className="text-2xl sm:text-3xl font-light tracking-wide text-black/80 dark:text-foreground/80">
           にじみ出ている価値観
         </h2>
-        <p className="text-sm font-light text-black/50 dark:text-white/50">
+        <p className="text-sm font-light text-black/50 dark:text-foreground/50">
           あなたの記録から、静かに浮かび上がった考え方
         </p>
       </div>
@@ -42,13 +42,13 @@ export function PhilosophyFragmentsSection({
               {/* Content */}
               <div className="pl-4 space-y-3">
                 {/* Fragment text */}
-                <p className="text-sm sm:text-base font-light text-black/70 dark:text-white/70 leading-relaxed italic">
+                <p className="text-sm sm:text-base font-light text-black/70 dark:text-foreground/70 leading-relaxed italic">
                   「{fragment.content}」
                 </p>
 
                 {/* Source theme */}
-                <div className="flex items-center justify-between text-xs font-light text-black/40 dark:text-white/40">
-                  <span className="text-black/50 dark:text-white/50">
+                <div className="flex items-center justify-between text-xs font-light text-black/40 dark:text-foreground/40">
+                  <span className="text-black/50 dark:text-foreground/50">
                     テーマ: {fragment.sourceTheme}
                   </span>
                   <span className="opacity-60">
@@ -57,7 +57,7 @@ export function PhilosophyFragmentsSection({
                 </div>
 
                 {/* Subtle indicator */}
-                <div className="flex items-center gap-2 text-xs font-light text-black/25 dark:text-white/25 pt-1">
+                <div className="flex items-center gap-2 text-xs font-light text-black/25 dark:text-foreground/25 pt-1">
                   <span className="inline-block w-0.5 h-0.5 rounded-full bg-black/25 dark:bg-white/25" />
                   <span>あなた自身の言葉から</span>
                 </div>
@@ -69,7 +69,7 @@ export function PhilosophyFragmentsSection({
 
       {/* Note about fragments */}
       <div className="pt-4 text-center">
-        <p className="text-xs font-light text-black/30 dark:text-white/30 max-w-md mx-auto leading-relaxed">
+        <p className="text-xs font-light text-black/30 dark:text-foreground/30 max-w-md mx-auto leading-relaxed">
           これらは、AIの解釈ではなく、
           あなたの記録そのものからにじみ出ている思考です。
         </p>

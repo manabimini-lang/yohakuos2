@@ -41,7 +41,7 @@ export function KnowledgeDetailClient({ id }: { id: string }) {
   if (loading) {
     return (
       <div className="mx-auto max-w-2xl px-6 py-24 text-center">
-        <p className="text-xs text-slate-300 font-sans tracking-widest animate-pulse">
+        <p className="text-xs text-muted-foreground font-sans tracking-widest animate-pulse">
           静かに本を開いています...
         </p>
       </div>
@@ -51,10 +51,10 @@ export function KnowledgeDetailClient({ id }: { id: string }) {
   if (!knowledge) {
     return (
       <div className="mx-auto max-w-2xl px-6 py-24 text-center space-y-4">
-        <p className="text-sm text-slate-400 font-serif">お探しの実践は見つかりませんでした。</p>
+        <p className="text-sm text-muted-foreground font-serif">お探しの実践は見つかりませんでした。</p>
         <Link
           href="/knowledge"
-          className="inline-flex items-center gap-2 text-xs text-slate-500 hover:text-slate-700 transition-colors"
+          className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-slate-700 transition-colors"
         >
           <ArrowLeft className="h-3 w-3" />
           <span>一覧に戻る</span>
@@ -84,7 +84,7 @@ export function KnowledgeDetailClient({ id }: { id: string }) {
       <div>
         <Link
           href="/knowledge"
-          className="inline-flex items-center gap-2 text-xs text-slate-400 hover:text-slate-600 transition-colors"
+          className="inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-slate-600 transition-colors"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
           <span>一覧に戻る</span>
@@ -94,13 +94,13 @@ export function KnowledgeDetailClient({ id }: { id: string }) {
       {/* Main Content Article */}
       <article className="space-y-8 font-sans">
         <div className="space-y-4">
-          <div className="flex items-center gap-3 text-[10px] text-slate-400 font-mono">
-            <span className="bg-slate-50 px-2.5 py-0.5 rounded-full text-[9px] tracking-wide text-slate-500 font-medium">
+          <div className="flex items-center gap-3 text-[10px] text-muted-foreground font-mono">
+            <span className="bg-slate-50 px-2.5 py-0.5 rounded-full text-[9px] tracking-wide text-muted-foreground font-medium">
               {knowledge.road}
             </span>
             <time dateTime={knowledge.createdAt}>{dateString}</time>
           </div>
-          <h1 className="text-xl md:text-2xl font-medium tracking-normal text-slate-800 leading-snug">
+          <h1 className="text-xl md:text-2xl font-medium tracking-normal text-foreground leading-snug">
             {knowledge.title}
           </h1>
         </div>
@@ -112,7 +112,7 @@ export function KnowledgeDetailClient({ id }: { id: string }) {
         {parsedTags.length > 0 && (
           <div className="flex flex-wrap gap-2 pt-2">
             {parsedTags.map((tag: string, i: number) => (
-              <span key={i} className="text-xs text-slate-400 font-mono">
+              <span key={i} className="text-xs text-muted-foreground font-mono">
                 #{tag}
               </span>
             ))}
@@ -125,12 +125,12 @@ export function KnowledgeDetailClient({ id }: { id: string }) {
 
       {/* Related Practices Section */}
       <div className="space-y-6">
-        <h3 className="text-xs font-medium tracking-wider text-slate-400 uppercase font-mono">
+        <h3 className="text-xs font-medium tracking-wider text-muted-foreground uppercase font-mono">
           関連する小さな実践
         </h3>
         
         {related.length === 0 ? (
-          <p className="text-xs text-slate-400 font-serif italic">他に関連する実践はまだありません。</p>
+          <p className="text-xs text-muted-foreground font-serif italic">他に関連する実践はまだありません。</p>
         ) : (
           <div className="grid gap-4 sm:grid-cols-3">
             {related.map((item) => {
@@ -144,14 +144,14 @@ export function KnowledgeDetailClient({ id }: { id: string }) {
                   className="group flex flex-col justify-between p-4 rounded-xl border border-slate-100 bg-white transition-all duration-300 hover:border-slate-200"
                 >
                   <div className="space-y-2">
-                    <span className="text-[9px] text-slate-400 font-mono">
+                    <span className="text-[9px] text-muted-foreground font-mono">
                       {relDateString}
                     </span>
-                    <h4 className="text-xs font-medium text-slate-700 leading-snug group-hover:text-slate-900 transition-colors line-clamp-2">
+                    <h4 className="text-xs font-medium text-slate-700 leading-snug group-hover:text-foreground transition-colors line-clamp-2">
                       {item.title}
                     </h4>
                   </div>
-                  <span className="mt-4 text-[9px] text-slate-400 bg-slate-50 px-2 py-0.5 rounded-md self-start font-medium font-sans">
+                  <span className="mt-4 text-[9px] text-muted-foreground bg-slate-50 px-2 py-0.5 rounded-md self-start font-medium font-sans">
                     {item.road.replace("ロード", "")}
                   </span>
                 </Link>

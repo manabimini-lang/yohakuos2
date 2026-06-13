@@ -41,19 +41,19 @@ export default async function ReflectionDetailPage({ params }: ReflectionDetailP
     : null;
 
   return (
-    <div className="min-h-screen bg-[#FDFDFD] dark:bg-[#0A0A0A] text-black/80 dark:text-white/80 pb-32 selection:bg-black/10 dark:selection:bg-white/10">
+    <div className="min-h-screen bg-[#FDFDFD] dark:bg-[#0A0A0A] text-black/80 dark:text-foreground/80 pb-32 selection:bg-black/10 dark:selection:bg-white/10">
       <main className="max-w-2xl mx-auto px-6 pt-24 md:pt-32 space-y-8">
         
         {/* Header with back button */}
         <div className="flex items-center justify-between">
           <Link
             href="/reflections"
-            className="inline-flex items-center text-xs text-black/40 dark:text-white/40 hover:text-black/60 dark:hover:text-white/60 transition-colors group"
+            className="inline-flex items-center text-xs text-black/40 dark:text-foreground/40 hover:text-black/60 dark:hover:text-foreground/60 transition-colors group"
           >
             <ChevronLeft className="w-3 h-3 mr-1 group-hover:-translate-x-0.5 transition-transform" />
             振り返りに戻る
           </Link>
-          <div className="text-xs font-mono text-black/40 dark:text-white/40">
+          <div className="text-xs font-mono text-black/40 dark:text-foreground/40">
             {new Date(reflection.createdAt).toLocaleDateString("ja-JP", {
               year: "numeric",
               month: "2-digit",
@@ -63,26 +63,26 @@ export default async function ReflectionDetailPage({ params }: ReflectionDetailP
         </div>
 
         {/* Script section */}
-        <section className="space-y-6 pt-8 border-t border-black/5 dark:border-white/5">
-          <h1 className="text-lg md:text-xl font-light tracking-wider text-black/90 dark:text-white/90">
+        <section className="space-y-6 pt-8 border-t border-black/5 dark:border-border/50">
+          <h1 className="text-lg md:text-xl font-light tracking-wider text-black/90 dark:text-foreground/90">
             静かな振り返り
           </h1>
           
-          <p className="text-base leading-relaxed font-light text-black/70 dark:text-white/70 whitespace-pre-wrap">
+          <p className="text-base leading-relaxed font-light text-black/70 dark:text-foreground/70 whitespace-pre-wrap">
             {reflection.script}
           </p>
         </section>
 
         {/* Audio player section */}
         {reflection.status === "completed" && reflection.audioUrl && (
-          <section className="space-y-6 pt-8 border-t border-black/5 dark:border-white/5">
+          <section className="space-y-6 pt-8 border-t border-black/5 dark:border-border/50">
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h2 className="text-xs tracking-[0.2em] uppercase text-black/40 dark:text-white/40">
+                <h2 className="text-xs tracking-[0.2em] uppercase text-black/40 dark:text-foreground/40">
                   音声
                 </h2>
                 {reflection.duration && (
-                  <span className="text-xs text-black/30 dark:text-white/30">
+                  <span className="text-xs text-black/30 dark:text-foreground/30">
                     {Math.round(reflection.duration / 60)}分
                   </span>
                 )}
@@ -96,17 +96,17 @@ export default async function ReflectionDetailPage({ params }: ReflectionDetailP
         )}
 
         {reflection.status === "pending" && (
-          <section className="space-y-6 pt-8 border-t border-black/5 dark:border-white/5">
-            <p className="text-sm text-black/40 dark:text-white/40 italic font-light">
+          <section className="space-y-6 pt-8 border-t border-black/5 dark:border-border/50">
+            <p className="text-sm text-black/40 dark:text-foreground/40 italic font-light">
               音声を生成しています...
             </p>
           </section>
         )}
 
         {reflection.status === "failed" && (
-          <section className="space-y-6 pt-8 border-t border-black/5 dark:border-white/5">
-            <div className="p-6 rounded-2xl bg-black/[0.02] dark:bg-white/[0.02] border border-black/5 dark:border-white/5 text-center">
-              <p className="text-sm text-black/40 dark:text-white/40 font-light">
+          <section className="space-y-6 pt-8 border-t border-black/5 dark:border-border/50">
+            <div className="p-6 rounded-2xl bg-black/[0.02] dark:bg-card border border-black/5 dark:border-border/50 text-center">
+              <p className="text-sm text-black/40 dark:text-foreground/40 font-light">
                 音声の生成に失敗しました。
               </p>
             </div>
@@ -115,21 +115,21 @@ export default async function ReflectionDetailPage({ params }: ReflectionDetailP
 
         {/* Related content section */}
         {contentItem && (
-          <section className="space-y-6 pt-8 border-t border-black/5 dark:border-white/5">
-            <h2 className="text-xs tracking-[0.2em] uppercase text-black/40 dark:text-white/40">
+          <section className="space-y-6 pt-8 border-t border-black/5 dark:border-border/50">
+            <h2 className="text-xs tracking-[0.2em] uppercase text-black/40 dark:text-foreground/40">
               この振り返りのもとになった記録
             </h2>
             
             <Link
               href={`/inbox/${contentItem.id}`}
-              className="block p-6 rounded-2xl border border-black/10 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.02] hover:border-black/20 dark:hover:border-white/20 transition-colors group"
+              className="block p-6 rounded-2xl border border-black/10 dark:border-border bg-black/[0.02] dark:bg-card hover:border-black/20 dark:hover:border-white/20 transition-colors group"
             >
-              <h3 className="font-light text-black/90 dark:text-white/90 group-hover:text-black dark:group-hover:text-white transition-colors mb-3">
+              <h3 className="font-light text-black/90 dark:text-foreground/90 group-hover:text-black dark:group-hover:text-foreground transition-colors mb-3">
                 {contentItem.title || "No title"}
               </h3>
               
               {contentItem.summary && (
-                <p className="text-sm text-black/60 dark:text-white/60 line-clamp-2 font-light mb-3">
+                <p className="text-sm text-black/60 dark:text-foreground/60 line-clamp-2 font-light mb-3">
                   {contentItem.summary}
                 </p>
               )}
@@ -139,7 +139,7 @@ export default async function ReflectionDetailPage({ params }: ReflectionDetailP
                   {contentItem.aiTags.slice(0, 3).map((tag) => (
                     <span
                       key={tag}
-                      className="inline-block px-3 py-1 rounded-full text-xs bg-black/5 dark:bg-white/5 text-black/60 dark:text-white/60"
+                      className="inline-block px-3 py-1 rounded-full text-xs bg-black/5 dark:bg-card text-black/60 dark:text-foreground/60"
                     >
                       {tag}
                     </span>
@@ -152,8 +152,8 @@ export default async function ReflectionDetailPage({ params }: ReflectionDetailP
 
         {/* Theme/tags section */}
         {contentItem?.aiTags && contentItem.aiTags.length > 0 && (
-          <section className="space-y-6 pt-8 border-t border-black/5 dark:border-white/5">
-            <h2 className="text-xs tracking-[0.2em] uppercase text-black/40 dark:text-white/40">
+          <section className="space-y-6 pt-8 border-t border-black/5 dark:border-border/50">
+            <h2 className="text-xs tracking-[0.2em] uppercase text-black/40 dark:text-foreground/40">
               関連テーマ
             </h2>
             
@@ -162,7 +162,7 @@ export default async function ReflectionDetailPage({ params }: ReflectionDetailP
                 <Link
                   key={tag}
                   href={`/tags/${encodeURIComponent(tag)}`}
-                  className="inline-block px-4 py-2 rounded-2xl text-sm font-light bg-black/[0.04] dark:bg-white/[0.04] text-black/70 dark:text-white/70 hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+                  className="inline-block px-4 py-2 rounded-2xl text-sm font-light bg-black/[0.04] dark:bg-white/[0.04] text-black/70 dark:text-foreground/70 hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
                 >
                   {tag}
                 </Link>

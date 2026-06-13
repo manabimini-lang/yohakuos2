@@ -18,10 +18,10 @@ export function ReturningThemesSection({ themes }: ReturningThemesSectionProps) 
   return (
     <section className="space-y-6">
       <div className="space-y-2">
-        <h2 className="text-2xl sm:text-3xl font-light tracking-wide text-black/80 dark:text-white/80">
+        <h2 className="text-2xl sm:text-3xl font-light tracking-wide text-black/80 dark:text-foreground/80">
           何度も戻ってくること
         </h2>
-        <p className="text-sm font-light text-black/50 dark:text-white/50">
+        <p className="text-sm font-light text-black/50 dark:text-foreground/50">
           人生テーマは、直線ではなく、何度も戻ってくる。
         </p>
       </div>
@@ -40,16 +40,16 @@ export function ReturningThemesSection({ themes }: ReturningThemesSectionProps) 
               {/* Content */}
               <div className="space-y-4">
                 {/* Theme name */}
-                <h3 className="text-lg sm:text-xl font-light tracking-wide text-black/75 dark:text-white/75">
+                <h3 className="text-lg sm:text-xl font-light tracking-wide text-black/75 dark:text-foreground/75">
                   「{theme.name}」
                 </h3>
 
                 {/* Return cycles */}
                 <div className="space-y-2">
-                  <p className="text-sm font-light text-black/60 dark:text-white/60">
+                  <p className="text-sm font-light text-black/60 dark:text-foreground/60">
                     {theme.cycleCount}度の異なる時期に現れています
                   </p>
-                  <p className="text-xs font-light text-black/50 dark:text-white/50">
+                  <p className="text-xs font-light text-black/50 dark:text-foreground/50">
                     {theme.firstAppeared.toLocaleDateString("ja-JP", {
                       year: "numeric",
                       month: "short",
@@ -73,7 +73,7 @@ export function ReturningThemesSection({ themes }: ReturningThemesSectionProps) 
                     )
                   )}
                   {theme.cycleCount > 6 && (
-                    <span className="text-xs text-black/30 dark:text-white/30 ml-1">
+                    <span className="text-xs text-black/30 dark:text-foreground/30 ml-1">
                       +{theme.cycleCount - 6}
                     </span>
                   )}
@@ -81,7 +81,7 @@ export function ReturningThemesSection({ themes }: ReturningThemesSectionProps) 
 
                 {/* Philosophy hint */}
                 {theme.philosophy && (
-                  <p className="text-xs font-light italic text-black/45 dark:text-white/45 pt-2 border-t border-black/5 dark:border-white/5">
+                  <p className="text-xs font-light italic text-black/45 dark:text-foreground/45 pt-2 border-t border-black/5 dark:border-border/50">
                     {theme.philosophy}
                   </p>
                 )}

@@ -106,7 +106,7 @@ export function SettingsClient({
       {/* プラン設定 */}
       <section className="space-y-6">
         <div>
-          <h2 className="text-lg font-medium text-slate-900">プラン</h2>
+          <h2 className="text-lg font-medium text-foreground">プラン</h2>
           <div className="mt-4 space-y-3 text-sm text-slate-600 leading-relaxed">
             <p>
               YOHAKU AIは、あなたの思考整理を支えるための会員向け機能です。
@@ -119,8 +119,8 @@ export function SettingsClient({
 
         <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm flex items-center justify-between">
           <div className="space-y-1">
-            <span className="text-xs font-medium text-slate-500">現在のステータス</span>
-            <p className="text-sm font-medium text-slate-800">
+            <span className="text-xs font-medium text-muted-foreground">現在のステータス</span>
+            <p className="text-sm font-medium text-foreground">
               {isPaidMember ? "会員プラン利用中" : "無料プラン"}
             </p>
           </div>
@@ -134,7 +134,7 @@ export function SettingsClient({
               {isCheckoutLoading ? "準備中..." : "会員プランを見る"}
             </button>
           ) : (
-            <div className="text-sm text-slate-500">
+            <div className="text-sm text-muted-foreground">
               <button
                 onClick={handleManageSubscription}
                 disabled={isPortalLoading}
@@ -150,18 +150,18 @@ export function SettingsClient({
       {/* Upgrade Premium Toast */}
       {showUpgradeToast && (
         <div className="fixed bottom-6 right-6 z-50 max-w-sm rounded-2xl border border-slate-100 bg-white p-5 shadow-lg animate-in slide-in-from-bottom duration-300 flex items-start gap-4">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-50 border border-slate-200 text-slate-400">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-50 border border-slate-200 text-muted-foreground">
             <Sparkles className="h-4 w-4 stroke-[1.5] text-yellow-500 fill-yellow-500/10" />
           </div>
           <div className="space-y-1">
-            <h3 className="text-sm font-medium text-slate-800">Premiumプランへようこそ</h3>
-            <p className="text-xs text-slate-500 leading-relaxed">
+            <h3 className="text-sm font-medium text-foreground">Premiumプランへようこそ</h3>
+            <p className="text-xs text-muted-foreground leading-relaxed">
               AI整理機能が利用可能になりました。
             </p>
           </div>
           <button 
             onClick={() => setShowUpgradeToast(false)}
-            className="text-slate-400 hover:text-slate-600 transition-colors ml-auto text-xs font-semibold px-1"
+            className="text-muted-foreground hover:text-slate-600 transition-colors ml-auto text-xs font-semibold px-1"
           >
             閉じる
           </button>

@@ -66,7 +66,7 @@ export default async function TagPage({ params, searchParams }: TagPageProps) {
   return (
     <section className="space-y-4">
       <header className="rounded-2xl border border-slate-200 bg-white p-5">
-        <h1 className="text-xl font-semibold text-slate-900">Tag: {tag.name}</h1>
+        <h1 className="text-xl font-semibold text-foreground">Tag: {tag.name}</h1>
         <p className="mt-1 text-sm text-slate-600">Related contents: {total}</p>
       </header>
 
@@ -78,8 +78,8 @@ export default async function TagPage({ params, searchParams }: TagPageProps) {
 
       {items.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center">
-          <p className="text-sm text-slate-500">このタグに一致するコンテンツがありません。</p>
-          <p className="mt-1 text-xs text-slate-400">条件を変えて再検索してください。</p>
+          <p className="text-sm text-muted-foreground">このタグに一致するコンテンツがありません。</p>
+          <p className="mt-1 text-xs text-muted-foreground">条件を変えて再検索してください。</p>
           <Link
             href={`/tags/${tag.slug}`}
             className="mt-4 inline-flex rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-600"
@@ -117,7 +117,7 @@ export default async function TagPage({ params, searchParams }: TagPageProps) {
               Prev
             </Link>
           ) : (
-            <span className="rounded-lg border border-slate-100 px-3 py-1.5 text-slate-300">
+            <span className="rounded-lg border border-slate-100 px-3 py-1.5 text-muted-foreground">
               Prev
             </span>
           )}
@@ -129,7 +129,7 @@ export default async function TagPage({ params, searchParams }: TagPageProps) {
               Next
             </Link>
           ) : (
-            <span className="rounded-lg border border-slate-100 px-3 py-1.5 text-slate-300">
+            <span className="rounded-lg border border-slate-100 px-3 py-1.5 text-muted-foreground">
               Next
             </span>
           )}

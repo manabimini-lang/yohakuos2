@@ -35,19 +35,19 @@ export default async function CompanionPage() {
 
     if (!hasAiAccess) {
         return (
-            <div className="min-h-screen bg-[#090909] text-slate-100 flex items-center justify-center p-6">
-                <div className="max-w-md w-full p-8 rounded-2xl border border-white/10 bg-white/[0.02] space-y-6 text-center">
-                    <h2 className="text-lg font-light text-white tracking-wider">静かな対話</h2>
-                    <p className="text-sm text-slate-300 leading-relaxed font-light">
+            <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-6">
+                <div className="max-w-md w-full p-8 rounded-2xl border border-border bg-card space-y-6 text-center">
+                    <h2 className="text-lg font-light text-foreground tracking-wider">静かな対話</h2>
+                    <p className="text-sm text-muted-foreground leading-relaxed font-light">
                         AI接続がまだ行われていません。
                     </p>
-                    <p className="text-xs text-slate-500 leading-relaxed font-light">
+                    <p className="text-xs text-muted-foreground leading-relaxed font-light">
                         Gemini APIキーを設定すると、保存した記録が静かに整えられ、パーソナルAIとの対話や、内面の風景の描画が始まります。
                     </p>
                     <div className="pt-2">
                         <Link 
                             href="/member/settings"
-                            className="inline-flex items-center text-xs font-light text-slate-400 hover:text-slate-200 transition-colors group"
+                            className="inline-flex items-center text-xs font-light text-muted-foreground hover:text-foreground transition-colors group"
                         >
                             AI設定へ
                             <ChevronRight className="w-3 h-3 ml-1 group-hover:translate-x-1 transition-transform" />
@@ -59,7 +59,7 @@ export default async function CompanionPage() {
     }
 
     return (
-        <div className="min-h-screen bg-[#090909] text-slate-100">
+        <div className="min-h-screen bg-background text-foreground">
             <div className="h-screen flex flex-col">
                 {starterJourney.active && !userSettings?.isEnabled && (
                     <div className="mx-auto my-6 w-full max-w-4xl px-6">

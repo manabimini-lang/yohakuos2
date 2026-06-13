@@ -36,13 +36,13 @@ export function AdminHeader({ user }: AdminHeaderProps) {
               className="h-9 w-9 rounded-full border border-slate-200 object-cover"
             />
           ) : (
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-900 text-sm font-semibold text-white">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-900 text-sm font-semibold text-foreground">
               {initial}
             </div>
           )}
           <div className="hidden text-right sm:block">
-            <p className="text-sm font-medium text-slate-900">{displayName}</p>
-            <p className="text-xs uppercase tracking-wide text-slate-500">
+            <p className="text-sm font-medium text-foreground">{displayName}</p>
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">
               {user.role ?? "無料メンバー"}
             </p>
           </div>

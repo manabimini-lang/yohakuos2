@@ -65,15 +65,15 @@ export default async function LearningFeedPage() {
   });
 
   return (
-    <div className="min-h-screen bg-[#FDFDFD] dark:bg-[#0A0A0A] text-black/80 dark:text-white/80 pb-20 selection:bg-black/10 dark:selection:bg-white/10">
+    <div className="min-h-screen bg-[#FDFDFD] dark:bg-[#0A0A0A] text-black/80 dark:text-foreground/80 pb-20 selection:bg-black/10 dark:selection:bg-white/10">
       <main className="max-w-3xl mx-auto px-6 pt-24 md:pt-32 space-y-32">
         
         {/* Header section */}
         <section className="space-y-4">
-          <h1 className="text-xl md:text-2xl font-light tracking-widest text-black/90 dark:text-white/90">
+          <h1 className="text-xl md:text-2xl font-light tracking-widest text-black/90 dark:text-foreground/90">
             静かに積層する学び
           </h1>
-          <p className="text-sm md:text-base text-black/50 dark:text-white/50 leading-relaxed font-light">
+          <p className="text-sm md:text-base text-black/50 dark:text-foreground/50 leading-relaxed font-light">
             過去の記録が、ゆっくりとつながっていく場所。
           </p>
         </section>
@@ -81,16 +81,16 @@ export default async function LearningFeedPage() {
         {/* Audio Reflections */}
         {audioReflections.length > 0 && (
           <section className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-150 fill-mode-both">
-            <h2 className="text-xs tracking-[0.2em] uppercase text-black/40 dark:text-white/40">Audio Reflections</h2>
+            <h2 className="text-xs tracking-[0.2em] uppercase text-black/40 dark:text-foreground/40">Audio Reflections</h2>
             <div className="grid gap-6">
               {audioReflections.map((audio) => (
-                <div key={audio.id} className="p-6 rounded-2xl bg-black/[0.02] dark:bg-white/[0.02] border border-black/5 dark:border-white/5 hover:border-black/10 dark:hover:border-white/10 transition-colors">
+                <div key={audio.id} className="p-6 rounded-2xl bg-black/[0.02] dark:bg-card border border-black/5 dark:border-border/50 hover:border-black/10 dark:hover:border-border transition-colors">
                   <p className="text-sm leading-loose font-light mb-6 opacity-80 whitespace-pre-wrap">{audio.script}</p>
                   {audio.audioUrl && <QuietAudioPlayer src={audio.audioUrl} title="静かな振り返り" />}
                 </div>
               ))}
             </div>
-            <Link href="/reflections" className="inline-flex items-center text-xs text-black/40 dark:text-white/40 hover:text-black/60 dark:hover:text-white/60 transition-colors group">
+            <Link href="/reflections" className="inline-flex items-center text-xs text-black/40 dark:text-foreground/40 hover:text-black/60 dark:hover:text-foreground/60 transition-colors group">
               すべての振り返りを開く
               <ChevronRight className="w-3 h-3 ml-1 group-hover:translate-x-1 transition-transform" />
             </Link>
@@ -99,13 +99,13 @@ export default async function LearningFeedPage() {
 
         {/* Quiet Questions */}
         <section className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-225 fill-mode-both">
-          <h2 className="text-xs tracking-[0.2em] uppercase text-black/40 dark:text-white/40">静かな問い</h2>
+          <h2 className="text-xs tracking-[0.2em] uppercase text-black/40 dark:text-foreground/40">静かな問い</h2>
           {enrichedSuggestions.length === 0 ? (
-            <div className="p-8 rounded-2xl bg-black/[0.02] dark:bg-white/[0.02] border border-black/5 dark:border-white/5 text-center space-y-3">
-              <p className="text-sm text-black/40 dark:text-white/40 font-light">
+            <div className="p-8 rounded-2xl bg-black/[0.02] dark:bg-card border border-black/5 dark:border-border/50 text-center space-y-3">
+              <p className="text-sm text-black/40 dark:text-foreground/40 font-light">
                 まだ静かな問いは浮かんでいません
               </p>
-              <p className="text-xs text-black/25 dark:text-white/25 leading-relaxed font-light">
+              <p className="text-xs text-black/25 dark:text-foreground/25 leading-relaxed font-light">
                 記録を積み重ねることで、やがてその奥に隠された共通点が見えてきます。
               </p>
             </div>
@@ -120,27 +120,27 @@ export default async function LearningFeedPage() {
 
         {/* Resurfaced Memories with Decay Logic */}
         <section className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-300 fill-mode-both">
-          <h2 className="text-xs tracking-[0.2em] uppercase text-black/40 dark:text-white/40">Resurfaced Memories</h2>
+          <h2 className="text-xs tracking-[0.2em] uppercase text-black/40 dark:text-foreground/40">Resurfaced Memories</h2>
           <div className="grid gap-12">
             {memories.length === 0 && (
-              <p className="text-sm text-black/30 dark:text-white/30 italic">記憶が降り積もるのを待っています...</p>
+              <p className="text-sm text-black/30 dark:text-foreground/30 italic">記憶が降り積もるのを待っています...</p>
             )}
             {memories.map((memory) => {
               const isFogged = !isPremium && memory.createdAt < threeDaysAgo;
               
               return (
-                <div key={memory.id} className={`group relative space-y-4 pl-4 border-l ${isFogged ? 'border-black/5 dark:border-white/5 opacity-50' : 'border-black/10 dark:border-white/10'}`}>
+                <div key={memory.id} className={`group relative space-y-4 pl-4 border-l ${isFogged ? 'border-black/5 dark:border-border/50 opacity-50' : 'border-black/10 dark:border-border'}`}>
                   {isFogged && (
                     <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#FDFDFD]/80 to-[#FDFDFD] dark:via-[#0A0A0A]/80 dark:to-[#0A0A0A] backdrop-blur-[2px] z-10" />
                   )}
-                  <p className="text-xs font-mono text-black/30 dark:text-white/30">
+                  <p className="text-xs font-mono text-black/30 dark:text-foreground/30">
                     {new Date(memory.createdAt).toLocaleDateString()}
                   </p>
-                  <p className="text-sm leading-relaxed font-light text-black/70 dark:text-white/70">
+                  <p className="text-sm leading-relaxed font-light text-black/70 dark:text-foreground/70">
                     {memory.message}
                   </p>
                   {isFogged && (
-                    <p className="absolute bottom-0 text-xs text-black/30 dark:text-white/30 italic z-20">
+                    <p className="absolute bottom-0 text-xs text-black/30 dark:text-foreground/30 italic z-20">
                       記録が霧化しました。
                     </p>
                   )}
@@ -153,7 +153,7 @@ export default async function LearningFeedPage() {
             <div className="pt-12 text-center">
               <Link 
                 href="/quiet-return"
-                className="inline-flex items-center text-xs font-light tracking-[0.1em] text-black/40 dark:text-white/40 hover:text-black/60 dark:hover:text-white/60 transition-colors group"
+                className="inline-flex items-center text-xs font-light tracking-[0.1em] text-black/40 dark:text-foreground/40 hover:text-black/60 dark:hover:text-foreground/60 transition-colors group"
               >
                 関連する記録を見る
                 <ChevronRight className="w-3 h-3 ml-1 group-hover:translate-x-1 transition-transform" />

@@ -170,11 +170,11 @@ export default function CompanionChat() {
     }
 
     return (
-        <div className="flex flex-col h-full max-w-2xl mx-auto pb-28 md:pb-24">
+        <div className="flex flex-col h-full max-w-2xl mx-auto pb-24 md:pb-24">
             {/* Header */}
-            <div className="px-6 py-4 border-b border-white/10 bg-[#090909]">
-                <h2 className="text-lg font-light text-white">静かな対話</h2>
-                <p className="text-sm text-slate-400 mt-1">
+            <div className="px-6 py-4 border-b border-border bg-background">
+                <h2 className="text-lg font-light text-foreground">静かな対話</h2>
+                <p className="text-sm text-muted-foreground mt-1">
                     言葉をひとつずつ置いておく場所です。
                 </p>
             </div>
@@ -199,9 +199,9 @@ export default function CompanionChat() {
                             }`}
                     >
                         <div
-                            className={`max-w-[80%] rounded-3xl px-4 py-3 ${msg.role === "user"
-                                    ? "bg-white/10 text-white"
-                                    : "bg-white/5 text-slate-200 border border-white/10"
+                            className={`max-w-[80%] rounded-2xl px-4 py-3 ${msg.role === "user"
+                                    ? "bg-white/10 text-foreground"
+                                    : "bg-card text-foreground border border-border"
                                 }`}
                         >
                             <p className="text-sm leading-relaxed whitespace-pre-wrap">
@@ -225,7 +225,7 @@ export default function CompanionChat() {
 
                 {/* Loading */}
                 {state.isLoading && (
-                    <div className="text-slate-500 text-sm italic">少し静かに考えています…</div>
+                    <div className="text-muted-foreground text-sm italic">少し静かに考えています…</div>
                 )}
 
                 <div ref={messagesEndRef} />
@@ -234,17 +234,17 @@ export default function CompanionChat() {
             {/* Error */}
             {state.error && (
                 <div className="px-6 py-3">
-                    <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-4 space-y-3">
-                        <p className="text-sm text-slate-300 font-light leading-relaxed">
+                    <div className="rounded-2xl border border-border bg-card px-5 py-4 space-y-3">
+                        <p className="text-sm text-muted-foreground font-light leading-relaxed">
                             現在の会話を続けられませんでした。
                         </p>
-                        <p className="text-xs text-slate-500 font-light">
+                        <p className="text-xs text-muted-foreground font-light">
                             少し時間を空けて、もう一度お試しください。
                         </p>
                         {lastFailedInput && (
                             <button
                                 onClick={handleRetryConnection}
-                                className="inline-flex items-center text-xs font-light text-slate-400 hover:text-slate-200 transition-colors group"
+                                className="inline-flex items-center text-xs font-light text-muted-foreground hover:text-foreground transition-colors group"
                             >
                                 再接続
                                 <svg className="w-3 h-3 ml-1 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -265,13 +265,13 @@ export default function CompanionChat() {
                         onKeyDown={handleKeyDown}
                         placeholder="そのまま、ここに置いてください"
                         rows={1}
-                        className="flex-1 resize-none rounded-3xl border border-white/10 bg-[#080808] px-4 py-3 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-white/10 focus:border-white/10 placeholder:text-slate-500"
+                        className="flex-1 resize-none rounded-2xl border border-border bg-[#080808] px-4 py-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-white/10 focus:border-border placeholder:text-muted-foreground"
                         disabled={state.isLoading}
                     />
                     <button
                         onClick={() => sendMessage()}
                         disabled={state.isLoading || !input.trim()}
-                        className="px-4 py-2.5 rounded-3xl bg-white/10 text-sm text-slate-100 transition-colors hover:bg-white/15 disabled:opacity-40 disabled:cursor-not-allowed"
+                        className="px-4 py-2.5 rounded-2xl bg-white/10 text-sm text-foreground transition-colors hover:bg-white/15 disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                         送信
                     </button>

@@ -18,17 +18,17 @@ const dateFmt = new Intl.DateTimeFormat("ja-JP", {
 export function RelatedContents({ items }: { items: RelatedItem[] }) {
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-5">
-      <h2 className="mb-3 text-base font-semibold text-slate-900">Related Contents</h2>
+      <h2 className="mb-3 text-base font-semibold text-foreground">Related Contents</h2>
       {items.length === 0 ? (
-        <p className="text-sm text-slate-500">関連記事はまだありません。</p>
+        <p className="text-sm text-muted-foreground">関連記事はまだありません。</p>
       ) : (
         <ul className="space-y-2">
           {items.map((item) => (
             <li key={item.id} className="rounded-lg border border-slate-200 px-3 py-3">
-              <Link href={`/member/contents/${item.slug}`} className="text-sm font-medium text-slate-900">
+              <Link href={`/member/contents/${item.slug}`} className="text-sm font-medium text-foreground">
                 {item.title}
               </Link>
-              <p className="mt-1 text-xs text-slate-500">
+              <p className="mt-1 text-xs text-muted-foreground">
                 {item.contentType} / {item.layer} / {dateFmt.format(item.updatedAt)}
               </p>
             </li>

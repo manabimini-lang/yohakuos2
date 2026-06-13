@@ -18,7 +18,7 @@ export default async function MemberLayout({
   }
 
   return (
-    <div className="min-h-screen bg-white text-slate-900">
+    <div className="min-h-screen bg-white text-foreground">
       <div className="mx-auto flex min-h-screen max-w-[1120px] flex-col">
         <MemberHeader user={session.user} />
         <main className="flex-1 px-4 py-8 lg:px-8 lg:py-10">{children}</main>

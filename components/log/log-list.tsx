@@ -28,7 +28,7 @@ export function LogList({ logs }: LogListProps) {
 
   if (logs.length === 0) {
     return (
-      <div className="py-12 text-center text-sm text-slate-400">
+      <div className="py-12 text-center text-sm text-muted-foreground">
         まだログがありません。
       </div>
     );
@@ -47,13 +47,13 @@ export function LogList({ logs }: LogListProps) {
 
         return (
           <div key={log.id} className="group flex flex-col gap-2 border-b border-slate-100 pb-6 transition-opacity hover:opacity-100 opacity-90">
-            <div className="flex items-center gap-3 text-xs text-slate-400 font-mono">
+            <div className="flex items-center gap-3 text-xs text-muted-foreground font-mono">
               <time dateTime={date.toISOString()}>
                 {dateString} {timeString}
               </time>
               <span title={`Mood: ${log.mood}`}>{formatMood(log.mood)}</span>
               {log.tags.length > 0 && (
-                <div className="flex gap-2 text-slate-400">
+                <div className="flex gap-2 text-muted-foreground">
                   {log.tags.map(tag => (
                     <span key={tag}>#{tag}</span>
                   ))}
@@ -62,7 +62,7 @@ export function LogList({ logs }: LogListProps) {
               <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
                 <button
                   onClick={() => handleOrganize(log.content)}
-                  className="text-slate-400 hover:text-slate-600 transition-colors"
+                  className="text-muted-foreground hover:text-slate-600 transition-colors"
                 >
                   [ AIで整理 ]
                 </button>
@@ -71,7 +71,7 @@ export function LogList({ logs }: LogListProps) {
             
             <p className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">
               {previewContent}
-              {hasMore && <span className="text-slate-400 ml-1">...</span>}
+              {hasMore && <span className="text-muted-foreground ml-1">...</span>}
             </p>
           </div>
         );

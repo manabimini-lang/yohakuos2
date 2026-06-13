@@ -59,7 +59,7 @@ export function LegalTOC({ items }: LegalTOCProps) {
   return (
     <nav className="sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto pr-4 hidden lg:block w-64 shrink-0 scrollbar-thin">
       <div className="space-y-4">
-        <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+        <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground dark:text-muted-foreground">
           目次
         </p>
         <ul className="space-y-2 border-l border-slate-100 dark:border-slate-800/60 pl-0">
@@ -72,8 +72,8 @@ export function LegalTOC({ items }: LegalTOCProps) {
                   onClick={(e) => handleClick(e, item.id)}
                   className={`block border-l-2 pl-4 py-1.5 text-xs font-normal transition-all duration-200 -ml-[1px] ${
                     isActive
-                      ? "border-slate-900 text-slate-900 font-medium dark:border-slate-300 dark:text-slate-200"
-                      : "border-transparent text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
+                      ? "border-slate-900 text-foreground font-medium dark:border-slate-300 dark:text-foreground"
+                      : "border-transparent text-muted-foreground hover:text-slate-600 dark:text-muted-foreground dark:hover:text-muted-foreground"
                   }`}
                 >
                   {item.title}

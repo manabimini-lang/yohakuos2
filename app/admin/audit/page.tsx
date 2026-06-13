@@ -43,8 +43,8 @@ export default async function AdminAuditPage({
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-slate-800">監査ログ</h1>
-        <div className="text-xs text-slate-400">
+        <h1 className="text-2xl font-semibold text-foreground">監査ログ</h1>
+        <div className="text-xs text-muted-foreground">
           {result.total} 件のイベント
         </div>
       </div>
@@ -90,7 +90,7 @@ function SummaryCard({
 }) {
   return (
     <div className="rounded-xl border border-slate-100 bg-white p-4 shadow-sm">
-      <p className="text-xs font-medium text-slate-500">{label}</p>
+      <p className="text-xs font-medium text-muted-foreground">{label}</p>
       <p className={`mt-1 text-2xl font-semibold ${color}`}>{count}</p>
     </div>
   );

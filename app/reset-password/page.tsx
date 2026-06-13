@@ -72,8 +72,8 @@ export default function ResetPasswordPage() {
     <div className="min-h-screen flex items-center justify-center bg-slate-50">
       <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
         <div className="mb-8 text-center">
-          <h1 className="text-2xl font-medium tracking-widest text-slate-800">YOHAKU</h1>
-          <p className="mt-3 text-sm text-slate-400">
+          <h1 className="text-2xl font-medium tracking-widest text-foreground">YOHAKU</h1>
+          <p className="mt-3 text-sm text-muted-foreground">
             新しいパスワードの設定
           </p>
         </div>
@@ -89,7 +89,7 @@ export default function ResetPasswordPage() {
             </div>
             <Link
               href="/login"
-              className="inline-flex w-full justify-center rounded-xl bg-slate-900 px-4 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90 shadow-sm"
+              className="inline-flex w-full justify-center rounded-xl bg-slate-900 px-4 py-3 text-sm font-medium text-foreground transition-opacity hover:opacity-90 shadow-sm"
             >
               ログインへ戻る
             </Link>
@@ -136,7 +136,7 @@ export default function ResetPasswordPage() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full rounded-xl bg-slate-900 px-4 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90 shadow-sm disabled:opacity-50 flex justify-center items-center gap-2"
+                className="w-full rounded-xl bg-slate-900 px-4 py-3 text-sm font-medium text-foreground transition-opacity hover:opacity-90 shadow-sm disabled:opacity-50 flex justify-center items-center gap-2"
               >
                 {isSubmitting ? "更新中..." : "パスワードを更新"}
               </button>

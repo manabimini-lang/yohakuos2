@@ -13,12 +13,12 @@ export function LifeDirection({ direction, themes = [] }: LifeDirectionProps) {
   return (
     <section className="space-y-6">
       <div className="space-y-4">
-        <h2 className="text-2xl sm:text-3xl font-light tracking-wide text-black/80 dark:text-white/80">
+        <h2 className="text-2xl sm:text-3xl font-light tracking-wide text-black/80 dark:text-foreground/80">
           最近、静かに続いていること
         </h2>
 
         {/* Main direction message */}
-        <div className="relative backdrop-blur-[0.5px] border border-black/5 dark:border-white/5 rounded-lg p-8 overflow-hidden bg-white/50 dark:bg-black/30">
+        <div className="relative backdrop-blur-[0.5px] border border-black/5 dark:border-border/50 rounded-lg p-8 overflow-hidden bg-white/50 dark:bg-black/30">
           
           {/* Subtle background accent */}
           <div className="absolute inset-0 opacity-0 group-hover:opacity-5 transition-opacity duration-500">
@@ -27,7 +27,7 @@ export function LifeDirection({ direction, themes = [] }: LifeDirectionProps) {
 
           {/* Content */}
           <div className="relative z-10 space-y-4">
-            <p className="text-base sm:text-lg font-light leading-relaxed text-black/75 dark:text-white/75">
+            <p className="text-base sm:text-lg font-light leading-relaxed text-black/75 dark:text-foreground/75">
               {direction}
             </p>
 
@@ -37,7 +37,7 @@ export function LifeDirection({ direction, themes = [] }: LifeDirectionProps) {
                 {themes.slice(0, 4).map((theme, idx) => (
                   <div
                     key={idx}
-                    className="px-3 py-1.5 rounded-full border border-black/10 dark:border-white/10 bg-black/2 dark:bg-white/2 text-xs font-light text-black/60 dark:text-white/60"
+                    className="px-3 py-1.5 rounded-full border border-black/10 dark:border-border bg-black/2 dark:bg-white/2 text-xs font-light text-black/60 dark:text-foreground/60"
                   >
                     {theme}
                   </div>
@@ -51,7 +51,7 @@ export function LifeDirection({ direction, themes = [] }: LifeDirectionProps) {
         </div>
 
         {/* Philosophical note */}
-        <p className="text-sm font-light text-black/50 dark:text-white/50 leading-relaxed border-l-2 border-black/10 dark:border-white/10 pl-4">
+        <p className="text-sm font-light text-black/50 dark:text-foreground/50 leading-relaxed border-l-2 border-black/10 dark:border-border pl-4">
           人生の方向性は、目標ではなく、流れです。
           <br />
           あなたの記録から、その流れが静かに見えてきています。

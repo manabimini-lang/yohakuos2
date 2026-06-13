@@ -191,9 +191,9 @@ model User {
   mfaSecret           String?   @map("mfa_secret")
   mfaEnabled          Boolean   @default(false) @map("mfa_enabled")
 
-  contentItems ContentItem[]
+  contentItems       ContentItem[]
   memoryResurfacings MemoryResurfacing[]
-  externalContents ExternalContent[]
+  externalContents   ExternalContent[]
 
   @@map("users")
 }
@@ -214,17 +214,17 @@ model UserApiKey {
 }
 
 model UserAISettings {
-  id              String  @id @default(cuid())
-  userId          String  @unique @map("user_id")
-  provider        String  @default("gemini")
-  encryptedApiKey String? @map("encrypted_api_key")
-  model           String?
-  embeddingsModel String? @map("embeddings_model")
-  isEnabled       Boolean @default(false) @map("is_enabled")
-  starterJourneyStartedAt DateTime? @map("starter_journey_started_at")
-  starterJourneyExpiresAt DateTime? @map("starter_journey_expires_at")
-  starterJourneyCompanionMessageCount Int @default(0) @map("starter_journey_companion_message_count")
-  starterJourneyCompanionMessageLimit Int @default(20) @map("starter_journey_companion_message_limit")
+  id                                  String    @id @default(cuid())
+  userId                              String    @unique @map("user_id")
+  provider                            String    @default("gemini")
+  encryptedApiKey                     String?   @map("encrypted_api_key")
+  model                               String?
+  embeddingsModel                     String?   @map("embeddings_model")
+  isEnabled                           Boolean   @default(false) @map("is_enabled")
+  starterJourneyStartedAt             DateTime? @map("starter_journey_started_at")
+  starterJourneyExpiresAt             DateTime? @map("starter_journey_expires_at")
+  starterJourneyCompanionMessageCount Int       @default(0) @map("starter_journey_companion_message_count")
+  starterJourneyCompanionMessageLimit Int       @default(20) @map("starter_journey_companion_message_limit")
 
   // Usage Protection (利用量制限)
   dailyTokenUsage   Int       @default(0) @map("daily_token_usage")
@@ -1270,21 +1270,47 @@ model ContentItem {
   aiVersion           String?                     @map("ai_version")
   aiProcessedAt       DateTime?                   @map("ai_processed_at")
 
+  // Memory OS 拡張
+  lastViewedAt DateTime? @map("last_viewed_at")
+  contextScore Float     @default(0) @map("context_score")
+  viewCount    Int       @default(0) @map("view_count")
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // resurfacings MemoryResurfacing[] // E-4A: Relation to MemoryResurfacing - Removed duplicate
-  sourceResurfacings MemoryResurfacing[] @relation("SourceResurfacing")
+  sourceResurfacings  MemoryResurfacing[] @relation("SourceResurfacing")
   relatedResurfacings MemoryResurfacing[] @relation("RelatedResurfacing")
-  // E-3: Memory Linkage
-  linksFrom MemoryLink[] @relation("SourceLink")
-  linksTo   MemoryLink[] @relation("TargetLink")
+  linksFrom           MemoryLink[]        @relation("SourceLink")
+  linksTo             MemoryLink[]        @relation("TargetLink")
+
+  relationsFrom MemoryRelation[] @relation("SourceRelation")
+  relationsTo   MemoryRelation[] @relation("TargetRelation")
 
   @@index([userId])
   @@index([createdAt])
   @@map("content_items")
+}
+
+// ===================================================
+// YOHAKU Memory OS Relations
+// ===================================================
+
+model MemoryRelation {
+  id        String   @id @default(cuid())
+  sourceId  String   @map("source_id")
+  targetId  String   @map("target_id")
+  score     Float
+  createdAt DateTime @default(now()) @map("created_at")
+
+  source ContentItem @relation("SourceRelation", fields: [sourceId], references: [id], onDelete: Cascade)
+  target ContentItem @relation("TargetRelation", fields: [targetId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceId, targetId])
+  @@index([sourceId])
+  @@index([targetId])
+  @@map("memory_relations")
 }
 
 // ===================================================
@@ -1321,7 +1347,7 @@ model MemoryResurfacing {
   createdAt        DateTime  @default(now()) @map("created_at")
   expiresAt        DateTime? @map("expires_at")
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   sourceContent  ContentItem? @relation("SourceResurfacing", fields: [sourceContentId], references: [id], onDelete: Cascade)
   relatedContent ContentItem? @relation("RelatedResurfacing", fields: [relatedContentId], references: [id], onDelete: Cascade)
 
@@ -1434,28 +1460,28 @@ model AudioReflection {
 }
 
 model CommunityReflectionSnapshot {
-  id                        String           @id @default(cuid())
+  id String @id @default(cuid())
 
-  periodStart               DateTime         @map("period_start")
-  periodEnd                 DateTime         @map("period_end")
+  periodStart DateTime @map("period_start")
+  periodEnd   DateTime @map("period_end")
 
-  summary                   String           @db.Text
+  summary String @db.Text
 
-  dominantTheme             ReflectionTheme? @map("dominant_theme")
-  dominantThemeConfidence   Float?           @map("dominant_theme_confidence")
+  dominantTheme           ReflectionTheme? @map("dominant_theme")
+  dominantThemeConfidence Float?           @map("dominant_theme_confidence")
 
-  restorationScore          Float            @default(0) @map("restoration_score")
-  growthScore               Float            @default(0) @map("growth_score")
-  connectionScore           Float            @default(0) @map("connection_score")
+  restorationScore Float @default(0) @map("restoration_score")
+  growthScore      Float @default(0) @map("growth_score")
+  connectionScore  Float @default(0) @map("connection_score")
 
-  momentCount               Int              @default(0) @map("moment_count")
-  inspiredCount             Int              @default(0) @map("inspired_count")
+  momentCount   Int @default(0) @map("moment_count")
+  inspiredCount Int @default(0) @map("inspired_count")
 
-  trendDirection            Int              @default(0) @map("trend_direction")
+  trendDirection Int @default(0) @map("trend_direction")
 
-  status                    SnapshotStatus   @default(GENERATED)
+  status SnapshotStatus @default(GENERATED)
 
-  createdAt     DateTime @default(now()) @map("created_at")
+  createdAt DateTime @default(now()) @map("created_at")
 
   @@unique([periodStart, periodEnd])
   @@index([createdAt])
@@ -1464,14 +1490,14 @@ model CommunityReflectionSnapshot {
 }
 
 model WisdomInsight {
-  id          String   @id @default(cuid())
-  userId      String   @map("user_id")
+  id          String            @id @default(cuid())
+  userId      String            @map("user_id")
   title       String
-  content     String   @db.Text
+  content     String            @db.Text
   insightType WisdomInsightType
   score       Float?
-  metadata    Json?    @db.JsonB
-  createdAt   DateTime @default(now()) @map("created_at")
+  metadata    Json?             @db.JsonB
+  createdAt   DateTime          @default(now()) @map("created_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

@@ -17,8 +17,8 @@ export function QuietQuestionCard({ suggestion }: QuietQuestionItemProps) {
       {/* Header */}
       <div className="space-y-2">
         <div className="flex items-center gap-2">
-          <Sparkles className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
-          <p className="text-xs uppercase tracking-[0.15em] text-slate-500 dark:text-slate-400">
+          <Sparkles className="w-3.5 h-3.5 text-muted-foreground dark:text-muted-foreground" />
+          <p className="text-xs uppercase tracking-[0.15em] text-muted-foreground dark:text-muted-foreground">
             静かな問い
           </p>
         </div>
@@ -26,14 +26,14 @@ export function QuietQuestionCard({ suggestion }: QuietQuestionItemProps) {
 
       {/* Question */}
       <div className="space-y-4">
-        <p className="text-lg leading-relaxed font-light text-slate-800 dark:text-slate-100">
+        <p className="text-lg leading-relaxed font-light text-foreground dark:text-foreground">
           {suggestion.reason || "記録同士のつながりが見えてきました。"}
         </p>
 
         {/* Similarity indicator */}
         <div className="flex items-center gap-2">
           <div className="flex-1 h-0.5 bg-gradient-to-r from-slate-300/50 to-transparent dark:from-slate-600/50"></div>
-          <span className="text-[10px] text-slate-400 dark:text-slate-500">
+          <span className="text-[10px] text-muted-foreground dark:text-muted-foreground">
             {(suggestion.similarityScore * 100).toFixed(0)}%
           </span>
         </div>
@@ -42,17 +42,17 @@ export function QuietQuestionCard({ suggestion }: QuietQuestionItemProps) {
       {/* Related Content Links */}
       {(suggestion.contentItem || suggestion.knowledgeContent) && (
         <div className="space-y-3 pt-4 border-t border-slate-200/40 dark:border-slate-800/40">
-          <p className="text-xs text-slate-500 dark:text-slate-400 font-light">関連する記録</p>
+          <p className="text-xs text-muted-foreground dark:text-muted-foreground font-light">関連する記録</p>
           <div className="flex flex-col gap-2">
             {suggestion.contentItem && (
               <Link
                 href={`/inbox/${suggestion.contentItem.id}`}
                 className="flex items-center justify-between group px-3 py-2 rounded-lg hover:bg-slate-200/30 dark:hover:bg-slate-800/30 transition-colors"
               >
-                <span className="text-sm text-slate-700 dark:text-slate-300 truncate group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
+                <span className="text-sm text-slate-700 dark:text-muted-foreground truncate group-hover:text-foreground dark:group-hover:text-foreground transition-colors">
                   {suggestion.contentItem.title || suggestion.contentItem.fileName || "記録"}
                 </span>
-                <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
+                <ChevronRight className="w-3.5 h-3.5 text-muted-foreground group-hover:translate-x-0.5 transition-transform" />
               </Link>
             )}
             {suggestion.knowledgeContent && (
@@ -60,10 +60,10 @@ export function QuietQuestionCard({ suggestion }: QuietQuestionItemProps) {
                 href={`/knowledge/${suggestion.knowledgeContent.id}`}
                 className="flex items-center justify-between group px-3 py-2 rounded-lg hover:bg-slate-200/30 dark:hover:bg-slate-800/30 transition-colors"
               >
-                <span className="text-sm text-slate-700 dark:text-slate-300 truncate group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
+                <span className="text-sm text-slate-700 dark:text-muted-foreground truncate group-hover:text-foreground dark:group-hover:text-foreground transition-colors">
                   {suggestion.knowledgeContent.title || "知識"}
                 </span>
-                <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
+                <ChevronRight className="w-3.5 h-3.5 text-muted-foreground group-hover:translate-x-0.5 transition-transform" />
               </Link>
             )}
           </div>

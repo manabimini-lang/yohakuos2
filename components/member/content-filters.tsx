@@ -18,7 +18,7 @@ export function ContentFilters({ search, tag, layer, contentType, tags }: Conten
   return (
     <form className="grid gap-2 rounded-2xl border border-slate-200 bg-white p-4 md:grid-cols-2 lg:grid-cols-5">
       <label className="lg:col-span-2">
-        <span className="mb-1.5 block text-xs font-medium text-slate-500">
+        <span className="mb-1.5 block text-xs font-medium text-muted-foreground">
           キーワード
         </span>
         <input
@@ -29,7 +29,7 @@ export function ContentFilters({ search, tag, layer, contentType, tags }: Conten
         />
       </label>
       <label>
-        <span className="mb-1.5 block text-xs font-medium text-slate-500">
+        <span className="mb-1.5 block text-xs font-medium text-muted-foreground">
           タグ
         </span>
         <select name="tag" defaultValue={tag ?? ""} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-slate-300 focus:outline-none">
@@ -42,7 +42,7 @@ export function ContentFilters({ search, tag, layer, contentType, tags }: Conten
         </select>
       </label>
       <label>
-        <span className="mb-1.5 block text-xs font-medium text-slate-500">
+        <span className="mb-1.5 block text-xs font-medium text-muted-foreground">
           レイヤー
         </span>
         <select name="layer" defaultValue={layer ?? ""} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-slate-300 focus:outline-none">
@@ -55,7 +55,7 @@ export function ContentFilters({ search, tag, layer, contentType, tags }: Conten
         </select>
       </label>
       <label>
-        <span className="mb-1.5 block text-xs font-medium text-slate-500">
+        <span className="mb-1.5 block text-xs font-medium text-muted-foreground">
           種類
         </span>
         <select
@@ -75,7 +75,7 @@ export function ContentFilters({ search, tag, layer, contentType, tags }: Conten
       <div className="flex items-end gap-2 lg:col-span-5 pt-2">
         <button
           type="submit"
-          className="rounded-lg bg-slate-900 px-5 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"
+          className="rounded-lg bg-slate-900 px-5 py-2 text-sm font-medium text-foreground transition-opacity hover:opacity-90"
         >
           絞り込む
         </button>

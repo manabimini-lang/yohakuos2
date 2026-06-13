@@ -32,7 +32,7 @@ export function ContentTable({ items }: { items: ContentListItem[] }) {
       <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
         <div className="hidden overflow-x-auto lg:block">
           <table className="min-w-full text-left text-sm">
-            <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+            <thead className="bg-slate-50 text-xs uppercase tracking-wide text-muted-foreground">
               <tr>
                 <th className="px-4 py-3 font-semibold">サムネイル</th>
                 <th className="px-4 py-3 font-semibold">タイトル</th>
@@ -55,12 +55,12 @@ export function ContentTable({ items }: { items: ContentListItem[] }) {
                         className="h-10 w-16 rounded-md border border-slate-200 object-cover"
                       />
                     ) : (
-                      <div className="flex h-10 w-16 items-center justify-center rounded-md border border-slate-200 bg-slate-100 text-xs font-semibold text-slate-500">
+                      <div className="flex h-10 w-16 items-center justify-center rounded-md border border-slate-200 bg-slate-100 text-xs font-semibold text-muted-foreground">
                         {thumbFallback(item.title)}
                       </div>
                     )}
                   </td>
-                  <td className="px-4 py-3 font-medium text-slate-900">{item.title}</td>
+                  <td className="px-4 py-3 font-medium text-foreground">{item.title}</td>
                   <td className="px-4 py-3">{CONTENT_TYPE_LABELS[item.contentType]}</td>
                   <td className="px-4 py-3">
                     <ContentStatusBadge
@@ -94,13 +94,13 @@ export function ContentTable({ items }: { items: ContentListItem[] }) {
                     className="h-14 w-20 rounded-md border border-slate-200 object-cover"
                   />
                 ) : (
-                  <div className="flex h-14 w-20 items-center justify-center rounded-md border border-slate-200 bg-slate-100 text-sm font-semibold text-slate-500">
+                  <div className="flex h-14 w-20 items-center justify-center rounded-md border border-slate-200 bg-slate-100 text-sm font-semibold text-muted-foreground">
                     {thumbFallback(item.title)}
                   </div>
                 )}
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold text-slate-900">{item.title}</p>
-                  <p className="mt-1 text-xs text-slate-500">{CONTENT_TYPE_LABELS[item.contentType]}</p>
+                  <p className="truncate text-sm font-semibold text-foreground">{item.title}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{CONTENT_TYPE_LABELS[item.contentType]}</p>
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     <ContentStatusBadge
                       label={VISIBILITY_LABELS[item.visibility]}

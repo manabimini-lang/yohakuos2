@@ -21,13 +21,13 @@ export function FeaturedContents({ items }: { items: FeaturedContent[] }) {
   return (
     <section className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-medium text-slate-900">最近の記事</h2>
-        <Link href="/member/contents" className="text-sm text-slate-500 hover:text-slate-700 transition-colors">
+        <h2 className="text-lg font-medium text-foreground">最近の記事</h2>
+        <Link href="/member/contents" className="text-sm text-muted-foreground hover:text-slate-700 transition-colors">
           すべて見る
         </Link>
       </div>
       {items.length === 0 ? (
-        <div className="rounded-2xl border border-slate-100 bg-white p-8 text-center text-sm text-slate-400 shadow-sm">
+        <div className="rounded-2xl border border-slate-100 bg-white p-8 text-center text-sm text-muted-foreground shadow-sm">
           記事はまだありません。
         </div>
       ) : (
@@ -38,15 +38,15 @@ export function FeaturedContents({ items }: { items: FeaturedContent[] }) {
                 {item.thumbnailUrl ? (
                   <img src={item.thumbnailUrl} alt={item.title} className="h-full w-full object-cover" />
                 ) : (
-                  <div className="flex h-full items-center justify-center text-xs text-slate-300"></div>
+                  <div className="flex h-full items-center justify-center text-xs text-muted-foreground"></div>
                 )}
               </div>
               <div className="space-y-2 p-5">
-                <h3 className="line-clamp-1 text-base font-medium text-slate-800">{item.title}</h3>
-                <p className="line-clamp-2 text-sm text-slate-500 leading-relaxed">
+                <h3 className="line-clamp-1 text-base font-medium text-foreground">{item.title}</h3>
+                <p className="line-clamp-2 text-sm text-muted-foreground leading-relaxed">
                   {item.description || "説明はまだありません。"}
                 </p>
-                <p className="text-xs text-slate-400 pt-1">
+                <p className="text-xs text-muted-foreground pt-1">
                   {item.contentType} / {item.layer} / {dateFmt.format(item.updatedAt)}
                 </p>
               </div>

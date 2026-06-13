@@ -13,8 +13,8 @@ export default function ForgotPasswordPage({
     <div className="min-h-screen flex items-center justify-center bg-slate-50">
       <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
         <div className="mb-8 text-center">
-          <h1 className="text-2xl font-medium tracking-widest text-slate-800">YOHAKU</h1>
-          <p className="mt-3 text-sm text-slate-400">
+          <h1 className="text-2xl font-medium tracking-widest text-foreground">YOHAKU</h1>
+          <p className="mt-3 text-sm text-muted-foreground">
             パスワード再設定
           </p>
         </div>
@@ -71,14 +71,14 @@ export default function ForgotPasswordPage({
 
               <button
                 type="submit"
-                className="w-full rounded-xl bg-slate-900 px-4 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90 shadow-sm"
+                className="w-full rounded-xl bg-slate-900 px-4 py-3 text-sm font-medium text-foreground transition-opacity hover:opacity-90 shadow-sm"
               >
                 送信する
               </button>
             </form>
 
             <div className="text-center mt-4">
-              <Link href="/login" className="text-sm text-slate-500 hover:text-slate-700 underline underline-offset-2">
+              <Link href="/login" className="text-sm text-muted-foreground hover:text-slate-700 underline underline-offset-2">
                 キャンセルして戻る
               </Link>
             </div>

@@ -56,26 +56,26 @@ export function PricingClient() {
     <div className="mx-auto max-w-2xl px-6 py-16 md:py-28 space-y-16 selection:bg-slate-100">
       {/* Header section */}
       <div className="space-y-4 text-center">
-        <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-[11px] font-medium tracking-wider text-slate-500 bg-slate-50 border border-slate-100">
-          <Sparkles className="w-3.5 h-3.5 text-slate-400 stroke-[1.5]" />
+        <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-[11px] font-medium tracking-wider text-muted-foreground bg-slate-50 border border-slate-100">
+          <Sparkles className="w-3.5 h-3.5 text-muted-foreground stroke-[1.5]" />
           <span>QUIET MEMBERSHIP</span>
         </div>
         <h1 className="text-3xl font-serif text-slate-850 tracking-wide mt-2">YOHAKU Premium</h1>
-        <p className="text-sm text-slate-500 max-w-md mx-auto leading-relaxed">
+        <p className="text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
           AI整理や深い振り返りを利用できます。これは単なる機能の解放ではなく、深く自分と向き合うための参加権です。
         </p>
       </div>
 
       {/* Plan Card */}
-      <div className="bg-white border border-slate-200/80 rounded-3xl p-8 md:p-10 shadow-sm space-y-8 max-w-md mx-auto relative overflow-hidden">
+      <div className="bg-white border border-slate-200/80 rounded-2xl p-8 md:p-10 shadow-sm space-y-8 max-w-md mx-auto relative overflow-hidden">
         {/* Subtle accent border */}
         <div className="absolute top-0 left-0 right-0 h-[2px] bg-slate-900/10"></div>
 
         <div className="space-y-3">
-          <h2 className="text-lg font-semibold text-slate-800">Premium プラン</h2>
+          <h2 className="text-lg font-semibold text-foreground">Premium プラン</h2>
           <div className="flex items-baseline space-x-1">
-            <span className="text-3xl font-serif font-medium text-slate-900">¥980</span>
-            <span className="text-xs text-slate-400 font-sans">/ 月（税込）</span>
+            <span className="text-3xl font-serif font-medium text-foreground">¥980</span>
+            <span className="text-xs text-muted-foreground font-sans">/ 月（税込）</span>
           </div>
         </div>
 
@@ -113,7 +113,7 @@ export function PricingClient() {
             <button
               onClick={handleSubscribe}
               disabled={loading || status === "loading"}
-              className="w-full flex items-center justify-center space-x-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-medium py-3 transition-colors disabled:opacity-50 text-sm shadow-sm"
+              className="w-full flex items-center justify-center space-x-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-foreground font-medium py-3 transition-colors disabled:opacity-50 text-sm shadow-sm"
             >
               {loading ? (
                 <>
@@ -129,7 +129,7 @@ export function PricingClient() {
       </div>
 
       {/* Trust Badge */}
-      <p className="text-center text-[10px] text-slate-400 max-w-xs mx-auto leading-relaxed">
+      <p className="text-center text-[10px] text-muted-foreground max-w-xs mx-auto leading-relaxed">
         ※ クレジットカード決済はStripeの保護された安全な決済システム（Stripe Hosted Checkout）を利用しており、当サービスのサーバーにはカード情報は一切保存されません。
       </p>
     </div>

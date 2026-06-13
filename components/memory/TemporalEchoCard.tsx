@@ -22,14 +22,14 @@ export function TemporalEchoCard({ echo }: TemporalEchoCardProps) {
         {/* Content */}
         <div className="relative z-10 space-y-3">
           {/* Echo marker */}
-          <p className="text-xs font-light tracking-widest text-black/25 dark:text-white/25 uppercase">
+          <p className="text-xs font-light tracking-widest text-black/25 dark:text-foreground/25 uppercase">
             時間の響き
           </p>
 
           {/* Two timestamps with echo visual */}
           <div className="space-y-4">
             <div className="flex items-center gap-3">
-              <div className="text-xs font-light text-black/50 dark:text-white/50">
+              <div className="text-xs font-light text-black/50 dark:text-foreground/50">
                 {echo.firstAppearance.toLocaleDateString("ja-JP", {
                   month: "short",
                   day: "numeric",
@@ -37,10 +37,10 @@ export function TemporalEchoCard({ echo }: TemporalEchoCardProps) {
               </div>
               <div className="flex-1 flex items-center gap-1">
                 <div className="flex-1 h-px bg-black/10 dark:bg-white/10" />
-                <span className="text-xs text-black/30 dark:text-white/30">✦</span>
+                <span className="text-xs text-black/30 dark:text-foreground/30">✦</span>
                 <div className="flex-1 h-px bg-black/10 dark:bg-white/10" />
               </div>
-              <div className="text-xs font-light text-black/50 dark:text-white/50">
+              <div className="text-xs font-light text-black/50 dark:text-foreground/50">
                 {echo.lastAppearance.toLocaleDateString("ja-JP", {
                   month: "short",
                   day: "numeric",
@@ -49,14 +49,14 @@ export function TemporalEchoCard({ echo }: TemporalEchoCardProps) {
             </div>
 
             {/* Gap duration */}
-            <p className="text-xs font-light text-black/40 dark:text-white/40 text-center py-1">
+            <p className="text-xs font-light text-black/40 dark:text-foreground/40 text-center py-1">
               {months}ヶ月の間隔で「{echo.fragmentContent}」が静かに響いています
             </p>
           </div>
 
           {/* Echo intensity visualization */}
           <div className="space-y-1 pt-2">
-            <div className="h-0.5 bg-black/5 dark:bg-white/5 rounded-full overflow-hidden">
+            <div className="h-0.5 bg-black/5 dark:bg-card rounded-full overflow-hidden">
               <div
                 className="h-full bg-black/15 dark:bg-white/15 rounded-full transition-all duration-500"
                 style={{ width: `${Math.round(echo.echoIntensity * 100)}%` }}
@@ -65,7 +65,7 @@ export function TemporalEchoCard({ echo }: TemporalEchoCardProps) {
           </div>
 
           {/* Echo sentiment */}
-          <p className="text-xs font-light text-black/30 dark:text-white/30 italic pt-1">
+          <p className="text-xs font-light text-black/30 dark:text-foreground/30 italic pt-1">
             存在は直線ではありません
           </p>
         </div>

@@ -9,7 +9,7 @@ export default async function AdminSettingsPage() {
   return (
     <section className="space-y-4">
       <header className="rounded-2xl border border-slate-200 bg-white p-5">
-        <h1 className="text-lg font-semibold text-slate-900">サイト設定</h1>
+        <h1 className="text-lg font-semibold text-foreground">サイト設定</h1>
         <p className="mt-1 text-sm text-slate-600">
           ブランドカラー・ロゴ・カード表示スタイルを管理します。
         </p>

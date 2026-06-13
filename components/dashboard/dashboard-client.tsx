@@ -196,7 +196,7 @@ export function DashboardClient() {
     <div className="mx-auto max-w-2xl px-4 py-12 md:py-24 space-y-12">
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 rounded-xl bg-slate-900 px-4 py-3 text-sm font-medium text-white shadow-lg animate-in slide-in-from-bottom-4 fade-in duration-300">
+        <div className="fixed bottom-6 right-6 z-50 rounded-xl bg-slate-900 px-4 py-3 text-sm font-medium text-foreground shadow-lg animate-in slide-in-from-bottom-4 fade-in duration-300">
           {toastMessage}
         </div>
       )}
@@ -217,10 +217,10 @@ export function DashboardClient() {
 
       {/* Today's Space */}
       <section className="rounded-2xl border border-slate-100 bg-white p-8 text-center space-y-6">
-        <p className="text-lg font-serif text-slate-800 leading-relaxed tracking-wide">
+        <p className="text-lg font-serif text-foreground leading-relaxed tracking-wide">
           「今日は何に時間を使いましたか？」
         </p>
-        <p className="text-sm text-slate-400">
+        <p className="text-sm text-muted-foreground">
           ただ事実を、あるいはその時の感情をそのまま置いてみてください。
         </p>
       </section>
@@ -233,13 +233,13 @@ export function DashboardClient() {
           placeholder="ここからすぐに書き始められます..."
           rows={3}
           disabled={isSaving}
-          className="w-full resize-none rounded-2xl border-none bg-slate-50/50 p-6 text-base leading-relaxed text-slate-800 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-200 transition-colors"
+          className="w-full resize-none rounded-2xl border-none bg-slate-50/50 p-6 text-base leading-relaxed text-foreground placeholder:text-muted-foreground focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-200 transition-colors"
         />
         <div className="flex justify-end">
           <button
             onClick={handleSave}
             disabled={isSaving || !content.trim()}
-            className="rounded-full bg-slate-900 px-6 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+            className="rounded-full bg-slate-900 px-6 py-2.5 text-sm font-medium text-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
           >
             {isSaving ? "保存中..." : "書き留める"}
           </button>
@@ -248,9 +248,9 @@ export function DashboardClient() {
 
       {/* Recent Logs */}
       <section className="pt-8">
-        <h2 className="text-xs font-medium tracking-widest text-slate-400 uppercase mb-6">Recent Logs</h2>
+        <h2 className="text-xs font-medium tracking-widest text-muted-foreground uppercase mb-6">Recent Logs</h2>
         {logs.length === 0 ? (
-          <p className="text-sm text-slate-400">まだログがありません。</p>
+          <p className="text-sm text-muted-foreground">まだログがありません。</p>
         ) : (
           <div className="space-y-6">
             {logs.map((log) => {
@@ -261,13 +261,13 @@ export function DashboardClient() {
 
               return (
                 <div key={log.id} className="group flex flex-col gap-2 border-b border-slate-50 pb-6 transition-opacity opacity-80 hover:opacity-100">
-                  <div className="flex items-center gap-3 text-xs text-slate-400 font-mono">
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground font-mono">
                     <time dateTime={date.toISOString()}>{dateString}</time>
-                    <span className="ml-2 text-[10px] tracking-wide text-slate-300 uppercase">{roads.find(r => r.id === log.road)?.title}</span>
+                    <span className="ml-2 text-[10px] tracking-wide text-muted-foreground uppercase">{roads.find(r => r.id === log.road)?.title}</span>
                   </div>
                   <p className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">
                     {previewContent}
-                    {hasMore && <span className="text-slate-400 ml-1">...</span>}
+                    {hasMore && <span className="text-muted-foreground ml-1">...</span>}
                   </p>
                 </div>
               );
@@ -279,16 +279,16 @@ export function DashboardClient() {
       {/* Today's Small Practices */}
       <section className="pt-8 border-t border-slate-100">
         <div className="space-y-1 mb-6">
-          <h2 className="text-xs font-medium tracking-widest text-slate-400 uppercase">今日の小さな実践</h2>
-          <p className="text-[10px] text-slate-400 font-sans">あなたのロードに合わせた、少し参考になる他者の歩み</p>
+          <h2 className="text-xs font-medium tracking-widest text-muted-foreground uppercase">今日の小さな実践</h2>
+          <p className="text-[10px] text-muted-foreground font-sans">あなたのロードに合わせた、少し参考になる他者の歩み</p>
         </div>
         
         {loadingPractices ? (
           <div className="text-center py-8">
-            <p className="text-xs text-slate-300 font-mono tracking-widest animate-pulse">実践を整理しています...</p>
+            <p className="text-xs text-muted-foreground font-mono tracking-widest animate-pulse">実践を整理しています...</p>
           </div>
         ) : practices.length === 0 ? (
-          <p className="text-xs text-slate-400 font-serif italic">今日の推薦される実践はまだありません。</p>
+          <p className="text-xs text-muted-foreground font-serif italic">今日の推薦される実践はまだありません。</p>
         ) : (
           <div className="grid gap-6 sm:grid-cols-3">
             {practices.map((practice) => {
@@ -312,21 +312,21 @@ export function DashboardClient() {
                 >
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-[9px] font-medium tracking-wider text-slate-400 bg-slate-50/80 px-2 py-0.5 rounded-full">
+                      <span className="text-[9px] font-medium tracking-wider text-muted-foreground bg-slate-50/80 px-2 py-0.5 rounded-full">
                         {practice.road.replace("ロード", "")}
                       </span>
                     </div>
-                    <h3 className="text-sm font-medium text-slate-800 leading-snug group-hover:text-slate-900 transition-colors line-clamp-2">
+                    <h3 className="text-sm font-medium text-foreground leading-snug group-hover:text-foreground transition-colors line-clamp-2">
                       {practice.title}
                     </h3>
-                    <p className="text-xs text-slate-500 leading-relaxed line-clamp-3">
+                    <p className="text-xs text-muted-foreground leading-relaxed line-clamp-3">
                       {practice.summary}
                     </p>
                   </div>
                   {parsedTags.length > 0 && (
                     <div className="flex flex-wrap gap-1.5 pt-2 border-t border-slate-50/50">
                       {parsedTags.map((tag, i) => (
-                        <span key={i} className="text-[9px] text-slate-400 font-mono">
+                        <span key={i} className="text-[9px] text-muted-foreground font-mono">
                           #{tag}
                         </span>
                       ))}
@@ -342,16 +342,16 @@ export function DashboardClient() {
       {/* Today's Contents */}
       <section className="pt-8 border-t border-slate-100">
         <div className="space-y-1 mb-6">
-          <h2 className="text-xs font-medium tracking-widest text-slate-400 uppercase">今日のコンテンツ</h2>
-          <p className="text-[10px] text-slate-400 font-sans">今のあなたのロードに合わせて推薦される、おすすめの外部インプット</p>
+          <h2 className="text-xs font-medium tracking-widest text-muted-foreground uppercase">今日のコンテンツ</h2>
+          <p className="text-[10px] text-muted-foreground font-sans">今のあなたのロードに合わせて推薦される、おすすめの外部インプット</p>
         </div>
 
         {loadingExternal ? (
           <div className="text-center py-8">
-            <p className="text-xs text-slate-300 font-mono tracking-widest animate-pulse">コンテンツを準備しています...</p>
+            <p className="text-xs text-muted-foreground font-mono tracking-widest animate-pulse">コンテンツを準備しています...</p>
           </div>
         ) : externalContents.length === 0 ? (
-          <p className="text-xs text-slate-400 font-serif italic">今日の推薦コンテンツはまだありません。</p>
+          <p className="text-xs text-muted-foreground font-serif italic">今日の推薦コンテンツはまだありません。</p>
         ) : (
           <div className="grid gap-6 sm:grid-cols-2">
             {externalContents.map((item) => {
@@ -393,15 +393,15 @@ export function DashboardClient() {
                       </div>
                     ) : (
                       <div className="w-full h-24 bg-slate-50/70 border-b border-slate-50 flex items-center justify-center">
-                        <Icon className="w-6 h-6 text-slate-300 stroke-[1.5]" />
+                        <Icon className="w-6 h-6 text-muted-foreground stroke-[1.5]" />
                       </div>
                     )}
 
                     {/* Content Meta & Info */}
                     <div className="px-5 pb-4 space-y-2">
                       <div className="flex items-center justify-between text-[9px] font-medium tracking-wider">
-                        <span className="text-slate-400 bg-slate-50 px-2 py-0.5 rounded border border-slate-100 inline-flex items-center space-x-1">
-                          <Icon className="w-3 h-3 stroke-[2] text-slate-400" />
+                        <span className="text-muted-foreground bg-slate-50 px-2 py-0.5 rounded border border-slate-100 inline-flex items-center space-x-1">
+                          <Icon className="w-3 h-3 stroke-[2] text-muted-foreground" />
                           <span>
                             {item.type === "youtube" ? "YouTube" 
                              : item.type === "note" ? "note" 
@@ -410,18 +410,18 @@ export function DashboardClient() {
                              : "外部記事"}
                           </span>
                         </span>
-                        <span className="text-slate-400">
+                        <span className="text-muted-foreground">
                           {item.road.replace("ロード", "")}
                         </span>
                       </div>
 
-                      <h3 className="text-xs font-semibold text-slate-800 leading-snug group-hover:text-slate-900 transition-colors line-clamp-2 inline-flex items-center gap-1">
+                      <h3 className="text-xs font-semibold text-foreground leading-snug group-hover:text-foreground transition-colors line-clamp-2 inline-flex items-center gap-1">
                         <span>{item.title}</span>
-                        <ExternalLink className="w-3 h-3 text-slate-300 group-hover:text-slate-400 transition-colors shrink-0" />
+                        <ExternalLink className="w-3 h-3 text-muted-foreground group-hover:text-muted-foreground transition-colors shrink-0" />
                       </h3>
 
                       {item.description && (
-                        <p className="text-[11px] text-slate-500 leading-relaxed line-clamp-2">
+                        <p className="text-[11px] text-muted-foreground leading-relaxed line-clamp-2">
                           {item.description}
                         </p>
                       )}
@@ -432,7 +432,7 @@ export function DashboardClient() {
                   {parsedTags.length > 0 && (
                     <div className="px-5 pb-4 flex flex-wrap gap-1">
                       {parsedTags.map((tag, i) => (
-                        <span key={i} className="text-[9px] text-slate-400 font-mono">
+                        <span key={i} className="text-[9px] text-muted-foreground font-mono">
                           #{tag}
                         </span>
                       ))}
@@ -448,16 +448,16 @@ export function DashboardClient() {
       {/* Discordの声 Section */}
       <section className="pt-8 border-t border-slate-100">
         <div className="space-y-1 mb-6">
-          <h2 className="text-xs font-medium tracking-widest text-slate-400 uppercase">Discordの声</h2>
-          <p className="text-[10px] text-slate-400 font-sans">同じ空間で静かに共有されている実践の声</p>
+          <h2 className="text-xs font-medium tracking-widest text-muted-foreground uppercase">Discordの声</h2>
+          <p className="text-[10px] text-muted-foreground font-sans">同じ空間で静かに共有されている実践の声</p>
         </div>
 
         {loadingFeed ? (
           <div className="text-center py-8">
-            <p className="text-xs text-slate-300 font-mono tracking-widest animate-pulse">声を整理しています...</p>
+            <p className="text-xs text-muted-foreground font-mono tracking-widest animate-pulse">声を整理しています...</p>
           </div>
         ) : discordFeed.length === 0 ? (
-          <p className="text-xs text-slate-400 font-serif italic">共有されている声はまだありません。</p>
+          <p className="text-xs text-muted-foreground font-serif italic">共有されている声はまだありません。</p>
         ) : (
           <div className="space-y-4">
             {discordFeed.map((post) => {
@@ -472,8 +472,8 @@ export function DashboardClient() {
                   key={post.id} 
                   className="rounded-2xl border border-slate-100 bg-white p-5 space-y-2.5 shadow-sm transition-all duration-300 hover:border-slate-150"
                 >
-                  <div className="flex justify-between items-center text-[10px] text-slate-400 font-mono">
-                    <span className="font-medium text-slate-500">@{post.author}</span>
+                  <div className="flex justify-between items-center text-[10px] text-muted-foreground font-mono">
+                    <span className="font-medium text-muted-foreground">@{post.author}</span>
                     <span>{dateString}</span>
                   </div>
                   <p className="text-xs md:text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">

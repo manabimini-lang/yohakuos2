@@ -7,6 +7,9 @@ export default {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['var(--font-inter)', 'var(--font-noto-sans-jp)', 'sans-serif'],
+      },
       colors: {
         brand: "#7C3AED",
         notion: {

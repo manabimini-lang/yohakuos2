@@ -124,7 +124,7 @@ export default function MembersPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-[400px] flex-col items-center justify-center text-slate-400 space-y-2">
+      <div className="flex min-h-[400px] flex-col items-center justify-center text-muted-foreground space-y-2">
         <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-200 border-t-slate-800" />
         <span className="text-xs">読み込み中...</span>
       </div>
@@ -135,7 +135,7 @@ export default function MembersPage() {
     <section className="space-y-6 max-w-5xl mx-auto">
       {/* Toast Notification */}
       {toast && (
-        <div className="fixed bottom-6 right-6 z-50 rounded-xl bg-slate-900 px-4 py-3 text-sm font-medium text-white shadow-lg animate-in slide-in-from-bottom-4 fade-in duration-300">
+        <div className="fixed bottom-6 right-6 z-50 rounded-xl bg-slate-900 px-4 py-3 text-sm font-medium text-foreground shadow-lg animate-in slide-in-from-bottom-4 fade-in duration-300">
           {toast}
         </div>
       )}
@@ -143,7 +143,7 @@ export default function MembersPage() {
       {/* Header */}
       <header className="rounded-2xl border border-slate-200 bg-white p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-lg font-semibold text-slate-900">メンバー管理</h1>
+          <h1 className="text-lg font-semibold text-foreground">メンバー管理</h1>
           <p className="mt-1 text-sm text-slate-600">
             登録ユーザーのアカウント状態、権限設定、見守り統計を確認・管理します。
           </p>
@@ -151,7 +151,7 @@ export default function MembersPage() {
 
         {/* Search Bar */}
         <div className="relative w-full md:w-72">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+          <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
           <input
             type="text"
             placeholder="名前またはメールで検索..."
@@ -165,16 +165,16 @@ export default function MembersPage() {
       {/* Main Table */}
       <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
         {filteredMembers.length === 0 ? (
-          <div className="p-12 text-center text-slate-400 space-y-1.5">
-            <Info className="w-8 h-8 mx-auto text-slate-200 stroke-[1.5]" />
-            <p className="text-sm font-medium text-slate-500">まだ共有はありません。</p>
-            <p className="text-xs text-slate-400">これから余白が育っていきます。</p>
+          <div className="p-12 text-center text-muted-foreground space-y-1.5">
+            <Info className="w-8 h-8 mx-auto text-foreground stroke-[1.5]" />
+            <p className="text-sm font-medium text-muted-foreground">まだ共有はありません。</p>
+            <p className="text-xs text-muted-foreground">これから余白が育っていきます。</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-slate-50 border-b border-slate-200 text-xs font-medium text-slate-500 uppercase tracking-wider">
+                <tr className="bg-slate-50 border-b border-slate-200 text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   <th className="px-6 py-4">メンバー</th>
                   <th className="px-6 py-4">登録日</th>
                   <th className="px-6 py-4">プラン</th>
@@ -197,21 +197,21 @@ export default function MembersPage() {
                       <tr className={`hover:bg-slate-50/50 transition-colors ${isSuspended ? "bg-red-50/10" : ""}`}>
                         <td className="px-6 py-4">
                           <div className="flex flex-col">
-                            <span className="text-sm font-medium text-slate-800">{member.name || "未設定"}</span>
-                            <span className="text-xs text-slate-400 inline-flex items-center gap-1.5 mt-0.5">
-                              <Mail className="w-3.5 h-3.5 text-slate-300" />
+                            <span className="text-sm font-medium text-foreground">{member.name || "未設定"}</span>
+                            <span className="text-xs text-muted-foreground inline-flex items-center gap-1.5 mt-0.5">
+                              <Mail className="w-3.5 h-3.5 text-muted-foreground" />
                               {member.email}
                             </span>
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-xs text-slate-500">
+                        <td className="px-6 py-4 text-xs text-muted-foreground">
                           {new Date(member.createdAt).toLocaleDateString("ja-JP")}
                         </td>
                         <td className="px-6 py-4">
                           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                             member.plan === "premium"
                               ? "bg-amber-50 text-amber-700 border border-amber-200"
-                              : "bg-slate-50 text-slate-500 border border-slate-200"
+                              : "bg-slate-50 text-muted-foreground border border-slate-200"
                           }`}>
                             {member.plan === "premium" ? "Premium" : "Free"}
                           </span>
@@ -229,7 +229,7 @@ export default function MembersPage() {
                                 管理者
                               </span>
                             ) : (
-                              <span className="inline-flex items-center text-xs font-medium text-slate-500 gap-1">
+                              <span className="inline-flex items-center text-xs font-medium text-muted-foreground gap-1">
                                 <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
                                 正常
                               </span>
@@ -260,7 +260,7 @@ export default function MembersPage() {
                             )}
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-xs text-slate-500">
+                        <td className="px-6 py-4 text-xs text-muted-foreground">
                           {member.lastActiveAt 
                             ? new Date(member.lastActiveAt).toLocaleString("ja-JP", {
                                 month: "short",
@@ -274,7 +274,7 @@ export default function MembersPage() {
                         <td className="px-6 py-4 text-right">
                           <button
                             onClick={() => setExpandedUserId(isExpanded ? null : member.id)}
-                            className="inline-flex items-center space-x-1.5 text-xs text-slate-500 hover:text-slate-900 border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white shadow-sm hover:shadow transition-all"
+                            className="inline-flex items-center space-x-1.5 text-xs text-muted-foreground hover:text-foreground border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white shadow-sm hover:shadow transition-all"
                           >
                             <span>{isExpanded ? "閉じる" : "詳細・操作"}</span>
                             {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
@@ -289,28 +289,28 @@ export default function MembersPage() {
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                               {/* Left: Detail Stats */}
                               <div className="space-y-4">
-                                <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">利用状況</h4>
+                                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">利用状況</h4>
                                 <div className="grid grid-cols-2 gap-4">
                                   <div className="bg-white border border-slate-200 rounded-xl p-3.5 shadow-sm space-y-1">
-                                    <span className="text-[10px] text-slate-400 font-medium block">保存数</span>
+                                    <span className="text-[10px] text-muted-foreground font-medium block">保存数</span>
                                     <span className="text-sm font-semibold text-slate-700">
                                       {member.stats.savedCount} 件
                                     </span>
                                   </div>
                                   <div className="bg-white border border-slate-200 rounded-xl p-3.5 shadow-sm space-y-1">
-                                    <span className="text-[10px] text-slate-400 font-medium block">振り返り数</span>
+                                    <span className="text-[10px] text-muted-foreground font-medium block">振り返り数</span>
                                     <span className="text-sm font-semibold text-slate-700">
                                       {member.stats.logsCount} 回
                                     </span>
                                   </div>
                                   <div className="bg-white border border-slate-200 rounded-xl p-3.5 shadow-sm space-y-1">
-                                    <span className="text-[10px] text-slate-400 font-medium block">提案閲覧率</span>
+                                    <span className="text-[10px] text-muted-foreground font-medium block">提案閲覧率</span>
                                     <span className="text-sm font-semibold text-slate-700">
                                       {member.stats.suggestionRate}%
                                     </span>
                                   </div>
                                   <div className="bg-white border border-slate-200 rounded-xl p-3.5 shadow-sm space-y-1">
-                                    <span className="text-[10px] text-slate-400 font-medium block">Discord連携</span>
+                                    <span className="text-[10px] text-muted-foreground font-medium block">Discord連携</span>
                                     <span className="text-xs font-semibold text-slate-700 flex items-center gap-1.5 mt-1">
                                       <span className={`w-1.5 h-1.5 rounded-full ${member.stats.isDiscordConnected ? "bg-indigo-500" : "bg-slate-300"}`} />
                                       {member.stats.isDiscordConnected ? "連携中" : "未連携"}
@@ -321,10 +321,10 @@ export default function MembersPage() {
 
                               {/* Middle: Accompaniment status */}
                               <div className="space-y-4 md:border-l md:border-slate-200/60 md:pl-6">
-                                <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">伴走状況</h4>
+                                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">伴走状況</h4>
                                 <div className="space-y-3">
                                   <div>
-                                    <span className="text-[10px] text-slate-400 font-medium block">最後に提案を閲覧した日時</span>
+                                    <span className="text-[10px] text-muted-foreground font-medium block">最後に提案を閲覧した日時</span>
                                     <span className="text-xs font-semibold text-slate-700">
                                       {member.accompaniment.lastSuggestionViewedAt 
                                         ? new Date(member.accompaniment.lastSuggestionViewedAt).toLocaleString("ja-JP")
@@ -333,13 +333,13 @@ export default function MembersPage() {
                                     </span>
                                   </div>
                                   <div>
-                                    <span className="text-[10px] text-slate-400 font-medium block">最後に受け取った提案タイトル</span>
+                                    <span className="text-[10px] text-muted-foreground font-medium block">最後に受け取った提案タイトル</span>
                                     <span className="text-xs font-semibold text-slate-700 leading-snug block mt-0.5">
                                       {member.accompaniment.lastSuggestionTitle || "なし"}
                                     </span>
                                   </div>
                                   <div>
-                                    <span className="text-[10px] text-slate-400 font-medium block">最後のログ記録日時</span>
+                                    <span className="text-[10px] text-muted-foreground font-medium block">最後のログ記録日時</span>
                                     <span className="text-xs font-semibold text-slate-700">
                                       {member.accompaniment.lastLogRecordedAt
                                         ? new Date(member.accompaniment.lastLogRecordedAt).toLocaleString("ja-JP")
@@ -353,10 +353,10 @@ export default function MembersPage() {
                               {/* Right: Risk alerts & Operations */}
                               <div className="space-y-4 md:border-l md:border-slate-200/60 md:pl-6 flex flex-col justify-between">
                                 <div className="space-y-3">
-                                  <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">見守りリスクサイン</h4>
+                                  <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">見守りリスクサイン</h4>
                                   
                                   {!hasRisks && !isSuspended && (
-                                    <p className="text-xs text-slate-500 italic">今日も伴走は良好です。静かに見守っています。</p>
+                                    <p className="text-xs text-muted-foreground italic">今日も伴走は良好です。静かに見守っています。</p>
                                   )}
 
                                   {isSuspended && (

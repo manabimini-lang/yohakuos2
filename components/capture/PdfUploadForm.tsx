@@ -101,7 +101,7 @@ export function PdfUploadForm({ onSuccess }: { onSuccess: () => void }) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       {/* File Drop Zone */}
       {!file ? (
         <div
@@ -112,7 +112,7 @@ export function PdfUploadForm({ onSuccess }: { onSuccess: () => void }) {
           className={`h-28 border-2 border-dashed rounded-xl flex flex-col items-center justify-center cursor-pointer transition-colors ${
             isDragging
               ? "border-brand bg-brand/5 dark:bg-brand/10"
-              : "border-notion-border dark:border-white/10 hover:border-gray-300 dark:hover:border-white/20"
+              : "border-notion-border dark:border-border hover:border-gray-300 dark:hover:border-white/20"
           }`}
         >
           <FileUp className={`w-6 h-6 mb-2 ${isDragging ? "text-brand" : "text-gray-400"}`} />
@@ -126,11 +126,11 @@ export function PdfUploadForm({ onSuccess }: { onSuccess: () => void }) {
           />
         </div>
       ) : (
-        <div className="p-3 rounded-xl border border-notion-border dark:border-white/10 bg-gray-50 dark:bg-white/5 flex items-center justify-between">
+        <div className="p-3 rounded-xl border border-notion-border dark:border-border bg-gray-50 dark:bg-card flex items-center justify-between">
           <div className="flex items-center gap-3 overflow-hidden">
             <FileIcon className="w-5 h-5 text-gray-400 shrink-0" />
             <div className="truncate">
-              <p className="text-sm font-medium text-notion-text dark:text-white truncate">{file.name}</p>
+              <p className="text-sm font-medium text-notion-text dark:text-foreground truncate">{file.name}</p>
               <p className="text-xs text-gray-500">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
             </div>
           </div>
@@ -155,7 +155,7 @@ export function PdfUploadForm({ onSuccess }: { onSuccess: () => void }) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
             transition={{ duration: 0.25, ease: [0.23, 1, 0.32, 1] }}
-            className="rounded-xl border border-stone-200 dark:border-white/10 bg-stone-50 dark:bg-white/5 px-4 py-3 space-y-1"
+            className="rounded-xl border border-stone-200 dark:border-border bg-stone-50 dark:bg-card px-4 py-3 space-y-1"
           >
             <p className="text-sm text-stone-600 dark:text-stone-300 font-light">
               {error.heading}
@@ -186,7 +186,7 @@ export function PdfUploadForm({ onSuccess }: { onSuccess: () => void }) {
           onChange={(e) => setReflection(e.target.value)}
           disabled={isSubmitting}
           rows={2}
-          className="w-full bg-transparent border border-notion-border dark:border-white/10 rounded-xl px-3 py-2 text-sm text-notion-text dark:text-white placeholder:text-gray-400 focus:outline-none focus:border-brand/50 transition-colors resize-none leading-relaxed"
+          className="w-full bg-transparent border border-notion-border dark:border-border rounded-xl px-3 py-2 text-sm text-notion-text dark:text-foreground placeholder:text-gray-400 focus:outline-none focus:border-brand/50 transition-colors resize-none leading-relaxed"
         />
       </div>
 
@@ -196,7 +196,7 @@ export function PdfUploadForm({ onSuccess }: { onSuccess: () => void }) {
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="text-sm text-slate-400 font-light"
+              className="text-sm text-muted-foreground font-light"
             >
               記録を保存しています...
             </motion.div>
@@ -205,7 +205,7 @@ export function PdfUploadForm({ onSuccess }: { onSuccess: () => void }) {
         <button
           type="submit"
           disabled={!file || isSubmitting}
-          className="px-6 py-2 rounded-full bg-notion-text dark:bg-white text-white dark:text-black text-sm font-medium disabled:opacity-50 transition-opacity hover:opacity-90"
+          className="px-6 py-2 rounded-full bg-notion-text dark:bg-white text-foreground dark:text-black text-sm font-medium disabled:opacity-50 transition-opacity hover:opacity-90"
         >
           余白に置く
         </button>

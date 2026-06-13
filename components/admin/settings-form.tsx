@@ -87,7 +87,7 @@ export function SettingsForm({ defaultValues }: { defaultValues: UpdateSettingsI
       <button
         type="submit"
         disabled={isSubmitting}
-        className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
+        className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-foreground disabled:opacity-60"
       >
         {isSubmitting ? "保存中..." : "設定を保存する"}
       </button>

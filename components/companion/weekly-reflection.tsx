@@ -54,7 +54,7 @@ export default function WeeklyReflectionClient() {
                     <button
                         onClick={generateReflection}
                         disabled={isLoading}
-                        className="px-6 py-3 bg-gray-800 text-white rounded-2xl text-sm hover:bg-gray-700 disabled:opacity-40 transition-colors"
+                        className="px-6 py-3 bg-gray-800 text-foreground rounded-2xl text-sm hover:bg-gray-700 disabled:opacity-40 transition-colors"
                     >
                         {isLoading ? "生成中..." : "今週を振り返る"}
                     </button>

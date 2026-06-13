@@ -124,7 +124,7 @@ export function DataSettingsClient() {
     <div className="mx-auto max-w-xl px-6 py-12 md:py-24 space-y-10 selection:bg-slate-100 relative">
       {/* Toast Notification */}
       {toast && (
-        <div className={`fixed bottom-6 right-6 z-50 rounded-xl px-4 py-3 text-sm font-medium text-white shadow-lg animate-in slide-in-from-bottom-4 fade-in duration-300 ${
+        <div className={`fixed bottom-6 right-6 z-50 rounded-xl px-4 py-3 text-sm font-medium text-foreground shadow-lg animate-in slide-in-from-bottom-4 fade-in duration-300 ${
           toast.type === "success" ? "bg-slate-900" : "bg-red-650"
         }`}>
           {toast.message}
@@ -134,33 +134,33 @@ export function DataSettingsClient() {
       {/* Back to Profile */}
       <div>
         <Link 
-          href="/profile" 
-          className="inline-flex items-center text-xs text-slate-400 hover:text-slate-655 transition-colors font-mono"
+          href="/settings" 
+          className="inline-flex items-center text-xs text-muted-foreground hover:text-slate-655 transition-colors font-mono"
         >
           <ChevronLeft className="w-3.5 h-3.5 mr-1" />
-          Profile
+          Settings
         </Link>
       </div>
 
       {/* Page Title */}
       <div className="space-y-2">
-        <h1 className="text-2xl font-serif text-slate-800 tracking-wide flex items-center gap-2">
+        <h1 className="text-2xl font-serif text-foreground tracking-wide flex items-center gap-2">
           <Database className="w-5.5 h-5.5 text-slate-450 stroke-[1.5]" />
           <span>データ管理</span>
         </h1>
-        <p className="text-xs text-slate-400 leading-relaxed">
+        <p className="text-xs text-muted-foreground leading-relaxed">
           YOHAKUのログは、あなたの端末内に保存されています
         </p>
       </div>
 
       {/* Export / Import Card */}
-      <div className="bg-white border border-slate-150 rounded-3xl p-6 md:p-8 space-y-6 shadow-sm">
+      <div className="bg-white border border-slate-150 rounded-2xl p-6 md:p-8 space-y-6 shadow-sm">
         <div className="space-y-3">
-          <p className="text-xs text-slate-500 leading-relaxed">
+          <p className="text-xs text-muted-foreground leading-relaxed">
             書かれた日々の記録はサーバーには送信されず、ブラウザのローカルデータベース（IndexedDB）に安全に暗号化および保存されています。
             所有権は完全にあなたにあります。
           </p>
-          <p className="text-xs text-slate-500 leading-relaxed">
+          <p className="text-xs text-muted-foreground leading-relaxed">
             端末の変更時のバックアップのために、ローカル形式（JSON）でログデータを書き出し、または復元（インポート）することができます。
           </p>
         </div>
@@ -179,7 +179,7 @@ export function DataSettingsClient() {
         )}
 
         <div className="pt-4 border-t border-slate-50 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center space-x-2 text-[10px] text-slate-400 font-mono">
+          <div className="flex items-center space-x-2 text-[10px] text-muted-foreground font-mono">
             <FileJson className="w-3.5 h-3.5 text-slate-350" />
             <span>JSON format</span>
           </div>
@@ -201,7 +201,7 @@ export function DataSettingsClient() {
             <button
               onClick={handleExport}
               disabled={exporting}
-              className="inline-flex items-center justify-center space-x-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-medium px-4 py-2.5 transition-colors text-xs shadow-sm disabled:opacity-50"
+              className="inline-flex items-center justify-center space-x-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-foreground font-medium px-4 py-2.5 transition-colors text-xs shadow-sm disabled:opacity-50"
             >
               {exporting ? (
                 <>

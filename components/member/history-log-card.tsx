@@ -6,11 +6,11 @@ import sanitizeHtml from "sanitize-html";
 import { ChevronDown, ChevronUp } from "lucide-react";
 
 const MOOD_TAG_CONFIG: Record<string, { label: string; color: string }> = {
-  "疲れた":       { label: "疲れた",       color: "bg-slate-100 text-slate-500" },
-  "焦る":         { label: "焦る",         color: "bg-slate-100 text-slate-500" },
-  "不安":         { label: "不安",         color: "bg-slate-100 text-slate-500" },
-  "整えたい":     { label: "整えたい",     color: "bg-slate-100 text-slate-500" },
-  "少し前進したい": { label: "少し前進したい", color: "bg-slate-100 text-slate-500" },
+  "疲れた":       { label: "疲れた",       color: "bg-slate-100 text-muted-foreground" },
+  "焦る":         { label: "焦る",         color: "bg-slate-100 text-muted-foreground" },
+  "不安":         { label: "不安",         color: "bg-slate-100 text-muted-foreground" },
+  "整えたい":     { label: "整えたい",     color: "bg-slate-100 text-muted-foreground" },
+  "少し前進したい": { label: "少し前進したい", color: "bg-slate-100 text-muted-foreground" },
 };
 
 interface Log {
@@ -34,7 +34,7 @@ export function HistoryLogCard({ log }: { log: Log }) {
     minute: "2-digit",
   });
 
-  const moodConfig = log.moodTag ? (MOOD_TAG_CONFIG[log.moodTag] ?? { label: log.moodTag, color: "bg-slate-100 text-slate-500" }) : null;
+  const moodConfig = log.moodTag ? (MOOD_TAG_CONFIG[log.moodTag] ?? { label: log.moodTag, color: "bg-slate-100 text-muted-foreground" }) : null;
 
   return (
     <div className="rounded-2xl border border-slate-100 bg-white shadow-sm overflow-hidden">
@@ -51,7 +51,7 @@ export function HistoryLogCard({ log }: { log: Log }) {
             <div className="flex items-center gap-2 flex-wrap">
               <time
                 dateTime={log.createdAt.toISOString()}
-                className="text-xs text-slate-400"
+                className="text-xs text-muted-foreground"
               >
                 {dateFmt.format(log.createdAt)}　{timeFmt.format(log.createdAt)}
               </time>
@@ -66,7 +66,7 @@ export function HistoryLogCard({ log }: { log: Log }) {
               {log.inputText}
             </p>
           </div>
-          <span className="text-slate-300 shrink-0 mt-0.5" aria-hidden="true">
+          <span className="text-muted-foreground shrink-0 mt-0.5" aria-hidden="true">
             {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </span>
         </div>
@@ -75,7 +75,7 @@ export function HistoryLogCard({ log }: { log: Log }) {
         {log.smallAction && (
           <div className="flex items-start gap-2 mt-3 pt-3 border-t border-slate-50">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0 mt-1.5" aria-hidden="true" />
-            <p className="text-xs text-slate-500 leading-relaxed">
+            <p className="text-xs text-muted-foreground leading-relaxed">
               {log.smallAction}
             </p>
           </div>
@@ -87,7 +87,7 @@ export function HistoryLogCard({ log }: { log: Log }) {
         <div className="border-t border-slate-100 bg-slate-50/50 px-5 py-5 animate-in fade-in duration-200">
           {/* 書いたこと */}
           <div className="mb-5 space-y-2">
-            <p className="text-xs text-slate-400 tracking-wide">書いたこと</p>
+            <p className="text-xs text-muted-foreground tracking-wide">書いたこと</p>
             <p className="text-sm text-slate-700 leading-loose whitespace-pre-wrap">
               {log.inputText}
             </p>
@@ -98,7 +98,7 @@ export function HistoryLogCard({ log }: { log: Log }) {
 
           {/* AI整理内容 */}
           <div className="space-y-2">
-            <p className="text-xs text-slate-400 tracking-wide">整理</p>
+            <p className="text-xs text-muted-foreground tracking-wide">整理</p>
             <div className="prose prose-sm prose-slate max-w-none
               prose-headings:font-medium prose-headings:text-slate-600 prose-headings:text-xs
               prose-headings:uppercase prose-headings:tracking-wide

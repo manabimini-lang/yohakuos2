@@ -68,14 +68,14 @@ export function QuietAudioPlayer({
           aria-label={isPlaying ? "一時停止" : "再生"}
         >
           {isPlaying ? (
-            <Pause className="w-3.5 h-3.5 text-black/60 dark:text-white/60" />
+            <Pause className="w-3.5 h-3.5 text-black/60 dark:text-foreground/60" />
           ) : (
-            <Play className="w-3.5 h-3.5 text-black/60 dark:text-white/60 ml-0.5" />
+            <Play className="w-3.5 h-3.5 text-black/60 dark:text-foreground/60 ml-0.5" />
           )}
         </button>
 
         {/* Time display */}
-        <div className="text-xs font-mono text-black/40 dark:text-white/40 min-w-fit">
+        <div className="text-xs font-mono text-black/40 dark:text-foreground/40 min-w-fit">
           {formatTime(currentTime)} / {duration ? formatTime(duration) : "0:00"}
         </div>
       </div>

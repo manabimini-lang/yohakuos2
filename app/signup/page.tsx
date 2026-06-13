@@ -26,8 +26,8 @@ export default function SignUpPage({
     <div className="min-h-screen flex items-center justify-center bg-slate-50">
       <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
         <div className="mb-8 text-center">
-          <h1 className="text-2xl font-medium tracking-widest text-slate-800">YOHAKU</h1>
-          <p className="mt-3 text-sm text-slate-400">
+          <h1 className="text-2xl font-medium tracking-widest text-foreground">YOHAKU</h1>
+          <p className="mt-3 text-sm text-muted-foreground">
             アカウントを作成する
           </p>
         </div>
@@ -89,7 +89,7 @@ export default function SignUpPage({
 
           <button
             type="submit"
-            className="w-full rounded-xl bg-slate-900 px-4 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90 shadow-sm"
+            className="w-full rounded-xl bg-slate-900 px-4 py-3 text-sm font-medium text-foreground transition-opacity hover:opacity-90 shadow-sm"
           >
             アカウントを作成
           </button>
@@ -106,7 +106,7 @@ export default function SignUpPage({
             <div className="w-full border-t border-slate-200"></div>
           </div>
           <div className="relative flex justify-center text-sm">
-            <span className="bg-white px-2 text-slate-500">または</span>
+            <span className="bg-white px-2 text-muted-foreground">または</span>
           </div>
         </div>
 
@@ -119,7 +119,7 @@ export default function SignUpPage({
           </Link>
         </div>
 
-        <p className="mt-6 text-center text-xs text-slate-400">
+        <p className="mt-6 text-center text-xs text-muted-foreground">
           登録することで、
           <Link href="/terms" className="underline hover:text-slate-600">利用規約</Link>
           および

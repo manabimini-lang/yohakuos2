@@ -60,7 +60,7 @@ export function MemoryResonance({ userId, themes }: MemoryResonanceProps) {
 
   return (
     <section className="space-y-8">
-      <h2 className="text-xs tracking-[0.2em] uppercase text-black/40 dark:text-white/40">
+      <h2 className="text-xs tracking-[0.2em] uppercase text-black/40 dark:text-foreground/40">
         静かにつながっていること
       </h2>
 
@@ -73,16 +73,16 @@ export function MemoryResonance({ userId, themes }: MemoryResonanceProps) {
             {/* Connection Header */}
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2 flex-1 min-w-0">
-                <span className="text-sm font-light text-black/70 dark:text-white/70 truncate">
+                <span className="text-sm font-light text-black/70 dark:text-foreground/70 truncate">
                   {resonance.theme1}
                 </span>
-                <div className="flex-shrink-0 text-black/20 dark:text-white/20">↔</div>
-                <span className="text-sm font-light text-black/70 dark:text-white/70 truncate">
+                <div className="flex-shrink-0 text-black/20 dark:text-foreground/20">↔</div>
+                <span className="text-sm font-light text-black/70 dark:text-foreground/70 truncate">
                   {resonance.theme2}
                 </span>
               </div>
               <div
-                className="flex-shrink-0 text-xs font-mono text-black/30 dark:text-white/30"
+                className="flex-shrink-0 text-xs font-mono text-black/30 dark:text-foreground/30"
                 title={`接続度: ${Math.round(resonance.strength * 100)}%`}
               >
                 {Math.round(resonance.strength * 100)}%
@@ -90,12 +90,12 @@ export function MemoryResonance({ userId, themes }: MemoryResonanceProps) {
             </div>
 
             {/* Connection Text */}
-            <p className="text-sm leading-relaxed font-light text-black/60 dark:text-white/60">
+            <p className="text-sm leading-relaxed font-light text-black/60 dark:text-foreground/60">
               {resonance.connection}
             </p>
 
             {/* Strength Indicator */}
-            <div className="mt-4 h-0.5 bg-black/5 dark:bg-white/5 rounded-full overflow-hidden">
+            <div className="mt-4 h-0.5 bg-black/5 dark:bg-card rounded-full overflow-hidden">
               <div
                 className="h-full bg-black/20 dark:bg-white/20 transition-all duration-300"
                 style={{ width: `${resonance.strength * 100}%` }}
@@ -108,7 +108,7 @@ export function MemoryResonance({ userId, themes }: MemoryResonanceProps) {
       {resonances.length > 0 && (
         <Link
           href="/memory/resonance"
-          className="inline-flex items-center text-xs font-light text-black/40 dark:text-white/40 hover:text-black/60 dark:hover:text-white/60 transition-colors group"
+          className="inline-flex items-center text-xs font-light text-black/40 dark:text-foreground/40 hover:text-black/60 dark:hover:text-foreground/60 transition-colors group"
         >
           その他のつながりを見る
           <ChevronRight className="w-3 h-3 ml-1 group-hover:translate-x-1 transition-transform" />

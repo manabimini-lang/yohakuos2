@@ -59,7 +59,7 @@ export default async function EditContentPage({ params }: EditContentPageProps) 
     <section className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-semibold text-slate-900">コンテンツ編集</h1>
+          <h1 className="text-lg font-semibold text-foreground">コンテンツ編集</h1>
           <p className="text-sm text-slate-600">既存コンテンツを編集します。</p>
         </div>
         <Link

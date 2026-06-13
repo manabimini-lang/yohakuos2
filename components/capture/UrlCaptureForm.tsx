@@ -60,7 +60,7 @@ export function UrlCaptureForm({ onSuccess }: { onSuccess: () => void }) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       {/* URL Input */}
       <div>
         <input
@@ -69,7 +69,7 @@ export function UrlCaptureForm({ onSuccess }: { onSuccess: () => void }) {
           value={url}
           onChange={(e) => { setUrl(e.target.value); setErrorCode(null); }}
           disabled={isSubmitting}
-          className="w-full bg-transparent border-b border-notion-border dark:border-white/20 pb-2 text-notion-text dark:text-white placeholder:text-gray-400 focus:outline-none focus:border-brand transition-colors text-lg"
+          className="w-full bg-transparent border-b border-notion-border dark:border-white/20 pb-2 text-notion-text dark:text-foreground placeholder:text-gray-400 focus:outline-none focus:border-brand transition-colors text-lg"
         />
       </div>
 
@@ -85,7 +85,7 @@ export function UrlCaptureForm({ onSuccess }: { onSuccess: () => void }) {
           onChange={(e) => setReflection(e.target.value)}
           disabled={isSubmitting}
           rows={3}
-          className="w-full bg-transparent border border-notion-border dark:border-white/10 rounded-xl px-3 py-2 text-sm text-notion-text dark:text-white placeholder:text-gray-400 focus:outline-none focus:border-brand/50 transition-colors resize-none leading-relaxed"
+          className="w-full bg-transparent border border-notion-border dark:border-border rounded-xl px-3 py-2 text-sm text-notion-text dark:text-foreground placeholder:text-gray-400 focus:outline-none focus:border-brand/50 transition-colors resize-none leading-relaxed"
         />
       </div>
 
@@ -98,7 +98,7 @@ export function UrlCaptureForm({ onSuccess }: { onSuccess: () => void }) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
             transition={{ duration: 0.25, ease: [0.23, 1, 0.32, 1] }}
-            className="rounded-xl border border-stone-200 dark:border-white/10 bg-stone-50 dark:bg-white/5 px-4 py-3 space-y-1"
+            className="rounded-xl border border-stone-200 dark:border-border bg-stone-50 dark:bg-card px-4 py-3 space-y-1"
           >
             <p className="text-sm text-stone-600 dark:text-stone-300 font-light">
               {error.heading}
@@ -123,7 +123,7 @@ export function UrlCaptureForm({ onSuccess }: { onSuccess: () => void }) {
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="text-sm text-slate-400 font-light"
+              className="text-sm text-muted-foreground font-light"
             >
               静かに整理しています...
             </motion.div>
@@ -132,7 +132,7 @@ export function UrlCaptureForm({ onSuccess }: { onSuccess: () => void }) {
         <button
           type="submit"
           disabled={!url || isSubmitting}
-          className="px-6 py-2 rounded-full bg-notion-text dark:bg-white text-white dark:text-black text-sm font-medium disabled:opacity-50 transition-opacity hover:opacity-90"
+          className="px-6 py-2 rounded-full bg-notion-text dark:bg-white text-foreground dark:text-black text-sm font-medium disabled:opacity-50 transition-opacity hover:opacity-90"
         >
           余白に置く
         </button>

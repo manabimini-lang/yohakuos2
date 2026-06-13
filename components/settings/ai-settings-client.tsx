@@ -91,20 +91,20 @@ export function AiSettingsClient({ initialSettings, aiAvailable, aiSource }: AiS
       {/* Back to Profile */}
       <div>
         <Link 
-          href="/profile" 
-          className="inline-flex items-center text-xs text-slate-400 hover:text-slate-650 transition-colors font-mono"
+          href="/settings" 
+          className="inline-flex items-center text-xs text-muted-foreground hover:text-slate-650 transition-colors font-mono"
         >
           <ChevronLeft className="w-3.5 h-3.5 mr-1" />
-          Profile
+          Settings
         </Link>
       </div>
 
       {/* Page Title */}
       <div className="space-y-2">
-        <h1 className="text-2xl font-serif text-slate-800 tracking-wide">
+        <h1 className="text-2xl font-serif text-foreground tracking-wide">
           AI接続設定
         </h1>
-        <p className="text-xs text-slate-400 leading-relaxed">
+        <p className="text-xs text-muted-foreground leading-relaxed">
           {aiAvailable 
             ? `接続済み (${
                 aiSource === "gemini_oauth" ? "Gemini OAuth連携" :
@@ -139,12 +139,12 @@ export function AiSettingsClient({ initialSettings, aiAvailable, aiSource }: AiS
       <form onSubmit={handleSave} className="bg-white border border-slate-150 rounded-2xl p-6 md:p-8 space-y-6 shadow-sm">
         {/* Header Indicator */}
         <div className="flex items-center space-x-3 pb-4 border-b border-slate-50">
-          <div className="p-2 bg-slate-50 rounded-xl text-slate-500">
+          <div className="p-2 bg-slate-50 rounded-xl text-muted-foreground">
             <Sparkles className="w-5 h-5 stroke-[1.5]" />
           </div>
           <div>
-            <h2 className="text-sm font-semibold text-slate-800">API接続</h2>
-            <p className="text-[11px] text-slate-400 mt-0.5">あなた個人のAIリソースを接続します</p>
+            <h2 className="text-sm font-semibold text-foreground">API接続</h2>
+            <p className="text-[11px] text-muted-foreground mt-0.5">あなた個人のAIリソースを接続します</p>
           </div>
         </div>
 
@@ -152,7 +152,7 @@ export function AiSettingsClient({ initialSettings, aiAvailable, aiSource }: AiS
         <div className="flex items-center justify-between p-4 rounded-xl bg-slate-50 border border-slate-100/80">
           <div className="space-y-0.5">
             <label htmlFor="ai-enable-toggle" className="text-xs font-semibold text-slate-700">AIによる自動解析</label>
-            <p className="text-[10px] text-slate-400">有効にすると、保存した内容を自動で要約・タグ付けします</p>
+            <p className="text-[10px] text-muted-foreground">有効にすると、保存した内容を自動で要約・タグ付けします</p>
           </div>
           <button
             type="button"
@@ -178,7 +178,7 @@ export function AiSettingsClient({ initialSettings, aiAvailable, aiSource }: AiS
             <select
               value={provider}
               onChange={(e) => setProvider(e.target.value)}
-              className="w-full text-xs rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-slate-800 focus:outline-none focus:border-slate-400 transition-colors"
+              className="w-full text-xs rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-foreground focus:outline-none focus:border-slate-400 transition-colors"
             >
               <option value="gemini">Google Gemini</option>
             </select>
@@ -192,19 +192,19 @@ export function AiSettingsClient({ initialSettings, aiAvailable, aiSource }: AiS
                 href="https://aistudio.google.com/" 
                 target="_blank" 
                 rel="noopener noreferrer" 
-                className="text-[10px] text-slate-400 hover:text-slate-600 transition-colors underline"
+                className="text-[10px] text-muted-foreground hover:text-slate-600 transition-colors underline"
               >
                 キーの取得方法
               </a>
             </div>
             <div className="relative">
-              <Key className="absolute left-3.5 top-3 w-4 h-4 text-slate-400" />
+              <Key className="absolute left-3.5 top-3 w-4 h-4 text-muted-foreground" />
               <input
                 type="password"
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
                 placeholder="AIzaSy..."
-                className="w-full text-xs rounded-xl border border-slate-200 bg-white pl-10 pr-3.5 py-2.5 text-slate-800 placeholder:text-slate-300 focus:outline-none focus:border-slate-400 transition-colors font-mono"
+                className="w-full text-xs rounded-xl border border-slate-200 bg-white pl-10 pr-3.5 py-2.5 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-slate-400 transition-colors font-mono"
               />
             </div>
           </div>
@@ -238,7 +238,7 @@ export function AiSettingsClient({ initialSettings, aiAvailable, aiSource }: AiS
           <button
             type="submit"
             disabled={saving || testing}
-            className="flex-1 inline-flex items-center justify-center space-x-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 active:bg-slate-950 text-white font-medium px-4 py-2.5 transition-colors text-xs disabled:opacity-50 disabled:pointer-events-none shadow-sm"
+            className="flex-1 inline-flex items-center justify-center space-x-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 active:bg-slate-950 text-foreground font-medium px-4 py-2.5 transition-colors text-xs disabled:opacity-50 disabled:pointer-events-none shadow-sm"
           >
             {saving ? (
               <>

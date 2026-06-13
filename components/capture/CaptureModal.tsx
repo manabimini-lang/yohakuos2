@@ -29,10 +29,10 @@ export function CaptureModal() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
               transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
-              className="w-full max-w-md bg-white dark:bg-[#111111] rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.15)] border border-notion-border dark:border-white/10 overflow-hidden pointer-events-auto"
+              className="w-full max-w-md bg-white dark:bg-[#111111] rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.15)] border border-notion-border dark:border-border overflow-hidden pointer-events-auto"
             >
               <div className="flex items-center justify-between p-6 pb-2">
-                <h2 className="text-lg font-medium text-notion-text dark:text-white">余白に置く</h2>
+                <h2 className="text-lg font-medium text-notion-text dark:text-foreground">余白に置く</h2>
                 <button
                   onClick={closeCapture}
                   className="p-1 rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
@@ -41,7 +41,7 @@ export function CaptureModal() {
                 </button>
               </div>
 
-              <div className="px-6 pt-2 pb-4 flex gap-4 border-b border-notion-border dark:border-white/10">
+              <div className="px-6 pt-2 pb-4 flex gap-4 border-b border-notion-border dark:border-border">
                 <button
                   onClick={() => setActiveTab("url")}
                   className={`text-sm font-medium pb-2 transition-colors relative ${

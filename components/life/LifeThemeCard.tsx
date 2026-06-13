@@ -20,7 +20,7 @@ export function LifeThemeCard({ theme }: LifeThemeCardProps) {
 
   return (
     <div className="group relative cursor-default transition-all duration-500">
-      <div className="relative backdrop-blur-[0.5px] border border-black/5 dark:border-white/5 rounded-lg p-6 sm:p-7 overflow-hidden bg-white/50 dark:bg-black/30 hover:bg-white/60 dark:hover:bg-black/40 transition-all duration-300">
+      <div className="relative backdrop-blur-[0.5px] border border-black/5 dark:border-border/50 rounded-lg p-6 sm:p-6 overflow-hidden bg-white/50 dark:bg-black/30 hover:bg-white/60 dark:hover:bg-black/40 transition-all duration-300">
         
         {/* Subtle accent line */}
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-black/10 to-transparent dark:via-white/10" />
@@ -29,18 +29,18 @@ export function LifeThemeCard({ theme }: LifeThemeCardProps) {
         <div className="space-y-4">
           {/* Theme name */}
           <div>
-            <h3 className="text-xl sm:text-2xl font-light tracking-wide text-black/80 dark:text-white/80">
+            <h3 className="text-xl sm:text-2xl font-light tracking-wide text-black/80 dark:text-foreground/80">
               「{theme.name}」
             </h3>
           </div>
 
           {/* Description */}
-          <p className="text-sm font-light text-black/60 dark:text-white/60 leading-relaxed">
+          <p className="text-sm font-light text-black/60 dark:text-foreground/60 leading-relaxed">
             {theme.description}
           </p>
 
           {/* Temporal context */}
-          <div className="flex items-center justify-between text-xs font-light text-black/50 dark:text-white/50 pt-2">
+          <div className="flex items-center justify-between text-xs font-light text-black/50 dark:text-foreground/50 pt-2">
             <span>
               {monthsSince}ヶ月前から続いている
             </span>
@@ -49,11 +49,11 @@ export function LifeThemeCard({ theme }: LifeThemeCardProps) {
 
           {/* Strength indicator */}
           <div className="space-y-1">
-            <div className="flex items-center justify-between text-xs font-light text-black/40 dark:text-white/40">
+            <div className="flex items-center justify-between text-xs font-light text-black/40 dark:text-foreground/40">
               <span>テーマの強さ</span>
               <span>{strengthPercent}%</span>
             </div>
-            <div className="h-0.5 bg-black/5 dark:bg-white/5 rounded-full overflow-hidden">
+            <div className="h-0.5 bg-black/5 dark:bg-card rounded-full overflow-hidden">
               <div
                 className="h-full bg-gradient-to-r from-black/20 to-black/5 dark:from-white/20 dark:to-white/5 transition-all duration-700"
                 style={{ width: `${strengthPercent}%` }}
@@ -63,15 +63,15 @@ export function LifeThemeCard({ theme }: LifeThemeCardProps) {
 
           {/* Examples */}
           {theme.examples.length > 0 && (
-            <div className="pt-2 border-t border-black/5 dark:border-white/5 space-y-1">
-              <p className="text-xs font-light text-black/40 dark:text-white/40 uppercase tracking-widest">
+            <div className="pt-2 border-t border-black/5 dark:border-border/50 space-y-1">
+              <p className="text-xs font-light text-black/40 dark:text-foreground/40 uppercase tracking-widest">
                 記録例
               </p>
               <div className="space-y-1">
                 {theme.examples.slice(0, 2).map((example, i) => (
                   <p
                     key={i}
-                    className="text-xs font-light text-black/50 dark:text-white/50 italic truncate"
+                    className="text-xs font-light text-black/50 dark:text-foreground/50 italic truncate"
                   >
                     • {example}
                   </p>
@@ -83,7 +83,7 @@ export function LifeThemeCard({ theme }: LifeThemeCardProps) {
       </div>
 
       {/* Hover accent */}
-      <div className="absolute -inset-0.5 rounded-lg border border-black/5 dark:border-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+      <div className="absolute -inset-0.5 rounded-lg border border-black/5 dark:border-border/50 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
     </div>
   );
 }

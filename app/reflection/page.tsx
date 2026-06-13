@@ -29,52 +29,52 @@ export default async function ReflectionPage() {
   });
 
   return (
-    <main className="min-h-screen bg-[#090909] pb-28 text-slate-100">
-      <div className="max-w-3xl mx-auto px-6 pt-14 pb-28 space-y-10">
+    <main className="min-h-screen bg-background pb-24 text-foreground">
+      <div className="max-w-3xl mx-auto px-6 pt-14 pb-24 space-y-10">
         <section className="space-y-4">
-          <div className="text-xs uppercase tracking-[0.35em] text-slate-500">{today}</div>
+          <div className="text-xs uppercase tracking-[0.35em] text-muted-foreground">{today}</div>
           <div className="space-y-3">
-            <h1 className="text-3xl font-light text-white">夜の机</h1>
-            <p className="text-sm leading-relaxed text-slate-400">
+            <h1 className="text-3xl font-light text-foreground">夜の机</h1>
+            <p className="text-sm leading-relaxed text-muted-foreground">
               今日はひとつの断片だけを静かに見つめる時間です。
             </p>
           </div>
         </section>
 
-        <section className="space-y-4 rounded-3xl border border-white/10 bg-white/5 p-6">
-          <div className="text-xs uppercase tracking-[0.35em] text-slate-500">今日の断片</div>
+        <section className="space-y-4 rounded-2xl border border-border bg-card p-6">
+          <div className="text-xs uppercase tracking-[0.35em] text-muted-foreground">今日の断片</div>
           {latestReflection ? (
-            <div className="space-y-4 text-slate-100">
+            <div className="space-y-4 text-foreground">
               <p className="text-sm leading-relaxed whitespace-pre-wrap">{latestReflection.script}</p>
-              <div className="rounded-3xl border border-white/10 bg-[#0B0B0B] px-4 py-3 text-sm text-slate-400">
+              <div className="rounded-2xl border border-border bg-card px-4 py-3 text-sm text-muted-foreground">
                 今夜の静かな問い: どこに、もう一度戻りたいと感じていますか？
               </div>
             </div>
           ) : (
-            <p className="text-sm text-slate-500 leading-relaxed">まだ振り返りは静かに育っています。</p>
+            <p className="text-sm text-muted-foreground leading-relaxed">まだ振り返りは静かに育っています。</p>
           )}
         </section>
 
-        <section className="space-y-4 rounded-3xl border border-white/10 bg-white/5 p-6">
-          <div className="text-xs uppercase tracking-[0.35em] text-slate-500">ひとつの過去記録</div>
+        <section className="space-y-4 rounded-2xl border border-border bg-card p-6">
+          <div className="text-xs uppercase tracking-[0.35em] text-muted-foreground">ひとつの過去記録</div>
           {previousReflection ? (
-            <div className="space-y-3 text-slate-200">
+            <div className="space-y-3 text-foreground">
               <p className="text-sm leading-relaxed whitespace-pre-wrap">{previousReflection.script}</p>
-              <div className="text-xs text-slate-500">{new Date(previousReflection.createdAt).toLocaleDateString("ja-JP")}</div>
+              <div className="text-xs text-muted-foreground">{new Date(previousReflection.createdAt).toLocaleDateString("ja-JP")}</div>
             </div>
           ) : (
-            <div className="text-sm text-slate-500 leading-relaxed">
+            <div className="text-sm text-muted-foreground leading-relaxed">
               過去の振り返りは、もう少しだけ積み重なってから現れます。
             </div>
           )}
         </section>
 
-        <div className="rounded-3xl border border-white/10 bg-white/5 p-6 text-sm text-slate-400">
+        <div className="rounded-2xl border border-border bg-card p-6 text-sm text-muted-foreground">
           <p>今夜は深掘りを急ぎません。静かな余白を保ちながら、翌日にまた戻ってきてください。</p>
         </div>
 
         <div className="flex justify-end">
-          <Link href="/inbox" className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-100 transition-colors hover:bg-white/10">
+          <Link href="/inbox" className="rounded-full border border-border bg-card px-4 py-2 text-sm text-foreground transition-colors hover:bg-white/10">
             Inboxに戻る
           </Link>
         </div>

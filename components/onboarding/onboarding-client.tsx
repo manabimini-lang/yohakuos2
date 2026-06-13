@@ -111,10 +111,10 @@ export function OnboardingClient() {
       {step === 1 && (
         <div className="space-y-10 animate-in fade-in slide-in-from-bottom-3 duration-700">
           <div className="space-y-3 text-center">
-            <h1 className="text-2xl md:text-3xl font-serif text-slate-800 tracking-wide">
+            <h1 className="text-2xl md:text-3xl font-serif text-foreground tracking-wide">
               どの道を歩んでいますか？
             </h1>
-            <p className="text-sm text-slate-400">
+            <p className="text-sm text-muted-foreground">
               今のあなたに最も近い状態を選択してください
             </p>
           </div>
@@ -132,13 +132,13 @@ export function OnboardingClient() {
               >
                 <div className="flex items-center justify-between">
                   <div className="space-y-1">
-                    <div className="text-sm font-medium text-slate-800 flex items-center gap-2">
+                    <div className="text-sm font-medium text-foreground flex items-center gap-2">
                       <span className="text-base">{road.icon}</span>
                       <span>{road.label}</span>
                     </div>
-                    <p className="text-xs text-slate-400 leading-normal">{road.desc}</p>
+                    <p className="text-xs text-muted-foreground leading-normal">{road.desc}</p>
                   </div>
-                  <ChevronRightIcon className="w-4 h-4 text-slate-300 group-hover:text-slate-500 group-hover:translate-x-0.5 transition-all" />
+                  <ChevronRightIcon className="w-4 h-4 text-muted-foreground group-hover:text-muted-foreground group-hover:translate-x-0.5 transition-all" />
                 </div>
               </button>
             ))}
@@ -149,15 +149,15 @@ export function OnboardingClient() {
       {/* Step 2: Philosophy */}
       {step === 2 && (
         <div className="space-y-10 text-center animate-in fade-in slide-in-from-bottom-3 duration-700">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-slate-50 border border-slate-100 text-slate-400">
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-slate-50 border border-slate-100 text-muted-foreground">
             <Sparkles className="w-5 h-5 stroke-[1.5]" />
           </div>
 
           <div className="space-y-4 max-w-md mx-auto">
-            <h1 className="text-lg md:text-xl font-medium text-slate-800 leading-relaxed font-serif">
+            <h1 className="text-lg md:text-xl font-medium text-foreground leading-relaxed font-serif">
               YOHAKUは、毎日の記録を整理し、小さく積み重ねる場所です。
             </h1>
-            <p className="text-xs md:text-sm text-slate-400 leading-relaxed">
+            <p className="text-xs md:text-sm text-muted-foreground leading-relaxed">
               ここに他のSNSのような競争や数字はありません。ただあなたが立ち止まり、余白を作り、次の一歩を踏み出すのを優しく見守るツールです。
             </p>
           </div>
@@ -165,7 +165,7 @@ export function OnboardingClient() {
           <div className="pt-4">
             <button
               onClick={() => setStep(3)}
-              className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-6 py-2.5 text-sm font-medium text-white hover:bg-slate-800 transition-colors"
+              className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-6 py-2.5 text-sm font-medium text-foreground hover:bg-slate-800 transition-colors"
             >
               <span>はじめる</span>
               <ArrowRight className="w-4 h-4" />
@@ -178,27 +178,27 @@ export function OnboardingClient() {
       {step === 3 && (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-3 duration-700">
           <div className="space-y-3 text-center">
-            <h1 className="text-2xl md:text-3xl font-serif text-slate-800 tracking-wide">
+            <h1 className="text-2xl md:text-3xl font-serif text-foreground tracking-wide">
               いま、どんな気持ちですか？
             </h1>
-            <p className="text-sm text-slate-400">
+            <p className="text-sm text-muted-foreground">
               最初の一歩として、いま心にあることを少しだけ書いてみましょう
             </p>
           </div>
 
-          <div className="relative rounded-3xl border border-slate-100 bg-white p-6 md:p-8 shadow-sm">
+          <div className="relative rounded-2xl border border-slate-100 bg-white p-6 md:p-8 shadow-sm">
             <textarea
               value={firstLogText}
               onChange={(e) => setFirstLogText(e.target.value)}
               placeholder="今気になっていることを書いてみる"
-              className="w-full resize-none border-0 bg-transparent p-0 text-slate-800 placeholder:text-slate-300 focus:ring-0 text-base leading-relaxed outline-none"
+              className="w-full resize-none border-0 bg-transparent p-0 text-foreground placeholder:text-muted-foreground focus:ring-0 text-base leading-relaxed outline-none"
               rows={4}
             />
             <div className="mt-6 flex justify-end">
               <button
                 onClick={handleSaveFirstLog}
                 disabled={!firstLogText.trim()}
-                className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-30 transition-colors"
+                className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-medium text-foreground hover:bg-slate-800 disabled:opacity-30 transition-colors"
               >
                 <span>記録して進む</span>
                 <ArrowRight className="w-4 h-4" />
@@ -212,20 +212,20 @@ export function OnboardingClient() {
       {step === 4 && (
         <div className="space-y-10 animate-in fade-in slide-in-from-bottom-3 duration-700">
           <div className="space-y-3 text-center">
-            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-slate-50 border border-slate-100 text-slate-400 mb-2">
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-slate-50 border border-slate-100 text-muted-foreground mb-2">
               <Key className="w-5 h-5 stroke-[1.5]" />
             </div>
-            <h1 className="text-2xl md:text-3xl font-serif text-slate-800 tracking-wide">
+            <h1 className="text-2xl md:text-3xl font-serif text-foreground tracking-wide">
               AI（Gemini）と接続する
             </h1>
-            <p className="text-sm text-slate-400 max-w-sm mx-auto leading-relaxed">
+            <p className="text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed">
               AIを接続すると、ログの自動整理や気づき・課題の抽出が利用できます
             </p>
           </div>
 
           <div className="space-y-6 max-w-md mx-auto">
             <div className="space-y-2">
-              <label className="text-xs font-semibold text-slate-500 font-mono tracking-wider uppercase">
+              <label className="text-xs font-semibold text-muted-foreground font-mono tracking-wider uppercase">
                 Gemini API Key
               </label>
               <input
@@ -233,7 +233,7 @@ export function OnboardingClient() {
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
                 placeholder="AI-key..."
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 placeholder:text-slate-350 focus:border-slate-400 focus:outline-none focus:ring-0"
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-foreground placeholder:text-slate-350 focus:border-slate-400 focus:outline-none focus:ring-0"
               />
               {keyError && (
                 <p className="text-xs text-red-500 mt-1">{keyError}</p>
@@ -244,7 +244,7 @@ export function OnboardingClient() {
               <button
                 onClick={handleConnectApiKey}
                 disabled={testingKey || !apiKey.trim()}
-                className="w-full flex items-center justify-center space-x-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-medium py-3 transition-colors disabled:opacity-50 text-sm shadow-sm"
+                className="w-full flex items-center justify-center space-x-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-foreground font-medium py-3 transition-colors disabled:opacity-50 text-sm shadow-sm"
               >
                 {testingKey ? (
                   <>
@@ -258,7 +258,7 @@ export function OnboardingClient() {
 
               <button
                 onClick={handleSkip}
-                className="text-xs text-slate-400 hover:text-slate-650 transition-colors py-2 font-mono"
+                className="text-xs text-muted-foreground hover:text-slate-650 transition-colors py-2 font-mono"
               >
                 Skip (後で設定する)
               </button>
@@ -274,8 +274,8 @@ export function OnboardingClient() {
             <Sparkles className="w-6 h-6 stroke-[1.5]" />
           </div>
           <div className="space-y-2">
-            <h1 className="text-xl font-serif text-slate-800">準備が整いました</h1>
-            <p className="text-xs text-slate-400">YOHAKUの空間へ移動しています...</p>
+            <h1 className="text-xl font-serif text-foreground">準備が整いました</h1>
+            <p className="text-xs text-muted-foreground">YOHAKUの空間へ移動しています...</p>
           </div>
         </div>
       )}

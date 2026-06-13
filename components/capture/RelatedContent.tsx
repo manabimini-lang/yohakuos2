@@ -44,7 +44,7 @@ export function RelatedContent({ contentItemId }: RelatedContentProps) {
   }
 
   return (
-    <div className="mt-4 pt-4 border-t border-notion-border dark:border-white/10">
+    <div className="mt-4 pt-4 border-t border-notion-border dark:border-border">
       <div className="flex items-center gap-1.5 mb-2 text-xs font-medium text-gray-500">
         <Link2 className="w-3.5 h-3.5" />
         <span>過去の文脈</span>
@@ -54,9 +54,9 @@ export function RelatedContent({ contentItemId }: RelatedContentProps) {
           <Link
             key={item.id}
             href={`/inbox/${item.id}`}
-            className="group flex items-center justify-between px-2 py-1.5 -mx-2 rounded-lg hover:bg-gray-50 dark:hover:bg-white/5 transition-colors text-xs text-gray-600 dark:text-gray-400"
+            className="group flex items-center justify-between px-2 py-1.5 -mx-2 rounded-lg hover:bg-gray-50 dark:hover:bg-card transition-colors text-xs text-gray-600 dark:text-gray-400"
           >
-            <span className="truncate group-hover:text-notion-text dark:group-hover:text-white transition-colors">
+            <span className="truncate group-hover:text-notion-text dark:group-hover:text-foreground transition-colors">
               {item.title || item.fileName || item.url}
             </span>
             <span className="shrink-0 text-gray-400 dark:text-gray-600 pl-2">

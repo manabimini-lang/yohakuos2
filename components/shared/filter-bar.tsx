@@ -35,7 +35,7 @@ function SelectField({
 }) {
   return (
     <label>
-      <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+      <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         {label}
       </span>
       <select
@@ -62,7 +62,7 @@ export function FilterBar({ basePath, params, tags = [], showAdminOnly = false }
       </div>
 
       <label>
-        <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+        <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           Tag
         </span>
         <select
@@ -118,7 +118,7 @@ export function FilterBar({ basePath, params, tags = [], showAdminOnly = false }
       <div className="flex items-end gap-2 lg:col-span-6">
         <button
           type="submit"
-          className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white"
+          className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-foreground"
         >
           Filter
         </button>

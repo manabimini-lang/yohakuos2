@@ -50,7 +50,7 @@ export default function AnalyticsPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-[400px] flex-col items-center justify-center text-slate-400 space-y-2">
+      <div className="flex min-h-[400px] flex-col items-center justify-center text-muted-foreground space-y-2">
         <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-200 border-t-slate-800" />
         <span className="text-xs">分析中...</span>
       </div>
@@ -59,9 +59,9 @@ export default function AnalyticsPage() {
 
   if (!data) {
     return (
-      <div className="p-12 text-center text-slate-400 space-y-2 max-w-5xl mx-auto">
-        <Info className="w-8 h-8 mx-auto text-slate-200 stroke-[1.5]" />
-        <p className="text-sm font-medium text-slate-500">分析データを読み込めませんでした</p>
+      <div className="p-12 text-center text-muted-foreground space-y-2 max-w-5xl mx-auto">
+        <Info className="w-8 h-8 mx-auto text-foreground stroke-[1.5]" />
+        <p className="text-sm font-medium text-muted-foreground">分析データを読み込めませんでした</p>
       </div>
     );
   }
@@ -73,14 +73,14 @@ export default function AnalyticsPage() {
     <section className="space-y-8 max-w-5xl mx-auto">
       {/* Toast Notification */}
       {toast && (
-        <div className="fixed bottom-6 right-6 z-50 rounded-xl bg-slate-900 px-4 py-3 text-sm font-medium text-white shadow-lg animate-in slide-in-from-bottom-4 fade-in duration-300">
+        <div className="fixed bottom-6 right-6 z-50 rounded-xl bg-slate-900 px-4 py-3 text-sm font-medium text-foreground shadow-lg animate-in slide-in-from-bottom-4 fade-in duration-300">
           {toast}
         </div>
       )}
 
       {/* Header */}
       <header className="rounded-2xl border border-slate-200 bg-white p-5">
-        <h1 className="text-lg font-semibold text-slate-900">余白のアナリティクス</h1>
+        <h1 className="text-lg font-semibold text-foreground">余白のアナリティクス</h1>
         <p className="mt-1 text-sm text-slate-600">
           アクセス数などの監視ではなく、メンバーの中に「静かな余白が育っているか」を見守ります。
         </p>
@@ -93,7 +93,7 @@ export default function AnalyticsPage() {
         <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
           <div className="flex items-center space-x-2.5">
             <Users className="w-4 h-4 text-indigo-500" />
-            <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">継続率</h3>
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">継続率</h3>
           </div>
           <div className="space-y-4">
             <div className="space-y-1">
@@ -122,7 +122,7 @@ export default function AnalyticsPage() {
               </div>
             </div>
           </div>
-          <p className="text-[10px] text-slate-400 leading-normal pt-1">
+          <p className="text-[10px] text-muted-foreground leading-normal pt-1">
             期間中に登録したユーザーが、現在もYOHAKUで振り返りを継続できている割合を示します。
           </p>
         </div>
@@ -131,10 +131,10 @@ export default function AnalyticsPage() {
         <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
           <div className="flex items-center space-x-2.5">
             <BookOpen className="w-4 h-4 text-emerald-500" />
-            <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">提案閲覧率</h3>
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">提案閲覧率</h3>
           </div>
           <div className="space-y-2 flex flex-col justify-center py-2">
-            <div className="text-4xl font-semibold text-slate-800 tracking-tight">{data.suggestionViewRate}%</div>
+            <div className="text-4xl font-semibold text-foreground tracking-tight">{data.suggestionViewRate}%</div>
             <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden mt-2">
               <div 
                 className="bg-emerald-500 h-full rounded-full transition-all duration-500" 
@@ -142,7 +142,7 @@ export default function AnalyticsPage() {
               />
             </div>
           </div>
-          <p className="text-[10px] text-slate-400 leading-normal">
+          <p className="text-[10px] text-muted-foreground leading-normal">
             AIまたはシステムが創出した学習やリフレクションのロード提案を、ユーザーが確認・完了した割合です。
           </p>
         </div>
@@ -151,10 +151,10 @@ export default function AnalyticsPage() {
         <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
           <div className="flex items-center space-x-2.5">
             <Heart className="w-4 h-4 text-rose-500" />
-            <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">振り返り実施率 (過去7日)</h3>
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">振り返り実施率 (過去7日)</h3>
           </div>
           <div className="space-y-2 flex flex-col justify-center py-2">
-            <div className="text-4xl font-semibold text-slate-800 tracking-tight">{data.reflectionRate}%</div>
+            <div className="text-4xl font-semibold text-foreground tracking-tight">{data.reflectionRate}%</div>
             <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden mt-2">
               <div 
                 className="bg-rose-500 h-full rounded-full transition-all duration-500" 
@@ -162,7 +162,7 @@ export default function AnalyticsPage() {
               />
             </div>
           </div>
-          <p className="text-[10px] text-slate-400 leading-normal">
+          <p className="text-[10px] text-muted-foreground leading-normal">
             登録メンバーのうち、過去7日間に少なくとも1回以上日常のログや振り返りを記録したメンバーの割合です。
           </p>
         </div>
@@ -172,14 +172,14 @@ export default function AnalyticsPage() {
       {/* Save Trend Chart */}
       <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-6">
         <div className="flex items-center space-x-2">
-          <TrendingUp className="w-4 h-4 text-slate-400" />
-          <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">保存数推移（過去7日間）</h3>
+          <TrendingUp className="w-4 h-4 text-muted-foreground" />
+          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">保存数推移（過去7日間）</h3>
         </div>
 
         {data.savesTrend.every(item => item.count === 0) ? (
-          <div className="p-8 text-center text-slate-400 space-y-1">
-            <p className="text-xs font-medium text-slate-500">まだ保存された知見はありません。</p>
-            <p className="text-[10px] text-slate-400">これから少しずつ余白が育っていきます。</p>
+          <div className="p-8 text-center text-muted-foreground space-y-1">
+            <p className="text-xs font-medium text-muted-foreground">まだ保存された知見はありません。</p>
+            <p className="text-[10px] text-muted-foreground">これから少しずつ余白が育っていきます。</p>
           </div>
         ) : (
           <div className="h-64 flex items-end justify-between gap-4 pt-6 px-4">
@@ -189,7 +189,7 @@ export default function AnalyticsPage() {
               return (
                 <div key={index} className="flex-1 flex flex-col items-center space-y-3 group h-full justify-end">
                   <div className="relative w-full flex justify-center">
-                    <span className="opacity-0 group-hover:opacity-100 absolute -top-8 bg-slate-800 text-white text-[10px] px-2 py-0.5 rounded shadow transition-opacity">
+                    <span className="opacity-0 group-hover:opacity-100 absolute -top-8 bg-slate-800 text-foreground text-[10px] px-2 py-0.5 rounded shadow transition-opacity">
                       {item.count} 件
                     </span>
                   </div>
@@ -197,7 +197,7 @@ export default function AnalyticsPage() {
                     className="w-full bg-slate-100 hover:bg-slate-200/80 rounded-t-lg transition-all duration-300"
                     style={{ height: `${heightPercent}%` }}
                   />
-                  <span className="text-[10px] text-slate-400 truncate">{item.date}</span>
+                  <span className="text-[10px] text-muted-foreground truncate">{item.date}</span>
                 </div>
               );
             })}

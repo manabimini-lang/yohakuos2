@@ -99,7 +99,7 @@ export function ContentShareClient() {
           <CheckCircle2 className="w-6 h-6 stroke-[1.5]" />
         </div>
         <div className="space-y-2">
-          <h1 className="text-xl font-serif text-slate-800">共有されました</h1>
+          <h1 className="text-xl font-serif text-foreground">共有されました</h1>
           <p className="text-xs text-slate-450 leading-relaxed">
             知見の推薦ありがとうございました。<br />
             ダッシュボードに戻っています...
@@ -115,7 +115,7 @@ export function ContentShareClient() {
       <div>
         <Link 
           href="/dashboard" 
-          className="inline-flex items-center text-xs text-slate-400 hover:text-slate-650 transition-colors font-mono"
+          className="inline-flex items-center text-xs text-muted-foreground hover:text-slate-650 transition-colors font-mono"
         >
           <ChevronLeft className="w-3.5 h-3.5 mr-1" />
           Dashboard
@@ -128,13 +128,13 @@ export function ContentShareClient() {
           <Share2 className="w-5.5 h-5.5 text-slate-450 stroke-[1.5]" />
           <span>知見を共有する</span>
         </h1>
-        <p className="text-xs text-slate-400 leading-relaxed">
+        <p className="text-xs text-muted-foreground leading-relaxed">
           誰かの歩みの少しの参考になるような、外部の有益なコンテンツをYOHAKUの空間に置きます。
         </p>
       </div>
 
       {/* Share Form */}
-      <form onSubmit={handleSubmit} className="space-y-6 bg-white border border-slate-150 rounded-3xl p-6 md:p-8 shadow-sm">
+      <form onSubmit={handleSubmit} className="space-y-6 bg-white border border-slate-150 rounded-2xl p-6 md:p-8 shadow-sm">
         {error && (
           <div className="flex items-start space-x-2 text-xs text-red-500 bg-red-50/55 border border-red-100 p-3.5 rounded-xl">
             <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
@@ -144,7 +144,7 @@ export function ContentShareClient() {
 
         {/* URL Input */}
         <div className="space-y-2">
-          <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider font-mono">
+          <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider font-mono">
             URL
           </label>
           <input
@@ -152,7 +152,7 @@ export function ContentShareClient() {
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             placeholder="https://note.com/example/n/..."
-            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 placeholder:text-slate-350 focus:border-slate-400 focus:outline-none focus:ring-0"
+            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-foreground placeholder:text-slate-350 focus:border-slate-400 focus:outline-none focus:ring-0"
             required
             disabled={saving}
           />
@@ -160,7 +160,7 @@ export function ContentShareClient() {
 
         {/* Title Input */}
         <div className="space-y-2">
-          <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider font-mono">
+          <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider font-mono">
             タイトル
           </label>
           <input
@@ -168,7 +168,7 @@ export function ContentShareClient() {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="コンテンツのタイトルを入力"
-            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 placeholder:text-slate-350 focus:border-slate-400 focus:outline-none focus:ring-0"
+            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-foreground placeholder:text-slate-350 focus:border-slate-400 focus:outline-none focus:ring-0"
             required
             disabled={saving}
           />
@@ -176,7 +176,7 @@ export function ContentShareClient() {
 
         {/* Description Input */}
         <div className="space-y-2">
-          <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider font-mono">
+          <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider font-mono">
             説明 (任意)
           </label>
           <textarea
@@ -184,14 +184,14 @@ export function ContentShareClient() {
             onChange={(e) => setDescription(e.target.value)}
             placeholder="どんなところが参考になるか、一言添えてみましょう"
             rows={3}
-            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 placeholder:text-slate-350 focus:border-slate-400 focus:outline-none focus:ring-0 resize-none leading-relaxed"
+            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-foreground placeholder:text-slate-350 focus:border-slate-400 focus:outline-none focus:ring-0 resize-none leading-relaxed"
             disabled={saving}
           />
         </div>
 
         {/* Type selector */}
         <div className="space-y-2.5">
-          <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider font-mono">
+          <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider font-mono">
             コンテンツの種類
           </label>
           <div className="flex flex-wrap gap-2">
@@ -202,7 +202,7 @@ export function ContentShareClient() {
                 onClick={() => setSelectedType(t.id)}
                 className={`px-3 py-1.5 rounded-xl border text-xs transition-all duration-300 ${
                   selectedType === t.id
-                    ? "border-slate-850 bg-slate-900 text-white font-medium shadow-sm"
+                    ? "border-slate-850 bg-slate-900 text-foreground font-medium shadow-sm"
                     : "border-slate-150 bg-white text-slate-600 hover:border-slate-200"
                 }`}
                 disabled={saving}
@@ -215,7 +215,7 @@ export function ContentShareClient() {
 
         {/* Road selector */}
         <div className="space-y-2.5">
-          <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider font-mono">
+          <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider font-mono">
             関連するロード
           </label>
           <div className="flex flex-wrap gap-2">
@@ -226,7 +226,7 @@ export function ContentShareClient() {
                 onClick={() => setSelectedRoad(r.slug)}
                 className={`px-3 py-1.5 rounded-xl border text-xs transition-all duration-300 ${
                   selectedRoad === r.slug
-                    ? "border-slate-850 bg-slate-900 text-white font-medium shadow-sm"
+                    ? "border-slate-850 bg-slate-900 text-foreground font-medium shadow-sm"
                     : "border-slate-150 bg-white text-slate-600 hover:border-slate-200"
                 }`}
                 disabled={saving}
@@ -239,7 +239,7 @@ export function ContentShareClient() {
 
         {/* Tags input */}
         <div className="space-y-2">
-          <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider font-mono">
+          <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider font-mono">
             タグ (カンマ区切り)
           </label>
           <input
@@ -247,7 +247,7 @@ export function ContentShareClient() {
             value={tagsString}
             onChange={(e) => setTagsString(e.target.value)}
             placeholder="行動心理, キャリア, 時間術"
-            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 placeholder:text-slate-350 focus:border-slate-400 focus:outline-none focus:ring-0"
+            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-foreground placeholder:text-slate-350 focus:border-slate-400 focus:outline-none focus:ring-0"
             disabled={saving}
           />
         </div>
@@ -257,7 +257,7 @@ export function ContentShareClient() {
           <button
             type="submit"
             disabled={saving || !url.trim() || !title.trim()}
-            className="rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-medium px-6 py-2.5 text-sm shadow-sm transition-colors disabled:opacity-50"
+            className="rounded-xl bg-slate-900 hover:bg-slate-800 text-foreground font-medium px-6 py-2.5 text-sm shadow-sm transition-colors disabled:opacity-50"
           >
             {saving ? "共有中..." : "共有する"}
           </button>

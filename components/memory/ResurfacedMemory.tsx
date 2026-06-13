@@ -16,7 +16,7 @@ export function ResurfacedMemory({ resurfacing }: ResurfacedMemoryProps) {
         <Leaf className="w-4 h-4 opacity-70" />
         <span className="font-medium">静かなつながり</span>
       </div>
-      <p className="text-base text-notion-text dark:text-white leading-relaxed font-serif">
+      <p className="text-base text-notion-text dark:text-foreground leading-relaxed font-serif">
         {resurfacing.message}
       </p>
     </div>

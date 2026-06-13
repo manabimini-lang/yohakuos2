@@ -98,7 +98,7 @@ export default function BillingPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-[400px] flex-col items-center justify-center text-slate-400 space-y-2">
+      <div className="flex min-h-[400px] flex-col items-center justify-center text-muted-foreground space-y-2">
         <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-200 border-t-slate-800" />
         <span className="text-xs">読み込み中...</span>
       </div>
@@ -109,7 +109,7 @@ export default function BillingPage() {
     <section className="space-y-6 max-w-5xl mx-auto">
       {/* Toast Notification */}
       {toast && (
-        <div className="fixed bottom-6 right-6 z-50 rounded-xl bg-slate-900 px-4 py-3 text-sm font-medium text-white shadow-lg animate-in slide-in-from-bottom-4 fade-in duration-300">
+        <div className="fixed bottom-6 right-6 z-50 rounded-xl bg-slate-900 px-4 py-3 text-sm font-medium text-foreground shadow-lg animate-in slide-in-from-bottom-4 fade-in duration-300">
           {toast}
         </div>
       )}
@@ -117,7 +117,7 @@ export default function BillingPage() {
       {/* Header */}
       <header className="rounded-2xl border border-slate-200 bg-white p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-lg font-semibold text-slate-900">課金管理</h1>
+          <h1 className="text-lg font-semibold text-foreground">課金管理</h1>
           <p className="mt-1 text-sm text-slate-600">
             Stripeサブスクリプション状況を監視します。プランの変更や個別のお支払い処理はStripe上で行います。
           </p>
@@ -125,7 +125,7 @@ export default function BillingPage() {
 
         {/* Search Bar */}
         <div className="relative w-full md:w-72">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+          <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
           <input
             type="text"
             placeholder="ユーザー名、メール、Stripe ID..."
@@ -138,10 +138,10 @@ export default function BillingPage() {
 
       {/* Stripe Source of Truth Notice */}
       <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex items-start gap-3">
-        <Info className="w-5 h-5 text-slate-500 shrink-0 mt-0.5" />
+        <Info className="w-5 h-5 text-muted-foreground shrink-0 mt-0.5" />
         <div className="space-y-1">
           <h4 className="text-xs font-semibold text-slate-700">請求ロジックの管理基準</h4>
-          <p className="text-xs text-slate-500 leading-normal">
+          <p className="text-xs text-muted-foreground leading-normal">
             YOHAKU OS2はStripeを唯一の「Source of Truth（信頼できる情報源）」としています。請求処理・顧客情報の変更・解約手続きは安全性の観点からStripe Customer Portalで行い、ローカルでの個別請求処理は行いません。
           </p>
         </div>
@@ -149,9 +149,9 @@ export default function BillingPage() {
 
       {/* suspicious list (Attention Required) */}
       <div className="space-y-3">
-        <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">要確認契約</h3>
+        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">要確認契約</h3>
         {suspiciousList.length === 0 ? (
-          <div className="bg-white border border-slate-200 rounded-2xl p-6 text-center text-slate-500 flex items-center justify-center gap-2 shadow-sm">
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 text-center text-muted-foreground flex items-center justify-center gap-2 shadow-sm">
             <CheckCircle2 className="w-4 h-4 text-emerald-500" />
             <p className="text-xs font-medium">確認が必要な契約はありません。すべて順調に推移しています。</p>
           </div>
@@ -177,13 +177,13 @@ export default function BillingPage() {
                       <tr key={item.id} className="hover:bg-amber-50/20 transition-colors">
                         <td className="px-6 py-4">
                           <div className="flex flex-col">
-                            <span className="text-sm font-medium text-slate-800">{item.userName || "未設定"}</span>
-                            <span className="text-xs text-slate-400 inline-flex items-center gap-1 mt-0.5">
-                              <Mail className="w-3.5 h-3.5 text-slate-300" />
+                            <span className="text-sm font-medium text-foreground">{item.userName || "未設定"}</span>
+                            <span className="text-xs text-muted-foreground inline-flex items-center gap-1 mt-0.5">
+                              <Mail className="w-3.5 h-3.5 text-muted-foreground" />
                               {item.userEmail}
                             </span>
                             {item.stripeCustomerId && (
-                              <span className="text-[10px] text-slate-400 font-mono mt-1 select-all">
+                              <span className="text-[10px] text-muted-foreground font-mono mt-1 select-all">
                                 Cust ID: {item.stripeCustomerId}
                               </span>
                             )}
@@ -195,11 +195,11 @@ export default function BillingPage() {
                           </span>
                         </td>
                         <td className="px-6 py-4">
-                          <span className={`inline-flex items-center text-xs font-medium text-slate-500`}>
+                          <span className={`inline-flex items-center text-xs font-medium text-muted-foreground`}>
                             {isPremium ? "プレミアムプラン" : "フリープラン"}
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-xs text-slate-500">
+                        <td className="px-6 py-4 text-xs text-muted-foreground">
                           {item.currentPeriodEnd 
                             ? new Date(item.currentPeriodEnd).toLocaleDateString("ja-JP", {
                                 year: "numeric",
@@ -232,18 +232,18 @@ export default function BillingPage() {
 
       {/* Normal list */}
       <div className="space-y-3">
-        <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">正常契約</h3>
+        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">正常契約</h3>
         <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
           {normalList.length === 0 ? (
-            <div className="p-12 text-center text-slate-400 space-y-1.5">
-              <Info className="w-8 h-8 mx-auto text-slate-200 stroke-[1.5]" />
-              <p className="text-sm font-medium text-slate-500">正常な契約データはありません。</p>
+            <div className="p-12 text-center text-muted-foreground space-y-1.5">
+              <Info className="w-8 h-8 mx-auto text-foreground stroke-[1.5]" />
+              <p className="text-sm font-medium text-muted-foreground">正常な契約データはありません。</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-slate-50 border-b border-slate-200 text-xs font-medium text-slate-500 uppercase tracking-wider">
+                  <tr className="bg-slate-50 border-b border-slate-200 text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     <th className="px-6 py-4">顧客 / ユーザー</th>
                     <th className="px-6 py-4">Stripeステータス</th>
                     <th className="px-6 py-4">現在のプラン</th>
@@ -260,13 +260,13 @@ export default function BillingPage() {
                       <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
                         <td className="px-6 py-4">
                           <div className="flex flex-col">
-                            <span className="text-sm font-medium text-slate-800">{item.userName || "未設定"}</span>
-                            <span className="text-xs text-slate-400 inline-flex items-center gap-1 mt-0.5">
-                              <Mail className="w-3.5 h-3.5 text-slate-300" />
+                            <span className="text-sm font-medium text-foreground">{item.userName || "未設定"}</span>
+                            <span className="text-xs text-muted-foreground inline-flex items-center gap-1 mt-0.5">
+                              <Mail className="w-3.5 h-3.5 text-muted-foreground" />
                               {item.userEmail}
                             </span>
                             {item.stripeCustomerId && (
-                              <span className="text-[10px] text-slate-400 font-mono mt-1 select-all">
+                              <span className="text-[10px] text-muted-foreground font-mono mt-1 select-all">
                                 Cust ID: {item.stripeCustomerId}
                               </span>
                             )}
@@ -283,12 +283,12 @@ export default function BillingPage() {
                         </td>
                         <td className="px-6 py-4">
                           <span className={`inline-flex items-center text-xs font-medium ${
-                            isPremium ? "text-amber-600 font-semibold" : "text-slate-500"
+                            isPremium ? "text-amber-600 font-semibold" : "text-muted-foreground"
                           }`}>
                             {isPremium ? "プレミアムプラン" : "フリープラン"}
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-xs text-slate-500">
+                        <td className="px-6 py-4 text-xs text-muted-foreground">
                           {item.currentPeriodEnd 
                             ? new Date(item.currentPeriodEnd).toLocaleDateString("ja-JP", {
                                 year: "numeric",
@@ -302,11 +302,11 @@ export default function BillingPage() {
                           <button
                             onClick={() => handleOpenPortal(item.stripeCustomerId, item.id)}
                             disabled={redirectingId !== null || !item.stripeCustomerId}
-                            className="inline-flex items-center gap-1.5 text-xs text-slate-600 hover:text-slate-900 border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white shadow-sm hover:shadow transition-all disabled:opacity-40"
+                            className="inline-flex items-center gap-1.5 text-xs text-slate-600 hover:text-foreground border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white shadow-sm hover:shadow transition-all disabled:opacity-40"
                           >
                             <CreditCard className="w-3.5 h-3.5" />
                             <span>{isRedirecting ? "生成中..." : "支払管理"}</span>
-                            <ExternalLink className="w-3 h-3 text-slate-400" />
+                            <ExternalLink className="w-3 h-3 text-muted-foreground" />
                           </button>
                         </td>
                       </tr>

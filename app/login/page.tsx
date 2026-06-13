@@ -27,8 +27,8 @@ export default function LoginPage({
     <div className="min-h-screen flex items-center justify-center bg-slate-50">
       <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
         <div className="mb-8 text-center">
-          <h1 className="text-2xl font-medium tracking-widest text-slate-800">YOHAKU</h1>
-          <p className="mt-3 text-sm text-slate-400">
+          <h1 className="text-2xl font-medium tracking-widest text-foreground">YOHAKU</h1>
+          <p className="mt-3 text-sm text-muted-foreground">
             学びを、余白のある習慣に。
           </p>
         </div>
@@ -61,7 +61,7 @@ export default function LoginPage({
               <label className="block text-sm font-medium text-slate-700">
                 パスワード
               </label>
-              <Link href="/forgot-password" className="text-xs text-slate-500 hover:text-slate-700 underline underline-offset-2">
+              <Link href="/forgot-password" className="text-xs text-muted-foreground hover:text-slate-700 underline underline-offset-2">
                 パスワードを忘れましたか？
               </Link>
             </div>
@@ -93,7 +93,7 @@ export default function LoginPage({
             <div className="w-full border-t border-slate-200"></div>
           </div>
           <div className="relative flex justify-center text-sm">
-            <span className="bg-white px-2 text-slate-500">または</span>
+            <span className="bg-white px-2 text-muted-foreground">または</span>
           </div>
         </div>
 
@@ -106,7 +106,7 @@ export default function LoginPage({
           </Link>
         </div>
 
-        <p className="mt-6 text-center text-xs text-slate-400">
+        <p className="mt-6 text-center text-xs text-muted-foreground">
           <Link href="/terms" className="underline hover:text-slate-600">利用規約</Link>
           および
           <Link href="/privacy" className="underline hover:text-slate-600">プライバシーポリシー</Link>

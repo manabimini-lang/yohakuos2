@@ -21,13 +21,13 @@ export function ContentHeader(props: ContentHeaderProps) {
         {props.thumbnailUrl ? (
           <img src={props.thumbnailUrl} alt={props.title} className="h-full w-full object-cover" />
         ) : (
-          <div className="flex h-full items-center justify-center text-xs font-semibold text-slate-400">
+          <div className="flex h-full items-center justify-center text-xs font-semibold text-muted-foreground">
             NO IMAGE
           </div>
         )}
       </div>
       <div className="space-y-3 p-5">
-        <h1 className="text-2xl font-semibold text-slate-900">{props.title}</h1>
+        <h1 className="text-2xl font-semibold text-foreground">{props.title}</h1>
         {props.description ? <p className="text-sm text-slate-600">{props.description}</p> : null}
         <div className="flex flex-wrap gap-1.5">
           {props.tags.map((tag) => (
@@ -36,7 +36,7 @@ export function ContentHeader(props: ContentHeaderProps) {
             </span>
           ))}
         </div>
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-muted-foreground">
           {props.contentType} / {props.layer} / Updated {dateFmt.format(props.updatedAt)}
         </p>
       </div>

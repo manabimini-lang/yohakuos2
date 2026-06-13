@@ -17,22 +17,22 @@ export default async function AdminKnowledgePage() {
   });
 
   return (
-    <div className="p-8 max-w-5xl mx-auto space-y-12 bg-white dark:bg-black min-h-screen text-notion-text dark:text-white">
+    <div className="p-8 max-w-5xl mx-auto space-y-12 bg-white dark:bg-black min-h-screen text-notion-text dark:text-foreground">
       <header className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-light tracking-wide mb-2">Knowledge Contents</h1>
           <p className="text-sm text-notion-text/50">YOHAKUのLearning Layerの基盤となる知識コンテンツの管理。</p>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 bg-black text-white dark:bg-white dark:text-black rounded-lg text-sm font-medium hover:opacity-80 transition-opacity">
+        <button className="flex items-center gap-2 px-4 py-2 bg-black text-foreground dark:bg-white dark:text-black rounded-lg text-sm font-medium hover:opacity-80 transition-opacity">
           <Plus className="w-4 h-4" />
           新規作成
         </button>
       </header>
 
-      <div className="bg-notion-bg/30 dark:bg-white/5 border border-notion-border/50 dark:border-white/10 rounded-2xl overflow-hidden">
+      <div className="bg-notion-bg/30 dark:bg-card border border-notion-border/50 dark:border-border rounded-2xl overflow-hidden">
         <table className="w-full text-left text-sm">
           <thead>
-            <tr className="border-b border-notion-border/50 dark:border-white/10 text-notion-text/60 dark:text-white/60">
+            <tr className="border-b border-notion-border/50 dark:border-border text-notion-text/60 dark:text-foreground/60">
               <th className="font-medium p-4 pl-6">タイトル</th>
               <th className="font-medium p-4">タイプ</th>
               <th className="font-medium p-4">タグ</th>
@@ -47,9 +47,9 @@ export default async function AdminKnowledgePage() {
               </tr>
             )}
             {knowledgeContents.map((content) => (
-              <tr key={content.id} className="hover:bg-notion-bg/50 dark:hover:bg-white/[0.02] transition-colors">
+              <tr key={content.id} className="hover:bg-notion-bg/50 dark:hover:bg-card transition-colors">
                 <td className="p-4 pl-6 font-medium">{content.title}</td>
-                <td className="p-4 text-notion-text/70 dark:text-white/70">{content.contentType}</td>
+                <td className="p-4 text-notion-text/70 dark:text-foreground/70">{content.contentType}</td>
                 <td className="p-4">
                   <div className="flex gap-2 flex-wrap">
                     {content.tags.map(tag => (

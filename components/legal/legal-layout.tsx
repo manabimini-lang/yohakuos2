@@ -21,16 +21,16 @@ export function LegalLayout({
   children,
 }: LegalLayoutProps) {
   return (
-    <div className="min-h-screen bg-slate-50/50 text-slate-800 dark:bg-slate-950 dark:text-slate-200 flex flex-col transition-colors duration-200">
+    <div className="min-h-screen bg-slate-50/50 text-foreground dark:bg-slate-950 dark:text-foreground flex flex-col transition-colors duration-200">
       {/* Mini-header */}
       <header className="sticky top-0 z-20 border-b border-slate-100/80 bg-white/80 backdrop-blur-md dark:border-slate-900/60 dark:bg-slate-950/80">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-6">
-          <Link href="/" className="flex items-center gap-2 text-sm font-medium tracking-wide text-slate-900 dark:text-slate-100">
+          <Link href="/" className="flex items-center gap-2 text-sm font-medium tracking-wide text-foreground dark:text-foreground">
             YOHAKU
           </Link>
           <Link
             href="/"
-            className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"
+            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground dark:text-muted-foreground dark:hover:text-foreground transition-colors"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
             トップへ戻る
@@ -44,10 +44,10 @@ export function LegalLayout({
           {/* Document Header */}
           <div className="space-y-4 pb-8 border-b border-slate-100 dark:border-slate-800/40">
             <LastUpdated date={lastUpdated} />
-            <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-slate-900 dark:text-white">
+            <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-foreground dark:text-foreground">
               {title}
             </h1>
-            <p className="text-sm md:text-[15px] leading-relaxed text-slate-500 dark:text-slate-400 max-w-3xl font-light">
+            <p className="text-sm md:text-[15px] leading-relaxed text-muted-foreground dark:text-muted-foreground max-w-3xl font-light">
               {description}
             </p>
           </div>

@@ -140,7 +140,7 @@ export function ProfileClient() {
       <div>
         <Link 
           href="/dashboard" 
-          className="inline-flex items-center text-xs text-slate-400 hover:text-slate-650 transition-colors font-mono"
+          className="inline-flex items-center text-xs text-muted-foreground hover:text-slate-650 transition-colors font-mono"
         >
           <ChevronLeft className="w-3.5 h-3.5 mr-1" />
           Dashboard
@@ -152,18 +152,18 @@ export function ProfileClient() {
         <div className="flex flex-col sm:flex-row items-center sm:items-end justify-between gap-4">
           <div className="space-y-1.5 text-center sm:text-left">
             <h1 className="text-2xl font-serif text-slate-850 tracking-wide inline-flex items-center gap-2">
-              <User className="w-6 h-6 text-slate-400 stroke-[1.5]" />
+              <User className="w-6 h-6 text-muted-foreground stroke-[1.5]" />
               <span>{session?.user?.name || "メンバー"}</span>
             </h1>
-            <p className="text-xs text-slate-400 font-mono">
+            <p className="text-xs text-muted-foreground font-mono">
               {session?.user?.email || "anonymous@yohaku.space"}
             </p>
           </div>
 
           <span className={`inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-[10px] font-medium tracking-wider border ${
             plan === "Premium" 
-              ? "text-slate-900 bg-slate-900/5 border-slate-900/10 font-bold" 
-              : "text-slate-500 bg-slate-50 border-slate-100"
+              ? "text-foreground bg-slate-900/5 border-slate-900/10 font-bold" 
+              : "text-muted-foreground bg-slate-50 border-slate-100"
           }`}>
             <Sparkles className="w-3 h-3 stroke-[2]" />
             <span>{plan} Plan</span>
@@ -173,24 +173,24 @@ export function ProfileClient() {
 
       {/* Stats Block (Obsidian-like cards) */}
       <div className="space-y-4">
-        <h2 className="text-xs font-semibold tracking-widest text-slate-400 uppercase">自分の現在地</h2>
+        <h2 className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">自分の現在地</h2>
         <div className="grid gap-4 sm:grid-cols-2">
           {/* Active Road */}
           <div className="rounded-2xl border border-slate-100 bg-white p-5 space-y-2.5">
-            <div className="flex items-center justify-between text-slate-400">
+            <div className="flex items-center justify-between text-muted-foreground">
               <span className="text-[10px] font-mono tracking-wider uppercase">Current Road</span>
               <Route className="w-4 h-4 stroke-[1.5]" />
             </div>
-            <p className="text-sm font-medium text-slate-800">{roadTitle}</p>
+            <p className="text-sm font-medium text-foreground">{roadTitle}</p>
           </div>
 
           {/* Continuous Days */}
           <div className="rounded-2xl border border-slate-100 bg-white p-5 space-y-2.5">
-            <div className="flex items-center justify-between text-slate-400">
+            <div className="flex items-center justify-between text-muted-foreground">
               <span className="text-[10px] font-mono tracking-wider uppercase">Active Streak</span>
               <Activity className="w-4 h-4 stroke-[1.5]" />
             </div>
-            <p className="text-sm font-medium text-slate-800">
+            <p className="text-sm font-medium text-foreground">
               <span className="text-base font-serif mr-1">{streak}</span>
               <span className="text-xs text-slate-450">日連続</span>
             </p>
@@ -198,11 +198,11 @@ export function ProfileClient() {
 
           {/* Logs count */}
           <div className="rounded-2xl border border-slate-100 bg-white p-5 space-y-2.5">
-            <div className="flex items-center justify-between text-slate-400">
+            <div className="flex items-center justify-between text-muted-foreground">
               <span className="text-[10px] font-mono tracking-wider uppercase">Logs This Month</span>
               <Calendar className="w-4 h-4 stroke-[1.5]" />
             </div>
-            <p className="text-sm font-medium text-slate-800">
+            <p className="text-sm font-medium text-foreground">
               <span className="text-base font-serif mr-1">{thisMonthLogsCount}</span>
               <span className="text-xs text-slate-450">回記録</span>
             </p>
@@ -210,11 +210,11 @@ export function ProfileClient() {
 
           {/* Gemini connection status */}
           <div className="rounded-2xl border border-slate-100 bg-white p-5 space-y-2.5">
-            <div className="flex items-center justify-between text-slate-400">
+            <div className="flex items-center justify-between text-muted-foreground">
               <span className="text-[10px] font-mono tracking-wider uppercase">Gemini Connect</span>
               <Key className="w-4 h-4 stroke-[1.5]" />
             </div>
-            <p className="text-sm font-medium text-slate-800 flex items-center space-x-1.5">
+            <p className="text-sm font-medium text-foreground flex items-center space-x-1.5">
               <span className={`w-1.5 h-1.5 rounded-full ${hasGeminiKey ? "bg-emerald-500 animate-pulse" : "bg-slate-300"}`}></span>
               <span className="text-xs">{hasGeminiKey ? "接続中" : "未接続"}</span>
             </p>
@@ -224,7 +224,7 @@ export function ProfileClient() {
 
       {/* Road Switcher (Inline Notion-like Selector) */}
       <div className="space-y-4 pt-4 border-t border-slate-50">
-        <h2 className="text-xs font-semibold tracking-widest text-slate-400 uppercase">ロードの切り替え</h2>
+        <h2 className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">ロードの切り替え</h2>
         <div className="flex flex-col sm:flex-row gap-2">
           {roads.map((r) => (
             <button
@@ -232,14 +232,14 @@ export function ProfileClient() {
               onClick={() => handleRoadChange(r.id)}
               className={`flex-1 text-left px-4 py-3 rounded-xl border text-xs transition-all duration-300 ${
                 currentRoadId === r.id
-                  ? "border-slate-800 bg-slate-900 text-white font-medium shadow-sm"
+                  ? "border-slate-800 bg-slate-900 text-foreground font-medium shadow-sm"
                   : "border-slate-100 bg-white text-slate-600 hover:border-slate-200"
               }`}
             >
               <div className="flex items-center justify-between">
                 <span>{r.icon} {r.title}</span>
                 {currentRoadId === r.id && (
-                  <span className="text-[9px] font-mono tracking-wider text-slate-400">Selected</span>
+                  <span className="text-[9px] font-mono tracking-wider text-muted-foreground">Selected</span>
                 )}
               </div>
             </button>
@@ -249,7 +249,7 @@ export function ProfileClient() {
 
       {/* Settings Navigation Section */}
       <div className="space-y-4 pt-6 border-t border-slate-50">
-        <h2 className="text-xs font-semibold tracking-widest text-slate-400 uppercase">空間を整える</h2>
+        <h2 className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">空間を整える</h2>
         <div className="divide-y divide-slate-100 border border-slate-100 rounded-2xl bg-white overflow-hidden text-xs">
           {/* Gemini Key Config */}
           <Link 
@@ -257,7 +257,7 @@ export function ProfileClient() {
             className="flex items-center justify-between p-4 text-slate-650 hover:bg-slate-50 transition-colors"
           >
             <div className="flex items-center space-x-2.5">
-              <Key className="w-4 h-4 text-slate-400 stroke-[1.5]" />
+              <Key className="w-4 h-4 text-muted-foreground stroke-[1.5]" />
               <span>AI（Gemini API）の接続設定</span>
             </div>
             <ChevronLeft className="w-3.5 h-3.5 rotate-180 text-slate-350" />
@@ -269,7 +269,7 @@ export function ProfileClient() {
             className="flex items-center justify-between p-4 text-slate-650 hover:bg-slate-50 transition-colors"
           >
             <div className="flex items-center space-x-2.5">
-              <MessageSquare className="w-4 h-4 text-slate-400 stroke-[1.5]" />
+              <MessageSquare className="w-4 h-4 text-muted-foreground stroke-[1.5]" />
               <span>Discord アカウント連携設定</span>
             </div>
             <ChevronLeft className="w-3.5 h-3.5 rotate-180 text-slate-350" />
@@ -281,7 +281,7 @@ export function ProfileClient() {
             className="flex items-center justify-between p-4 text-slate-655 hover:bg-slate-50 transition-colors"
           >
             <div className="flex items-center space-x-2.5">
-              <CreditCard className="w-4 h-4 text-slate-400 stroke-[1.5]" />
+              <CreditCard className="w-4 h-4 text-muted-foreground stroke-[1.5]" />
               <span>Premium 加入管理 / プランの変更</span>
             </div>
             <ChevronLeft className="w-3.5 h-3.5 rotate-180 text-slate-350" />
@@ -293,7 +293,7 @@ export function ProfileClient() {
             className="flex items-center justify-between p-4 text-slate-650 hover:bg-slate-50 transition-colors"
           >
             <div className="flex items-center space-x-2.5">
-              <Database className="w-4 h-4 text-slate-400 stroke-[1.5]" />
+              <Database className="w-4 h-4 text-muted-foreground stroke-[1.5]" />
               <span>データ管理（バックアップ）</span>
             </div>
             <ChevronLeft className="w-3.5 h-3.5 rotate-180 text-slate-350" />
@@ -305,7 +305,7 @@ export function ProfileClient() {
             className="flex items-center justify-between p-4 text-slate-650 hover:bg-slate-50 transition-colors"
           >
             <div className="flex items-center space-x-2.5">
-              <Settings className="w-4 h-4 text-slate-400 stroke-[1.5]" />
+              <Settings className="w-4 h-4 text-muted-foreground stroke-[1.5]" />
               <span>その他の設定</span>
             </div>
             <ChevronLeft className="w-3.5 h-3.5 rotate-180 text-slate-350" />

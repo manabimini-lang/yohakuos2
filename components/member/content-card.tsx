@@ -23,11 +23,11 @@ export function ContentCard({
         {item.thumbnailUrl ? (
           <img src={item.thumbnailUrl} alt={item.title} className="h-full w-full object-cover" />
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-xs text-slate-300"></div>
+          <div className="flex h-full w-full items-center justify-center text-xs text-muted-foreground"></div>
         )}
         <div className="absolute left-3 top-3 flex gap-1.5">
           {item.locked ? (
-            <span className="inline-flex items-center gap-1 rounded-md bg-slate-800/80 px-2 py-1 text-[11px] font-medium tracking-wide text-white backdrop-blur">
+            <span className="inline-flex items-center gap-1 rounded-md bg-slate-800/80 px-2 py-1 text-[11px] font-medium tracking-wide text-foreground backdrop-blur">
               <Lock className="h-3 w-3" />
               会員限定
             </span>
@@ -46,8 +46,8 @@ export function ContentCard({
       </div>
       <div className="space-y-3 p-5">
         <div>
-          <h3 className="line-clamp-1 text-base font-medium text-slate-800">{item.title}</h3>
-          <p className="mt-1.5 line-clamp-2 text-sm text-slate-500 leading-relaxed">
+          <h3 className="line-clamp-1 text-base font-medium text-foreground">{item.title}</h3>
+          <p className="mt-1.5 line-clamp-2 text-sm text-muted-foreground leading-relaxed">
             {item.description || "説明はまだありません。"}
           </p>
         </div>
@@ -58,7 +58,7 @@ export function ContentCard({
             </span>
           ))}
         </div>
-        <div className="text-xs text-slate-400 pt-1">
+        <div className="text-xs text-muted-foreground pt-1">
           {item.contentType} / {item.layer} / {dateFmt.format(item.updatedAt)}
         </div>
       </div>

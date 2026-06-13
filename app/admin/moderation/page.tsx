@@ -106,7 +106,7 @@ export default function ModerationPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-[400px] flex-col items-center justify-center text-slate-400 space-y-2">
+      <div className="flex min-h-[400px] flex-col items-center justify-center text-muted-foreground space-y-2">
         <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-200 border-t-slate-800" />
         <span className="text-xs">読み込み中...</span>
       </div>
@@ -117,7 +117,7 @@ export default function ModerationPage() {
     <section className="space-y-6 max-w-5xl mx-auto">
       {/* Toast Notification */}
       {toast && (
-        <div className="fixed bottom-6 right-6 z-50 rounded-xl bg-slate-900 px-4 py-3 text-sm font-medium text-white shadow-lg animate-in slide-in-from-bottom-4 fade-in duration-300">
+        <div className="fixed bottom-6 right-6 z-50 rounded-xl bg-slate-900 px-4 py-3 text-sm font-medium text-foreground shadow-lg animate-in slide-in-from-bottom-4 fade-in duration-300">
           {toast}
         </div>
       )}
@@ -125,7 +125,7 @@ export default function ModerationPage() {
       {/* Header */}
       <header className="rounded-2xl border border-slate-200 bg-white p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-lg font-semibold text-slate-900">モデレーション</h1>
+          <h1 className="text-lg font-semibold text-foreground">モデレーション</h1>
           <p className="mt-1 text-sm text-slate-600">
             Discordへ共有されたメンバーの知見を確認し、必要に応じて非表示や削除を行います。
           </p>
@@ -133,7 +133,7 @@ export default function ModerationPage() {
 
         {/* Search Bar */}
         <div className="relative w-full md:w-72">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+          <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
           <input
             type="text"
             placeholder="投稿者、タイトル、内容で検索..."
@@ -147,16 +147,16 @@ export default function ModerationPage() {
       {/* Main Panel */}
       <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
         {filteredShares.length === 0 ? (
-          <div className="p-12 text-center text-slate-400 space-y-1.5">
-            <Info className="w-8 h-8 mx-auto text-slate-200 stroke-[1.5]" />
-            <p className="text-sm font-medium text-slate-500">まだ共有はありません。</p>
-            <p className="text-xs text-slate-400">今日も静かな一日でした。</p>
+          <div className="p-12 text-center text-muted-foreground space-y-1.5">
+            <Info className="w-8 h-8 mx-auto text-foreground stroke-[1.5]" />
+            <p className="text-sm font-medium text-muted-foreground">まだ共有はありません。</p>
+            <p className="text-xs text-muted-foreground">今日も静かな一日でした。</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-slate-50 border-b border-slate-200 text-xs font-medium text-slate-500 uppercase tracking-wider">
+                <tr className="bg-slate-50 border-b border-slate-200 text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   <th className="px-6 py-4">投稿者 / 日時</th>
                   <th className="px-6 py-4">共有内容</th>
                   <th className="px-6 py-4">通報</th>
@@ -174,27 +174,27 @@ export default function ModerationPage() {
                     <tr key={item.id} className={`hover:bg-slate-50/50 transition-colors ${isHidden ? "bg-slate-50/30" : isDeleted ? "bg-rose-50/5" : ""}`}>
                       <td className="px-6 py-4">
                         <div className="flex flex-col">
-                          <span className="text-sm font-medium text-slate-800">{item.actorName}</span>
-                          <span className="text-xs text-slate-400 inline-flex items-center gap-1 mt-0.5">
-                            <Mail className="w-3.5 h-3.5 text-slate-300" />
+                          <span className="text-sm font-medium text-foreground">{item.actorName}</span>
+                          <span className="text-xs text-muted-foreground inline-flex items-center gap-1 mt-0.5">
+                            <Mail className="w-3.5 h-3.5 text-muted-foreground" />
                             {item.actorEmail}
                           </span>
-                          <span className="text-[10px] text-slate-400 mt-2">
+                          <span className="text-[10px] text-muted-foreground mt-2">
                             {new Date(item.createdAt).toLocaleString("ja-JP")}
                           </span>
                         </div>
                       </td>
                       <td className="px-6 py-4 max-w-sm">
                         <div className="space-y-1.5">
-                          <span className="inline-flex text-[9px] font-semibold bg-slate-100 text-slate-500 border border-slate-200 px-1.5 py-0.2 rounded">
+                          <span className="inline-flex text-[9px] font-semibold bg-slate-100 text-muted-foreground border border-slate-200 px-1.5 py-0.2 rounded">
                             {item.content.road === "beginner" ? "初任者ロード" : item.content.road === "side-hustle" ? "副業ロード" : "退職ロード"}
                           </span>
-                          <h4 className="text-xs font-semibold text-slate-800 leading-snug">{item.content.title || "無題"}</h4>
-                          <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">{item.content.summary || "振り返り内容なし"}</p>
+                          <h4 className="text-xs font-semibold text-foreground leading-snug">{item.content.title || "無題"}</h4>
+                          <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">{item.content.summary || "振り返り内容なし"}</p>
                           {item.content.tags && item.content.tags.length > 0 && (
                             <div className="flex flex-wrap gap-1 mt-1">
                               {item.content.tags.map((tag, idx) => (
-                                <span key={idx} className="text-[9px] text-slate-400">
+                                <span key={idx} className="text-[9px] text-muted-foreground">
                                   #{tag}
                                 </span>
                               ))}
@@ -207,7 +207,7 @@ export default function ModerationPage() {
                           <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold ${
                             item.reports > 0 
                               ? "bg-amber-50 text-amber-700 border border-amber-200" 
-                              : "bg-slate-50 text-slate-400"
+                              : "bg-slate-50 text-muted-foreground"
                           }`}>
                             {item.reports} 回
                           </span>
@@ -215,7 +215,7 @@ export default function ModerationPage() {
                             <button
                               onClick={() => handleTestReport(item.id)}
                               disabled={actioningId !== null}
-                              className="text-[10px] text-slate-400 hover:text-slate-600 hover:underline"
+                              className="text-[10px] text-muted-foreground hover:text-slate-600 hover:underline"
                             >
                               通報
                             </button>

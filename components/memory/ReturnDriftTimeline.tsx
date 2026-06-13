@@ -18,10 +18,10 @@ export function ReturnDriftTimeline({
   if (fragments.length === 0 && resurfacings.length === 0) {
     return (
       <div className="py-16 sm:py-24 text-center space-y-4">
-        <p className="text-sm font-light text-black/40 dark:text-white/40">
+        <p className="text-sm font-light text-black/40 dark:text-foreground/40">
           遠い断片が戻ってくるのを待っています
         </p>
-        <p className="text-xs font-light text-black/25 dark:text-white/25">
+        <p className="text-xs font-light text-black/25 dark:text-foreground/25">
           存在は、単なる積み重ねではなく、
           <br />
           静かな往来を繰り返しています
@@ -73,10 +73,10 @@ export function ReturnDriftTimeline({
     <div className="space-y-12 sm:space-y-16">
       {/* Header */}
       <div className="mb-12 space-y-3">
-        <h2 className="text-2xl sm:text-3xl font-light tracking-wide text-black/70 dark:text-white/70">
+        <h2 className="text-2xl sm:text-3xl font-light tracking-wide text-black/70 dark:text-foreground/70">
           戻りの流れ
         </h2>
-        <p className="text-sm font-light text-black/50 dark:text-white/50 max-w-lg leading-relaxed">
+        <p className="text-sm font-light text-black/50 dark:text-foreground/50 max-w-lg leading-relaxed">
           時間は直線ではなく、
           遠い断片や薄れていた余白は、
           少し違う静けさで、また戻ってくることがある。
@@ -111,23 +111,23 @@ export function ReturnDriftTimeline({
                 {/* Content */}
                 <div className="space-y-2">
                   {/* Type indicator */}
-                  <p className="text-xs font-light tracking-widest text-black/30 dark:text-white/30 uppercase">
+                  <p className="text-xs font-light tracking-widest text-black/30 dark:text-foreground/30 uppercase">
                     {isFragment ? "静かな戻り" : "穏やかな再浮上"}
                   </p>
 
                   {/* Fragment/Theme content */}
-                  <h4 className="text-lg sm:text-xl font-light text-black/70 dark:text-white/70">
+                  <h4 className="text-lg sm:text-xl font-light text-black/70 dark:text-foreground/70">
                     「{event.content}」
                   </h4>
 
                   {/* Silence length */}
-                  <p className="text-sm font-light text-black/50 dark:text-white/50">
+                  <p className="text-sm font-light text-black/50 dark:text-foreground/50">
                     {months}ヶ月の沈黙を越えて
                   </p>
 
                   {/* Narrative note */}
                   {isFragment && (
-                    <p className="text-xs font-light italic text-black/40 dark:text-white/40 pt-2 border-l-2 border-black/5 dark:border-white/5 pl-3">
+                    <p className="text-xs font-light italic text-black/40 dark:text-foreground/40 pt-2 border-l-2 border-black/5 dark:border-border/50 pl-3">
                       以前({fragment.originalDate.toLocaleDateString("ja-JP")})のいのちが、別の形で戻っています。
                     </p>
                   )}
@@ -143,15 +143,15 @@ export function ReturnDriftTimeline({
         {/* End sentinel */}
         <div className="relative pl-8 sm:pl-12 opacity-50">
           <div className="absolute left-0 sm:left-2 top-1.5 w-2 h-2 rounded-full bg-black/10 dark:bg-white/10" />
-          <p className="text-xs font-light text-black/30 dark:text-white/30 italic">
+          <p className="text-xs font-light text-black/30 dark:text-foreground/30 italic">
             さらに遠い時間へ...
           </p>
         </div>
       </div>
 
       {/* Bottom philosophy note */}
-      <div className="mt-16 pt-12 border-t border-black/5 dark:border-white/5 text-center">
-        <p className="text-xs font-light text-black/25 dark:text-white/25 leading-relaxed max-w-md mx-auto">
+      <div className="mt-16 pt-12 border-t border-black/5 dark:border-border/50 text-center">
+        <p className="text-xs font-light text-black/25 dark:text-foreground/25 leading-relaxed max-w-md mx-auto">
           戻ることにも、静かな流れがある。
           <br />
           存在は消えてはいない。

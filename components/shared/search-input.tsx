@@ -11,7 +11,7 @@ export function SearchInput({
 }: SearchInputProps) {
   return (
     <label className="block">
-      <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+      <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         Search
       </span>
       <input

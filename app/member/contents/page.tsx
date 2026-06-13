@@ -50,8 +50,8 @@ export default async function MemberContentsPage({
   return (
     <section className="space-y-4">
       <header className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
-        <h1 className="text-lg font-medium text-slate-800">記事</h1>
-        <p className="mt-1.5 text-sm text-slate-500">
+        <h1 className="text-lg font-medium text-foreground">記事</h1>
+        <p className="mt-1.5 text-sm text-muted-foreground">
           気になるキーワードやタグで、静かに探せます。
         </p>
       </header>
@@ -65,10 +65,10 @@ export default async function MemberContentsPage({
       {result.items.length === 0 ? (
         <div className="rounded-2xl border border-slate-100 bg-slate-50/60 p-10 text-center shadow-sm">
           <p className="text-sm font-medium text-slate-600">記事が見つかりませんでした。</p>
-          <p className="mt-2 text-xs text-slate-400">別のキーワードを試してみてください。</p>
+          <p className="mt-2 text-xs text-muted-foreground">別のキーワードを試してみてください。</p>
           <Link
             href="/member/contents"
-            className="mt-5 inline-flex rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-slate-500 hover:text-slate-700 transition-colors"
+            className="mt-5 inline-flex rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-muted-foreground hover:text-slate-700 transition-colors"
           >
             条件をクリアする
           </Link>
@@ -87,7 +87,7 @@ export default async function MemberContentsPage({
       )}
 
       <div className="flex items-center justify-between rounded-xl border border-slate-100 bg-white px-5 py-3 text-sm shadow-sm">
-        <p className="text-slate-500">
+        <p className="text-muted-foreground">
           {pager.page} / {pager.totalPages}
         </p>
         <div className="flex gap-2">
@@ -99,7 +99,7 @@ export default async function MemberContentsPage({
               前へ
             </Link>
           ) : (
-            <span className="rounded-lg border border-slate-100 px-4 py-1.5 text-slate-300 bg-slate-50">
+            <span className="rounded-lg border border-slate-100 px-4 py-1.5 text-muted-foreground bg-slate-50">
               前へ
             </span>
           )}
@@ -111,7 +111,7 @@ export default async function MemberContentsPage({
               次へ
             </Link>
           ) : (
-            <span className="rounded-lg border border-slate-100 px-4 py-1.5 text-slate-300 bg-slate-50">
+            <span className="rounded-lg border border-slate-100 px-4 py-1.5 text-muted-foreground bg-slate-50">
               次へ
             </span>
           )}

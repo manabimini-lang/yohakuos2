@@ -36,7 +36,7 @@ export function MemberHeader({ user }: MemberHeaderProps) {
               href="/pricing"
               className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-medium text-slate-600 bg-slate-50 border border-slate-200/80 hover:bg-slate-100 transition-colors shadow-sm cursor-pointer"
             >
-              <Sparkles className="w-3 h-3 text-slate-400 stroke-[1.5]" />
+              <Sparkles className="w-3 h-3 text-muted-foreground stroke-[1.5]" />
               <span>Premiumへ</span>
             </Link>
           )}
@@ -66,7 +66,7 @@ export function MemberHeader({ user }: MemberHeaderProps) {
           >
             <button
               type="submit"
-              className="rounded-lg px-3 py-1.5 text-xs text-slate-400 transition-colors hover:bg-slate-50 hover:text-slate-600"
+              className="rounded-lg px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-slate-50 hover:text-slate-600"
             >
               ログアウト
             </button>

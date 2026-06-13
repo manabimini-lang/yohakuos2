@@ -77,15 +77,15 @@ export function OperationsAdminView({ health, pendingCount, failedCount }: Props
         <table className="w-full text-left text-xs">
           <thead>
             <tr className="border-b border-slate-100 bg-slate-50">
-              <th className="px-4 py-3 font-medium text-slate-500">ジョブタイプ</th>
-              <th className="px-4 py-3 font-medium text-slate-500">件数</th>
-              <th className="px-4 py-3 font-medium text-slate-500">ステータス</th>
+              <th className="px-4 py-3 font-medium text-muted-foreground">ジョブタイプ</th>
+              <th className="px-4 py-3 font-medium text-muted-foreground">件数</th>
+              <th className="px-4 py-3 font-medium text-muted-foreground">ステータス</th>
             </tr>
           </thead>
           <tbody>
             {Object.entries(health.byJobType).length === 0 ? (
               <tr>
-                <td colSpan={3} className="px-4 py-8 text-center text-slate-400">
+                <td colSpan={3} className="px-4 py-8 text-center text-muted-foreground">
                   キューにジョブがありません
                 </td>
               </tr>
@@ -93,9 +93,9 @@ export function OperationsAdminView({ health, pendingCount, failedCount }: Props
               Object.entries(health.byJobType).map(([jobType, count]) => (
                 <tr key={jobType} className="border-b border-slate-50 hover:bg-slate-50">
                   <td className="px-4 py-3 font-mono text-slate-700">{jobType}</td>
-                  <td className="px-4 py-3 text-slate-500">{count}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{count}</td>
                   <td className="px-4 py-3">
-                    <span className="inline-block rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-500">
+                    <span className="inline-block rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
                       {count > 0 ? "アクティブ" : "アイドル"}
                     </span>
                   </td>

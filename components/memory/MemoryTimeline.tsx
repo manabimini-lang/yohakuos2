@@ -10,7 +10,7 @@ interface MemoryTimelineProps {
 export function MemoryTimeline({ timeline }: MemoryTimelineProps) {
   if (!timeline || timeline.length === 0) {
     return (
-      <div className="py-20 text-center text-black/30 dark:text-white/30 font-light">
+      <div className="py-20 text-center text-black/30 dark:text-foreground/30 font-light">
         まだ記憶の地層はありません。
       </div>
     );
@@ -37,11 +37,11 @@ export function MemoryTimeline({ timeline }: MemoryTimelineProps) {
           <div className="absolute left-0 top-2 bottom-0 w-px bg-black/8 dark:bg-white/8" />
           
           <div className="mb-8">
-            <h2 className="text-xl md:text-2xl font-light tracking-widest text-black/90 dark:text-white/90">
+            <h2 className="text-xl md:text-2xl font-light tracking-widest text-black/90 dark:text-foreground/90">
               {monthData.year}年{monthData.month}月
             </h2>
             {monthData.themes && monthData.themes.length > 0 && (
-              <div className="flex gap-3 text-xs text-black/40 dark:text-white/40 mt-3 font-light">
+              <div className="flex gap-3 text-xs text-black/40 dark:text-foreground/40 mt-3 font-light">
                 {monthData.themes.map((theme, i) => (
                   <span key={i} className="flex items-center gap-3">
                     {theme}

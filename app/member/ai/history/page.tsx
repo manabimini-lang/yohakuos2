@@ -84,18 +84,18 @@ export default async function MemberAiHistoryPage({ searchParams }: Props) {
   const monthGroups = groupByMonth(logs);
 
   return (
-    <div className="max-w-xl mx-auto pb-28 pt-4 space-y-10">
+    <div className="max-w-xl mx-auto pb-24 pt-4 space-y-10">
 
       {/* セクション1｜やさしい導入 */}
       <div className="px-1 space-y-1">
-        <h1 className="text-xl font-medium text-slate-800">記録</h1>
-        <p className="text-sm text-slate-500">{introMessage}</p>
+        <h1 className="text-xl font-medium text-foreground">記録</h1>
+        <p className="text-sm text-muted-foreground">{introMessage}</p>
       </div>
 
       {/* セクション3｜小さな変化（インサイト）- ログが十分あるときのみ */}
       {insight && (
         <div className="rounded-2xl border border-slate-100 bg-slate-50/60 px-5 py-4 shadow-sm">
-          <p className="text-xs text-slate-400 mb-1.5">最近のようす</p>
+          <p className="text-xs text-muted-foreground mb-1.5">最近のようす</p>
           <p className="text-sm text-slate-600 leading-relaxed">{insight.message}</p>
         </div>
       )}
@@ -103,14 +103,14 @@ export default async function MemberAiHistoryPage({ searchParams }: Props) {
       {/* moodTagフィルター */}
       {total > 0 && (
         <div className="space-y-2">
-          <p className="text-xs text-slate-400 px-1">絞り込み</p>
+          <p className="text-xs text-muted-foreground px-1">絞り込み</p>
           <div className="flex flex-wrap gap-2">
             <Link
               href="/member/ai/history"
               className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
                 !activeMood
-                  ? "bg-slate-900 border-slate-900 text-white"
-                  : "bg-white border-slate-200 text-slate-500 hover:border-slate-300"
+                  ? "bg-slate-900 border-slate-900 text-foreground"
+                  : "bg-white border-slate-200 text-muted-foreground hover:border-slate-300"
               }`}
             >
               すべて
@@ -132,7 +132,7 @@ export default async function MemberAiHistoryPage({ searchParams }: Props) {
 
       {/* セクション2｜ログ一覧 */}
       {logs.length === 0 ? (
-        <div className="rounded-3xl border border-slate-100 bg-white/60 p-12 text-center space-y-4 shadow-sm">
+        <div className="rounded-2xl border border-slate-100 bg-white/60 p-12 text-center space-y-4 shadow-sm">
           {activeMood ? (
             <>
               <p className="text-base font-medium text-slate-600 leading-relaxed">
@@ -140,7 +140,7 @@ export default async function MemberAiHistoryPage({ searchParams }: Props) {
               </p>
               <Link
                 href="/member/ai/history"
-                className="inline-block text-sm text-slate-400 underline underline-offset-4 hover:text-slate-600 transition-colors"
+                className="inline-block text-sm text-muted-foreground underline underline-offset-4 hover:text-slate-600 transition-colors"
               >
                 すべての記録を見る
               </Link>
@@ -151,10 +151,10 @@ export default async function MemberAiHistoryPage({ searchParams }: Props) {
                 少し疲れた日も、<br/>
                 ここへ戻ってこれます。
               </p>
-              <p className="text-sm text-slate-400">最初の整理を書いてみましょう。</p>
+              <p className="text-sm text-muted-foreground">最初の整理を書いてみましょう。</p>
               <Link
                 href="/inbox"
-                className="inline-block text-sm text-slate-500 underline underline-offset-4 hover:text-slate-700 transition-colors"
+                className="inline-block text-sm text-muted-foreground underline underline-offset-4 hover:text-slate-700 transition-colors"
               >
                 思考を整理しにいく
               </Link>
@@ -167,7 +167,7 @@ export default async function MemberAiHistoryPage({ searchParams }: Props) {
             <section key={group.label} aria-label={group.label}>
               {/* 月ラベル */}
               <div className="flex items-center gap-3 mb-4 px-1">
-                <span className="text-xs font-medium text-slate-400">{group.label}</span>
+                <span className="text-xs font-medium text-muted-foreground">{group.label}</span>
                 <div className="flex-1 h-px bg-slate-100" aria-hidden="true" />
               </div>
               {/* その月のカード群 */}
@@ -187,20 +187,20 @@ export default async function MemberAiHistoryPage({ searchParams }: Props) {
           {hasPrev ? (
             <Link
               href={`/member/ai/history?page=${page - 1}${activeMood ? `&mood=${encodeURIComponent(activeMood)}` : ""}`}
-              className="text-sm text-slate-500 hover:text-slate-800 transition-colors py-2"
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors py-2"
             >
               ← 前のページ
             </Link>
           ) : <span />}
 
-          <span className="text-xs text-slate-400">
+          <span className="text-xs text-muted-foreground">
             {page} / {totalPages}
           </span>
 
           {hasNext ? (
             <Link
               href={`/member/ai/history?page=${page + 1}${activeMood ? `&mood=${encodeURIComponent(activeMood)}` : ""}`}
-              className="text-sm text-slate-500 hover:text-slate-800 transition-colors py-2"
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors py-2"
             >
               次のページ →
             </Link>
@@ -212,7 +212,7 @@ export default async function MemberAiHistoryPage({ searchParams }: Props) {
       <div className="text-center pt-4">
         <Link
           href="/inbox"
-          className="inline-block text-sm text-slate-400 hover:text-slate-600 transition-colors py-3"
+          className="inline-block text-sm text-muted-foreground hover:text-slate-600 transition-colors py-3"
         >
           今日の整理へ
         </Link>

@@ -94,7 +94,7 @@ export function AuditAdminView({
 
         <button
           onClick={() => router.push("/admin/audit")}
-          className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-500 hover:bg-slate-50"
+          className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-muted-foreground hover:bg-slate-50"
         >
           リセット
         </button>
@@ -105,19 +105,19 @@ export function AuditAdminView({
         <table className="w-full text-left text-xs">
           <thead>
             <tr className="border-b border-slate-100 bg-slate-50">
-              <th className="px-4 py-3 font-medium text-slate-500">日時</th>
-              <th className="px-4 py-3 font-medium text-slate-500">重要度</th>
-              <th className="px-4 py-3 font-medium text-slate-500">カテゴリ</th>
-              <th className="px-4 py-3 font-medium text-slate-500">アクション</th>
-              <th className="px-4 py-3 font-medium text-slate-500">アクター</th>
-              <th className="px-4 py-3 font-medium text-slate-500">ターゲット</th>
-              <th className="px-4 py-3 font-medium text-slate-500">IP</th>
+              <th className="px-4 py-3 font-medium text-muted-foreground">日時</th>
+              <th className="px-4 py-3 font-medium text-muted-foreground">重要度</th>
+              <th className="px-4 py-3 font-medium text-muted-foreground">カテゴリ</th>
+              <th className="px-4 py-3 font-medium text-muted-foreground">アクション</th>
+              <th className="px-4 py-3 font-medium text-muted-foreground">アクター</th>
+              <th className="px-4 py-3 font-medium text-muted-foreground">ターゲット</th>
+              <th className="px-4 py-3 font-medium text-muted-foreground">IP</th>
             </tr>
           </thead>
           <tbody>
             {records.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-slate-400">
+                <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
                   監査イベントがありません
                 </td>
               </tr>
@@ -127,7 +127,7 @@ export function AuditAdminView({
                   key={record.id}
                   className="border-b border-slate-50 transition-colors hover:bg-slate-50"
                 >
-                  <td className="whitespace-nowrap px-4 py-3 text-slate-500">
+                  <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">
                     {new Date(record.createdAt).toLocaleString("ja-JP", {
                       month: "2-digit",
                       day: "2-digit",
@@ -150,10 +150,10 @@ export function AuditAdminView({
                   <td className="max-w-[200px] truncate px-4 py-3 font-mono text-slate-700">
                     {record.action}
                   </td>
-                  <td className="px-4 py-3 text-slate-500">
+                  <td className="px-4 py-3 text-muted-foreground">
                     {record.actorEmail ?? record.actorId ?? "—"}
                   </td>
-                  <td className="px-4 py-3 text-slate-500">
+                  <td className="px-4 py-3 text-muted-foreground">
                     {record.targetType ? (
                       <span>
                         {record.targetType}:{record.targetId?.slice(0, 8)}
@@ -162,7 +162,7 @@ export function AuditAdminView({
                       "—"
                     )}
                   </td>
-                  <td className="px-4 py-3 font-mono text-slate-400">
+                  <td className="px-4 py-3 font-mono text-muted-foreground">
                     {record.ipAddress ?? "—"}
                   </td>
                 </tr>
@@ -189,7 +189,7 @@ export function AuditAdminView({
           >
             前へ
           </button>
-          <span className="text-xs text-slate-400">
+          <span className="text-xs text-muted-foreground">
             {page} / {totalPages}
           </span>
           <button
@@ -210,7 +210,7 @@ export function AuditAdminView({
       )}
 
       {/* Total */}
-      <div className="text-center text-[10px] text-slate-400">
+      <div className="text-center text-[10px] text-muted-foreground">
         全{total}件
       </div>
     </div>

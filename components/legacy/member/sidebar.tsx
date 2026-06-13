@@ -50,8 +50,8 @@ function SidebarNavItem({ href, label, icon: Icon }: NavEntry) {
       className={[
         "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors",
         isActive
-          ? "bg-slate-100 text-slate-900 font-medium"
-          : "text-slate-500 hover:bg-slate-50 hover:text-slate-700",
+          ? "bg-slate-100 text-foreground font-medium"
+          : "text-muted-foreground hover:bg-slate-50 hover:text-slate-700",
       ].join(" ")}
     >
       <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
@@ -105,7 +105,7 @@ export function MemberSidebarNav() {
         {installPromptEvent && (
           <button
             onClick={handleInstallClick}
-            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-slate-500 hover:bg-slate-50 hover:text-slate-700 transition-colors font-medium mt-4 border border-dashed border-slate-200"
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-muted-foreground hover:bg-slate-50 hover:text-slate-700 transition-colors font-medium mt-4 border border-dashed border-slate-200"
           >
             <Download className="h-4 w-4 shrink-0" aria-hidden="true" />
             <span>アプリをインストール</span>
@@ -114,19 +114,19 @@ export function MemberSidebarNav() {
       </nav>
 
       {!isPremium && (
-        <div className="p-4 mt-6 rounded-2xl bg-slate-50 border border-slate-100 text-slate-800 space-y-3.5 select-none transition-all duration-300">
+        <div className="p-4 mt-6 rounded-2xl bg-slate-50 border border-slate-100 text-foreground space-y-3.5 select-none transition-all duration-300">
           <div className="space-y-1">
-            <p className="text-xs font-medium text-slate-800 flex items-center gap-1.5 tracking-wide">
-              <Sparkles className="w-3.5 h-3.5 text-slate-400 stroke-[1.5]" />
+            <p className="text-xs font-medium text-foreground flex items-center gap-1.5 tracking-wide">
+              <Sparkles className="w-3.5 h-3.5 text-muted-foreground stroke-[1.5]" />
               PremiumでAI整理を解放
             </p>
-            <p className="text-[11px] text-slate-500 leading-relaxed font-sans">
+            <p className="text-[11px] text-muted-foreground leading-relaxed font-sans">
               静かな振り返りを、AIとともに。
             </p>
           </div>
           <Link
             href="/pricing"
-            className="block w-full text-center rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-medium py-2 transition-colors shadow-sm cursor-pointer"
+            className="block w-full text-center rounded-xl bg-slate-900 hover:bg-slate-800 text-foreground text-xs font-medium py-2 transition-colors shadow-sm cursor-pointer"
           >
             Premiumに参加
           </Link>

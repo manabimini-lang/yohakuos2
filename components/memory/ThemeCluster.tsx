@@ -19,7 +19,7 @@ export function ThemeCluster({ themes }: ThemeClusterProps) {
         {themes.map((theme, idx) => (
           <div
             key={idx}
-            className="px-4 py-2 rounded-full border border-notion-border dark:border-white/10 bg-white/50 dark:bg-white/5 text-sm text-notion-text dark:text-gray-300 shadow-sm"
+            className="px-4 py-2 rounded-full border border-notion-border dark:border-border bg-white/50 dark:bg-card text-sm text-notion-text dark:text-gray-300 shadow-sm"
           >
             {theme}
           </div>

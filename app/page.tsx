@@ -9,51 +9,48 @@ import {
   BookMarked,
   Compass,
   MessageCircle,
+  Layers,
+  Cloud,
+  History
 } from "lucide-react";
 
-const highlights = [
+const journeySteps = [
   {
-    icon: Sparkles,
-    title: "静かな整理",
-    description: "散らかった思考を、無理なく整えるための余白をつくります。",
+    step: "01",
+    icon: Feather,
+    title: "今日：断片を置く",
+    description: "整理できなくても大丈夫。今の気持ち、拾った言葉を、そのままそっと置いておきます。",
+    accent: "bg-slate-50 text-slate-400"
   },
   {
-    icon: Brain,
-    title: "AIと伴走",
-    description: "記録や気づきを、AIがやさしくつないで次の一歩に変えます。",
+    step: "02",
+    icon: Layers,
+    title: "数週間後：層が生まれる",
+    description: "積もった断片が重なり、あなたの「人生の層」として静かに形を成していきます。",
+    accent: "bg-stone-50 text-stone-400"
   },
   {
-    icon: ShieldCheck,
-    title: "安心の設計",
-    description: "ログイン後の体験を、落ち着いた導線で安全に進められます。",
+    step: "03",
+    icon: History,
+    title: "振り返り：意味に出会う",
+    description: "AIがあなたの軌跡を繋ぎます。それは保存ではなく、未来の自分との再会です。",
+    accent: "bg-zinc-900 text-white"
   },
 ];
 
-const experiences = [
+const principles = [
   {
-    icon: PenLine,
-    title: "記録を残す",
-    description: "今日の気分や思考を、静かな入力欄にそっと置いておけます。",
-    accent: "from-slate-950 to-slate-700",
+    title: "保存より再会",
+    description: "溜めるための場所ではなく、出会い直すための場所。蓄積が重荷にならない UI を。"
   },
   {
-    icon: BookMarked,
-    title: "振り返りを整える",
-    description: "過去のメモや気づきを、ひとつの流れとして読み返せます。",
-    accent: "from-stone-700 to-stone-500",
+    title: "整理しない自由",
+    description: "完璧に整える必要はありません。散らかったままでも、AIがそっと文脈を紡ぎます。"
   },
   {
-    icon: Compass,
-    title: "内面の風景を見る",
-    description: "人生の流れや小さな変化を、やわらかく見つめられます。",
-    accent: "from-slate-800 to-slate-500",
-  },
-  {
-    icon: MessageCircle,
-    title: "対話でほどく",
-    description: "AI Companion が、考えを急がず少しずつ整える手伝いをします。",
-    accent: "from-zinc-900 to-zinc-600",
-  },
+    title: "静かな伴走",
+    description: "AIは主役ではありません。あなたの記憶の地層を、影のように支え、整える存在です。"
+  }
 ];
 
 export default function LandingPage() {
@@ -96,69 +93,81 @@ export default function LandingPage() {
               </Link>
             </div>
           </div>
+        </div>
+      </section>
 
-          <div className="mt-20 grid gap-4 lg:grid-cols-3">
-            {highlights.map((item) => {
-              const Icon = item.icon;
-              return (
-                <div
-                  key={item.title}
-                  className="rounded-[1.75rem] border border-slate-200/80 bg-white/70 p-6 backdrop-blur-sm shadow-[0_8px_30px_rgba(15,23,42,0.04)]"
-                >
-                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-950 text-white">
-                    <Icon className="h-5 w-5" />
-                  </div>
-                  <h2 className="mt-5 text-lg font-medium tracking-[-0.02em] text-slate-950">
-                    {item.title}
-                  </h2>
-                  <p className="mt-2 text-sm leading-7 text-slate-600">
-                    {item.description}
-                  </p>
-                </div>
-              );
-            })}
-          </div>
+      {/* Story Section: 残したものが、意味になるまで */}
+      <section className="py-32 bg-white">
+        <div className="mx-auto max-w-7xl px-6 lg:px-16 text-center">
+          <h2 className="text-3xl font-light tracking-tight text-slate-950 sm:text-4xl">
+            残したものが、意味になるまで
+          </h2>
+          <p className="mt-4 text-slate-500 font-light">
+            整理できなくても大丈夫。断片が重なり、人生の層に変わる旅。
+          </p>
 
-          <div className="mt-20">
-            <div className="flex items-end justify-between gap-4">
-              <div>
-                <p className="text-xs font-medium tracking-[0.22em] text-slate-400 uppercase">
-                  What you can do
-                </p>
-                <h2 className="mt-3 text-2xl font-light tracking-[-0.03em] text-slate-950 sm:text-3xl">
-                  YOHAKUでできること
-                </h2>
-              </div>
-              <Link
-                href="/login"
-                className="hidden sm:inline-flex items-center gap-2 text-sm font-medium text-slate-500 transition-colors hover:text-slate-900"
+          <div className="mt-20 grid gap-8 lg:grid-cols-3">
+            {journeySteps.map((step) => (
+              <div
+                key={step.step}
+                className="relative rounded-[2rem] border border-slate-100 bg-slate-50/30 p-8 text-left transition-all hover:bg-white hover:shadow-xl hover:shadow-slate-200/50"
               >
-                はじめる
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-            </div>
+                <span className="text-[4rem] font-bold text-slate-100 absolute top-4 right-8 select-none leading-none">
+                  {step.step}
+                </span>
+                <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${step.accent} shadow-sm mb-6 relative z-10`}>
+                  <step.icon className="h-6 w-6" />
+                </div>
+                <h3 className="text-xl font-medium text-slate-950 relative z-10">
+                  {step.title}
+                </h3>
+                <p className="mt-4 text-sm leading-7 text-slate-600 font-light relative z-10">
+                  {step.description}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
-            <div className="mt-6 grid gap-4 md:grid-cols-2">
-              {experiences.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <div
-                    key={item.title}
-                    className="group rounded-[1.75rem] border border-slate-200/80 bg-white/75 p-6 shadow-[0_10px_40px_rgba(15,23,42,0.04)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_14px_50px_rgba(15,23,42,0.08)]"
-                  >
-                    <div className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${item.accent} text-white shadow-sm`}>
-                      <Icon className="h-5 w-5" />
-                    </div>
-                    <h3 className="mt-5 text-lg font-medium tracking-[-0.02em] text-slate-950">
-                      {item.title}
-                    </h3>
-                    <p className="mt-2 text-sm leading-7 text-slate-600">
-                      {item.description}
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
+      {/* Memory Principles Section */}
+      <section className="py-32 border-t border-slate-100">
+        <div className="mx-auto max-w-5xl px-6 lg:px-16">
+          <p className="text-xs font-medium tracking-[0.22em] text-slate-400 uppercase text-center mb-12">
+            Memory OS Principles
+          </p>
+          <div className="grid gap-12 sm:grid-cols-3">
+            {principles.map((principle) => (
+              <div key={principle.title} className="text-center sm:text-left">
+                <h3 className="text-lg font-medium text-slate-950">{principle.title}</h3>
+                <p className="mt-3 text-sm leading-6 text-slate-500 font-light">
+                  {principle.description}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Final CTA */}
+      <section className="py-32 bg-slate-950 text-white overflow-hidden relative">
+        <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.2),transparent_50%)]" />
+        <div className="relative mx-auto max-w-7xl px-6 lg:px-16 text-center">
+          <h2 className="text-3xl font-light tracking-tight sm:text-4xl">
+            あなたの余白を、ここから始めましょう。
+          </h2>
+          <p className="mt-6 text-slate-400 font-light max-w-xl mx-auto">
+            溜めるためではなく、自分と出会うための場所。<br />
+            YOHAKU は、あなたと共に静かに呼吸します。
+          </p>
+          <div className="mt-10">
+            <Link
+              href="/login"
+              className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-8 py-4 text-sm font-medium text-slate-950 transition-transform hover:-translate-y-0.5"
+            >
+              扉をひらく
+              <ArrowRight className="h-4 w-4" />
+            </Link>
           </div>
         </div>
       </section>

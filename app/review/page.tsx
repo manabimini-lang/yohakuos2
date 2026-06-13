@@ -7,7 +7,7 @@ const ReviewClient = dynamic(
     ssr: false,
     loading: () => (
       <div className="flex min-h-screen items-center justify-center">
-        <p className="text-sm text-slate-400 font-mono tracking-widest animate-pulse">
+        <p className="text-sm text-muted-foreground font-mono tracking-widest animate-pulse">
           データを読み込んでいます...
         </p>
       </div>

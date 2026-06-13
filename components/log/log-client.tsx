@@ -122,7 +122,7 @@ export function LogClient() {
     <div className="mx-auto max-w-2xl px-4 py-12 md:py-24">
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 rounded-xl bg-slate-900 px-4 py-3 text-sm font-medium text-white shadow-lg animate-in slide-in-from-bottom-4 fade-in duration-300">
+        <div className="fixed bottom-6 right-6 z-50 rounded-xl bg-slate-900 px-4 py-3 text-sm font-medium text-foreground shadow-lg animate-in slide-in-from-bottom-4 fade-in duration-300">
           {toastMessage}
         </div>
       )}
@@ -137,8 +137,8 @@ export function LogClient() {
                 onClick={() => handleRoadChange(road.id)}
                 className={`flex items-center gap-2 whitespace-nowrap px-4 py-3 text-sm font-medium transition-colors ${
                   currentRoad === road.id
-                    ? "border-b-2 border-slate-900 text-slate-900"
-                    : "border-b-2 border-transparent text-slate-400 hover:text-slate-600 hover:border-slate-300"
+                    ? "border-b-2 border-slate-900 text-foreground"
+                    : "border-b-2 border-transparent text-muted-foreground hover:text-slate-600 hover:border-slate-300"
                 }`}
               >
                 <span className="text-lg">{road.icon}</span>
@@ -168,7 +168,7 @@ export function LogClient() {
           placeholder="今日はどんなことがありましたか？"
           rows={5}
           disabled={isSaving}
-          className="w-full resize-none rounded-2xl border-none bg-slate-50/50 p-6 text-base leading-relaxed text-slate-800 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-200 transition-colors"
+          className="w-full resize-none rounded-2xl border-none bg-slate-50/50 p-6 text-base leading-relaxed text-foreground placeholder:text-muted-foreground focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-200 transition-colors"
         />
 
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-2">
@@ -181,14 +181,14 @@ export function LogClient() {
               onChange={(e) => setTagsInput(e.target.value)}
               placeholder="#授業 #退勤"
               disabled={isSaving}
-              className="w-40 border-none bg-transparent text-sm text-slate-600 placeholder:text-slate-300 focus:outline-none"
+              className="w-40 border-none bg-transparent text-sm text-slate-600 placeholder:text-muted-foreground focus:outline-none"
             />
           </div>
 
           <button
             onClick={handleSave}
             disabled={isSaving || !content.trim()}
-            className="shrink-0 rounded-full bg-slate-900 px-6 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+            className="shrink-0 rounded-full bg-slate-900 px-6 py-2.5 text-sm font-medium text-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
           >
             {isSaving ? "保存中..." : "ログを残す"}
           </button>

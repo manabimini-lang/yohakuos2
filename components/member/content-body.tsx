@@ -29,7 +29,7 @@ export function ContentBody({
     const embed = getYoutubeEmbedUrl(content);
     return (
       <section className="rounded-2xl border border-slate-200 bg-white p-5">
-        <h2 className="mb-3 text-lg font-semibold text-slate-900">Video</h2>
+        <h2 className="mb-3 text-lg font-semibold text-foreground">Video</h2>
         {embed ? (
           <div className="aspect-video overflow-hidden rounded-xl border border-slate-200">
             <iframe
@@ -50,7 +50,7 @@ export function ContentBody({
   if (contentType === "TASK") {
     return (
       <section className="rounded-2xl border border-slate-200 bg-white p-5">
-        <h2 className="mb-3 text-lg font-semibold text-slate-900">Task</h2>
+        <h2 className="mb-3 text-lg font-semibold text-foreground">Task</h2>
         <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700 whitespace-pre-wrap">
           {content || "タスク内容はまだありません。"}
         </div>

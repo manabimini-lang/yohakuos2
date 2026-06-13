@@ -105,12 +105,12 @@ export function ReviewClient() {
   return (
     <div className="mx-auto max-w-2xl px-4 py-12 md:py-24 space-y-16">
       <div className="text-center space-y-2 mb-16">
-        <h1 className="text-xl font-medium text-slate-800 tracking-wider">Review</h1>
-        <p className="text-sm text-slate-400">静かに歩みを振り返る</p>
+        <h1 className="text-xl font-medium text-foreground tracking-wider">Review</h1>
+        <p className="text-sm text-muted-foreground">静かに歩みを振り返る</p>
       </div>
 
       {logs.length === 0 ? (
-        <div className="text-center text-sm text-slate-400 py-12">
+        <div className="text-center text-sm text-muted-foreground py-12">
           まだログがありません。まずは記録をつけてみましょう。
         </div>
       ) : (
@@ -118,21 +118,21 @@ export function ReviewClient() {
           {/* Metrics Section */}
           <section className="grid grid-cols-2 gap-8">
             <div className="space-y-2">
-              <span className="text-xs font-medium tracking-widest text-slate-400 uppercase">This Month</span>
-              <p className="text-3xl font-light text-slate-800">{thisMonthCount} <span className="text-base text-slate-400">Logs</span></p>
+              <span className="text-xs font-medium tracking-widest text-muted-foreground uppercase">This Month</span>
+              <p className="text-3xl font-light text-foreground">{thisMonthCount} <span className="text-base text-muted-foreground">Logs</span></p>
             </div>
             
             <div className="space-y-2">
-              <span className="text-xs font-medium tracking-widest text-slate-400 uppercase">Current Streak</span>
-              <p className="text-3xl font-light text-slate-800">{currentStreak} <span className="text-base text-slate-400">Days</span></p>
+              <span className="text-xs font-medium tracking-widest text-muted-foreground uppercase">Current Streak</span>
+              <p className="text-3xl font-light text-foreground">{currentStreak} <span className="text-base text-muted-foreground">Days</span></p>
             </div>
           </section>
 
           {/* Mood Trend Section */}
           <section className="space-y-6 pt-8 border-t border-slate-100">
             <div className="space-y-1">
-              <span className="text-xs font-medium tracking-widest text-slate-400 uppercase">Mood Trend</span>
-              <p className="text-sm text-slate-500">直近の感情の波</p>
+              <span className="text-xs font-medium tracking-widest text-muted-foreground uppercase">Mood Trend</span>
+              <p className="text-sm text-muted-foreground">直近の感情の波</p>
             </div>
             
             <div className="h-32 w-full pt-4">
@@ -161,8 +161,8 @@ export function ReviewClient() {
           {/* Tags Section */}
           <section className="space-y-6 pt-8 border-t border-slate-100">
             <div className="space-y-1">
-              <span className="text-xs font-medium tracking-widest text-slate-400 uppercase">Frequent Tags</span>
-              <p className="text-sm text-slate-500">よく記録しているテーマ</p>
+              <span className="text-xs font-medium tracking-widest text-muted-foreground uppercase">Frequent Tags</span>
+              <p className="text-sm text-muted-foreground">よく記録しているテーマ</p>
             </div>
 
             {topTags.length > 0 ? (
@@ -170,12 +170,12 @@ export function ReviewClient() {
                 {topTags.map((tag, i) => (
                   <li key={i} className="flex items-center justify-between text-sm">
                     <span className="text-slate-600">#{tag.name}</span>
-                    <span className="text-slate-400 font-mono text-xs">{tag.count}</span>
+                    <span className="text-muted-foreground font-mono text-xs">{tag.count}</span>
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="text-sm text-slate-400">タグがありません</p>
+              <p className="text-sm text-muted-foreground">タグがありません</p>
             )}
           </section>
         </>

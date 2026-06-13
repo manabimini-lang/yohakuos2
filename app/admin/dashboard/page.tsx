@@ -45,7 +45,7 @@ function KpiCard({
   color?: string;
 }) {
   const colorMap: Record<string, string> = {
-    slate: "text-slate-500",
+    slate: "text-muted-foreground",
     amber: "text-amber-500",
     emerald: "text-emerald-500",
     indigo: "text-indigo-500",
@@ -57,14 +57,14 @@ function KpiCard({
   return (
     <div className="bg-white border border-slate-200/60 rounded-xl p-5 shadow-sm space-y-2">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-medium text-slate-400">{label}</span>
-        <Icon className={`w-4 h-4 stroke-[1.5] ${colorMap[color] ?? "text-slate-400"}`} />
+        <span className="text-xs font-medium text-muted-foreground">{label}</span>
+        <Icon className={`w-4 h-4 stroke-[1.5] ${colorMap[color] ?? "text-muted-foreground"}`} />
       </div>
       <div className="flex items-baseline space-x-1.5">
-        <span className="text-2xl font-semibold tracking-tight text-slate-800">
+        <span className="text-2xl font-semibold tracking-tight text-foreground">
           {typeof value === "number" ? value.toLocaleString() : value}
         </span>
-        {unit && <span className="text-xs text-slate-400">{unit}</span>}
+        {unit && <span className="text-xs text-muted-foreground">{unit}</span>}
       </div>
     </div>
   );
@@ -91,7 +91,7 @@ function SubsBar({
         <span className={`w-2 h-2 rounded-full ${dotColors[color]}`} />
         <span className="text-slate-600">{label}</span>
       </div>
-      <span className="font-semibold text-slate-800">{count.toLocaleString()}</span>
+      <span className="font-semibold text-foreground">{count.toLocaleString()}</span>
     </div>
   );
 }
@@ -128,7 +128,7 @@ function AiStatusRow({
   color: string;
 }) {
   const textColors: Record<string, string> = {
-    slate: "text-slate-500 bg-slate-50 border-slate-200",
+    slate: "text-muted-foreground bg-slate-50 border-slate-200",
     sky: "text-sky-600 bg-sky-50 border-sky-100",
     emerald: "text-emerald-700 bg-emerald-50 border-emerald-100",
     rose: "text-rose-700 bg-rose-50 border-rose-100",
@@ -161,17 +161,17 @@ export default async function FounderDashboardPage() {
     <div className="space-y-8 max-w-7xl mx-auto">
       {/* Header */}
       <div>
-        <h1 className="text-xl font-semibold text-slate-900 tracking-tight">
+        <h1 className="text-xl font-semibold text-foreground tracking-tight">
           Founder Dashboard
         </h1>
-        <p className="text-sm text-slate-400 mt-0.5">
+        <p className="text-sm text-muted-foreground mt-0.5">
           YOHAKUの全体状況をリアルタイムで確認します。
         </p>
       </div>
 
       {/* ── Section 1: Business KPI ─────────────────────────────────────────── */}
       <section>
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-3">
+        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">
           Business KPI
         </h2>
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
@@ -190,10 +190,10 @@ export default async function FounderDashboardPage() {
         {/* Section 2: Subscription Health */}
         <section className="bg-white border border-slate-200/60 rounded-xl shadow-sm p-6 space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-xs font-semibold uppercase tracking-widest text-slate-400">
+            <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
               Subscription Health
             </h2>
-            <CreditCard className="w-4 h-4 text-slate-300 stroke-[1.5]" />
+            <CreditCard className="w-4 h-4 text-muted-foreground stroke-[1.5]" />
           </div>
           <div className="divide-y divide-slate-50">
             <SubsBar label="Active（有料）" count={subscription.active} color="emerald" />
@@ -203,14 +203,14 @@ export default async function FounderDashboardPage() {
           </div>
           <div className="pt-4 border-t border-slate-100 grid grid-cols-2 gap-4">
             <div className="text-center">
-              <p className="text-[10px] text-slate-400 mb-1">推定 MRR</p>
-              <p className="text-xl font-bold text-slate-800">
+              <p className="text-[10px] text-muted-foreground mb-1">推定 MRR</p>
+              <p className="text-xl font-bold text-foreground">
                 ¥{subscription.mrr.toLocaleString()}
               </p>
             </div>
             <div className="text-center">
-              <p className="text-[10px] text-slate-400 mb-1">直近30日 解約数</p>
-              <p className={`text-xl font-bold ${subscription.recentChurn > 0 ? "text-rose-600" : "text-slate-800"}`}>
+              <p className="text-[10px] text-muted-foreground mb-1">直近30日 解約数</p>
+              <p className={`text-xl font-bold ${subscription.recentChurn > 0 ? "text-rose-600" : "text-foreground"}`}>
                 {subscription.recentChurn}
               </p>
             </div>
@@ -220,10 +220,10 @@ export default async function FounderDashboardPage() {
         {/* Section 3: AI Runtime Health */}
         <section className="bg-white border border-slate-200/60 rounded-xl shadow-sm p-6 space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-xs font-semibold uppercase tracking-widest text-slate-400">
+            <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
               AI Runtime Health
             </h2>
-            <Activity className="w-4 h-4 text-slate-300 stroke-[1.5]" />
+            <Activity className="w-4 h-4 text-muted-foreground stroke-[1.5]" />
           </div>
           <div>
             <AiStatusRow label="Pending（待機中）" count={aiRuntime.pending} color="slate" />
@@ -233,7 +233,7 @@ export default async function FounderDashboardPage() {
           </div>
           <div className="pt-4 border-t border-slate-100">
             <div className="flex items-center justify-between">
-              <span className="text-xs text-slate-500">Gemini エラー（直近24h）</span>
+              <span className="text-xs text-muted-foreground">Gemini エラー（直近24h）</span>
               <span
                 className={`text-sm font-bold ${aiRuntime.geminiErrors24h > 0 ? "text-rose-600" : "text-emerald-600"}`}
               >
@@ -246,7 +246,7 @@ export default async function FounderDashboardPage() {
 
       {/* ── Section 4: Content Health ────────────────────────────────────────── */}
       <section>
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-3">
+        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">
           Content Health
         </h2>
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
@@ -265,10 +265,10 @@ export default async function FounderDashboardPage() {
         {/* Section 5: System Health */}
         <section className="lg:col-span-2 bg-white border border-slate-200/60 rounded-xl shadow-sm p-6 space-y-2">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-xs font-semibold uppercase tracking-widest text-slate-400">
+            <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
               System Health
             </h2>
-            <Zap className="w-4 h-4 text-slate-300 stroke-[1.5]" />
+            <Zap className="w-4 h-4 text-muted-foreground stroke-[1.5]" />
           </div>
           <StatusDot ok={system.db} label="DB接続（Supabase）" />
           <StatusDot ok={system.stripe} label="Stripe接続（APIキー設定）" />
@@ -286,15 +286,15 @@ export default async function FounderDashboardPage() {
         {/* Section 6: Recent Errors */}
         <section className="lg:col-span-3 bg-white border border-slate-200/60 rounded-xl shadow-sm p-6 space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-xs font-semibold uppercase tracking-widest text-slate-400">
+            <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
               Recent Errors
             </h2>
             <AlertTriangle className="w-4 h-4 text-rose-300 stroke-[1.5]" />
           </div>
           {recentErrors.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-8 text-center text-slate-400 space-y-1">
+            <div className="flex flex-col items-center justify-center py-8 text-center text-muted-foreground space-y-1">
               <CheckCircle className="w-6 h-6 text-emerald-300 stroke-[1.5]" />
-              <p className="text-xs font-medium text-slate-500">現在エラーはありません</p>
+              <p className="text-xs font-medium text-muted-foreground">現在エラーはありません</p>
             </div>
           ) : (
             <div className="overflow-y-auto max-h-72 space-y-1.5 pr-1">
