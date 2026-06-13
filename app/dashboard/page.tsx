@@ -31,7 +31,7 @@ export default async function DashboardPage() {
   const quietReturnCandidates = await prisma.contentItem.findMany({
     where: {
       userId,
-      reflection: { not: null, not: "" },
+      reflection: { not: null },
       createdAt: { lt: threeMonthsAgo },
     },
     orderBy: { contextScore: "desc" },

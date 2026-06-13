@@ -37,14 +37,17 @@ export async function GET(req: Request) {
 
     const clientId = process.env.DISCORD_CLIENT_ID;
     const clientSecret = process.env.DISCORD_CLIENT_SECRET;
-    const nextauthUrl = process.env.NEXTAUTH_URL;
 
-    if (!clientId || !clientSecret || !nextauthUrl) {
-      console.error("Missing Discord credentials or NEXTAUTH_URL configuration");
+    if (!clientId || !clientSecret) {
+      console.error("Missing Discord credentials configuration");
       return new NextResponse("Configuration error", { status: 500 });
     }
 
-    const redirectUri = `${nextauthUrl}/api/auth/discord/callback`;
+    const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || "localhost:3000";
+    const protocol = req.headers.get("x-forwarded-proto") || (host.includes("localhost") ? "http" : "https");
+    const baseUrl = `${protocol}://${host}`;
+
+    const redirectUri = `${baseUrl}/api/auth/discord/callback`;
 
     // 1. Exchange code for token
     const tokenResponse = await fetch("https://discord.com/api/oauth2/token", {
@@ -105,7 +108,7 @@ export async function GET(req: Request) {
     });
 
     // 4. Redirect user back to account settings
-    return NextResponse.redirect(new URL("/settings/account?success=true", nextauthUrl));
+    return NextResponse.redirect(new URL("/member/settings/account?success=true", baseUrl));
   } catch (error) {
     console.error("[DISCORD_CALLBACK_ERROR]", error);
     return new NextResponse("Internal Server Error", { status: 500 });
