@@ -6,7 +6,7 @@ import { ContextMemoriesSection } from "@/components/memory/ContextMemoriesSecti
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
-import { InboxGrid } from "@/components/capture/InboxGrid";
+import { InboxClient } from "@/components/capture/inbox-client";
 import { EmptyInbox } from "@/components/capture/EmptyInbox";
 import { PageTitle, Body, Caption, SectionTitle } from "@/components/ui/typography";
 import { Button } from "@/components/ui/button";
@@ -29,17 +29,19 @@ export default async function InboxPage() {
 
   const userId = session.user.id;
 
-  let items = await prisma.contentItem.findMany({
-    where: {
-      userId,
-    },
-    // Remove orderBy createdAt, we sort by memoryScore below
+  // Priority 3: Fetch Recent Items (sorted by createdAt, limit 12)
+  const recentItems = await prisma.contentItem.findMany({
+    where: { userId },
+    orderBy: { createdAt: "desc" },
+    take: 12,
   });
 
-  // Calculate MemoryScore and sort
-  items = items
-    .map(item => ({ ...item, memoryScore: calculateMemoryScore(item) }))
-    .sort((a, b) => b.memoryScore - a.memoryScore);
+  // Priority 3: Fetch Context Items (sorted by contextScore, limit 12)
+  const contextItems = await prisma.contentItem.findMany({
+    where: { userId },
+    orderBy: { contextScore: "desc" },
+    take: 12,
+  });
 
   const [userSettings, starterJourney] = await Promise.all([
     prisma.userAISettings.findUnique({
@@ -60,7 +62,7 @@ export default async function InboxPage() {
   });
 
   const hasAiAccess = userSettings?.isEnabled || starterJourney.active;
-  const showHiddenFeatures = items.length >= 5 && hasAiAccess;
+  const showHiddenFeatures = recentItems.length >= 5 && hasAiAccess;
 
   return (
     <main className="min-h-screen bg-background pb-24 text-foreground/80">
@@ -105,12 +107,8 @@ export default async function InboxPage() {
           </div>
         </Card>
 
-        <section className="mt-10 space-y-8">
-          {items.length > 0 ? (
-            <InboxGrid items={items} />
-          ) : (
-            <EmptyInbox />
-          )}
+        <section className="mt-10">
+          <InboxClient recentItems={recentItems} contextItems={contextItems} />
         </section>
 
         {showHiddenFeatures && (

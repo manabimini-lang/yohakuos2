@@ -1,102 +1,82 @@
 import { prisma } from "@/lib/prisma";
-import { Redis } from "@upstash/redis";
+import { ContentItem } from "@prisma/client";
 
-// Define the ViewModel for Related Memory
-export type RelatedMemoryViewModel = {
-  id: string;
-  title: string;
-  thumbnailUrl?: string;
-  reflectionPreview?: string;
+export interface RelatedMemory {
+  memory: ContentItem;
   similarityScore: number;
-  createdAt: string;
-};
-
-// Initialize Upstash Redis (if configured)
-const hasRedisConfig = !!(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN);
-const redis = hasRedisConfig ? Redis.fromEnv() : null;
+}
 
 /**
- * Get related memories based on embedding cosine distance (pgvector)
- * @param contentId ID of the reference content
- * @param userId ID of the current user
- * @returns Top 5 related memories
+ * Calculates related memories for a given ContentItem.
+ * Uses a heuristic mix (for Phase 1):
+ * - Content Similarity (50%) -> Mocked using tags overlap
+ * - Reflection Similarity (30%) -> Mocked using presence or tags
+ * - Time Proximity (20%) -> Date distance
+ * 
+ * Future Phase 2 will replace the mock with actual `embedding <=> current_embed` via pgvector.
  */
 export async function getRelatedMemories(
   contentId: string,
-  userId: string
-): Promise<RelatedMemoryViewModel[]> {
-  const CACHE_KEY = `related:${contentId}`;
-  
-  // 1. Try Cache
-  if (redis) {
-    try {
-      const cached = await redis.get<RelatedMemoryViewModel[]>(CACHE_KEY);
-      if (cached) {
-        return cached;
-      }
-    } catch (e) {
-      console.warn("Redis cache read failed:", e);
-    }
-  }
-
-  // 2. Fetch target item embedding
-  const currentItem = await prisma.contentItem.findUnique({
-    where: { id: contentId },
-    select: { embedding: true },
+  userId: string,
+  limit: number = 3
+): Promise<RelatedMemory[]> {
+  const current = await prisma.contentItem.findUnique({
+    where: { id: contentId }
   });
 
-  if (!currentItem) {
-    return [];
-  }
+  if (!current) return [];
 
-  // If no embedding yet, return empty
-  // (In Prisma, unsupported types come back as raw values if we use queryRaw, but findUnique doesn't return Unsupported types properly,
-  // so we actually must fetch embedding via queryRaw if we need it, OR we just do it in one SQL query)
-  
-  // 3. One SQL Query to find nearest neighbors
-  // We compute cosine distance: embedding <=> (SELECT embedding FROM content_items WHERE id = ...)
-  // Note: Prisma raw query parameters must be used carefully.
-  try {
-    const rawResults = await prisma.$queryRaw<any[]>`
-      SELECT 
-        id, 
-        title, 
-        url, 
-        file_name as "fileName",
-        thumbnail_url as "thumbnailUrl", 
-        reflection, 
-        created_at as "createdAt",
-        1 - (embedding <=> (SELECT embedding FROM content_items WHERE id = ${contentId})) as "similarityScore"
-      FROM content_items
-      WHERE user_id = ${userId}
-        AND id != ${contentId}
-        AND embedding IS NOT NULL
-        AND (SELECT embedding FROM content_items WHERE id = ${contentId}) IS NOT NULL
-      ORDER BY embedding <=> (SELECT embedding FROM content_items WHERE id = ${contentId})
-      LIMIT 5
-    `;
+  // Fetch candidate pool (exclude current)
+  // Optimization: fetch recent or random sample if DB is huge
+  const candidates = await prisma.contentItem.findMany({
+    where: {
+      userId,
+      id: { not: current.id }
+    },
+    take: 50,
+  });
 
-    const viewModels: RelatedMemoryViewModel[] = rawResults.map((row) => ({
-      id: row.id,
-      title: row.title || row.url || row.fileName || "保存された記録",
-      thumbnailUrl: row.thumbnailUrl || undefined,
-      reflectionPreview: row.reflection ? row.reflection.slice(0, 60) : undefined,
-      similarityScore: Number(row.similarityScore),
-      createdAt: new Date(row.createdAt).toISOString(),
-    }));
+  const now = new Date().getTime();
+  const currentDate = new Date(current.createdAt).getTime();
 
-    // 4. Set Cache
-    if (redis && viewModels.length > 0) {
-      try {
-        await redis.set(CACHE_KEY, viewModels, { ex: 60 * 60 * 24 }); // 24h TTL
-      } catch (e) {
-        console.warn("Redis cache write failed:", e);
-      }
+  const scoredCandidates = candidates.map(candidate => {
+    let score = 0;
+
+    // 1. Content Similarity (50%)
+    // Mock: Check aiTags overlap
+    let tagScore = 0;
+    if (current.aiTags?.length && candidate.aiTags?.length) {
+      const currentTags = new Set(current.aiTags);
+      const overlap = candidate.aiTags.filter(t => currentTags.has(t)).length;
+      tagScore = (overlap / Math.max(current.aiTags.length, 1)) * 50;
+    }
+    score += tagScore;
+
+    // 2. Reflection Similarity (30%)
+    // Mock: If both have reflections, give base points. 
+    // In actual implementation, this would be semantic similarity of reflections.
+    if (current.reflection && candidate.reflection) {
+      score += 15;
+      // Add more if they share tags + both have reflection
+      score += (tagScore / 50) * 15;
     }
 
-    return viewModels;
-  } catch (error) {
-    console.error("Error fetching related memories:", error);
-    return [];
-  }
+    // 3. Time Proximity (20%)
+    // Items created close to each other get higher score.
+    const candidateDate = new Date(candidate.createdAt).getTime();
+    const daysDiff = Math.abs(currentDate - candidateDate) / (1000 * 60 * 60 * 24);
+    // Gaussian-like decay, max 20 pts for same day
+    const timeScore = 20 * Math.exp(-daysDiff / 14); 
+    score += timeScore;
+
+    return {
+      memory: candidate,
+      similarityScore: score,
+    };
+  });
+
+  // Sort by score desc and take limit
+  return scoredCandidates
+    .sort((a, b) => b.similarityScore - a.similarityScore)
+    .slice(0, limit);
 }
