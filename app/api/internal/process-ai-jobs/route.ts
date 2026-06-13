@@ -73,6 +73,15 @@ export async function GET(request: Request) {
       env: process.env.NODE_ENV,
     });
 
+    await prisma.auditLog.create({
+      data: {
+        category: "ai",
+        action: "cron.process_ai_jobs.started",
+        severity: "info",
+        metadata: { env: process.env.NODE_ENV }
+      }
+    });
+
     // Process content analysis jobs (priority 1)
     const contentJobs = await prisma.aIJob.findMany({
       where: {
@@ -468,16 +477,36 @@ export async function GET(request: Request) {
     // Process custom registered jobs (5 at a time)
     const processedCustomQueueCount = await processQueueBatch(5);
 
-    return NextResponse.json({ 
-      success: true, 
+    const stats = { 
       processedContentCount,
       processedAudioCount,
       processedReturnCount,
       processedLifeOSCount,
       processedCustomQueueCount,
+    };
+
+    await prisma.auditLog.create({
+      data: {
+        category: "ai",
+        action: "cron.process_ai_jobs.completed",
+        severity: "info",
+        metadata: stats
+      }
     });
-  } catch (error) {
+
+    return NextResponse.json({ success: true, ...stats });
+  } catch (error: any) {
     console.error("Cron Error:", error);
+    try {
+      await prisma.auditLog.create({
+        data: {
+          category: "ai",
+          action: "cron.process_ai_jobs.failed",
+          severity: "error",
+          metadata: { error: error?.message || String(error) }
+        }
+      });
+    } catch(e) {}
     return new NextResponse("Internal Server Error", { status: 500 });
   }
 }

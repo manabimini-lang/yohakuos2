@@ -1,9 +1,13 @@
 import { prisma } from "@/lib/prisma";
 import { ContentItem } from "@prisma/client";
 
-export interface RelatedMemory {
-  memory: ContentItem;
+export interface RelatedMemoryViewModel {
+  id: string;
+  title: string;
+  thumbnailUrl?: string;
+  reflectionPreview?: string;
   similarityScore: number;
+  createdAt: string;
 }
 
 /**
@@ -19,7 +23,7 @@ export async function getRelatedMemories(
   contentId: string,
   userId: string,
   limit: number = 3
-): Promise<RelatedMemory[]> {
+): Promise<RelatedMemoryViewModel[]> {
   const current = await prisma.contentItem.findUnique({
     where: { id: contentId }
   });
@@ -70,8 +74,12 @@ export async function getRelatedMemories(
     score += timeScore;
 
     return {
-      memory: candidate,
+      id: candidate.id,
+      title: candidate.title || candidate.url || candidate.fileName || "保存された記録",
+      thumbnailUrl: candidate.thumbnailUrl || undefined,
+      reflectionPreview: candidate.reflection ? candidate.reflection.slice(0, 60) : undefined,
       similarityScore: score,
+      createdAt: candidate.createdAt.toISOString()
     };
   });
 

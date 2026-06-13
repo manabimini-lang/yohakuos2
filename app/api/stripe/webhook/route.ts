@@ -4,7 +4,7 @@ import Stripe from "stripe";
 import { getStripe } from "@/lib/stripe";
 import { subscriptionService } from "@/lib/services/subscription.service";
 import { subscriptionRepository } from "@/lib/repositories/subscription.repository";
-
+import { prisma } from "@/lib/prisma";
 export async function POST(req: Request) {
   const stripe = getStripe();
   const body = await req.text();
@@ -46,6 +46,17 @@ export async function POST(req: Request) {
     });
 
     console.log(`[STRIPE_SUBSCRIPTION] Checkout completed: userId=${session.metadata.userId}, subscriptionId=${subscription.id}, customerId=${subscription.customer}, status=${subscription.status}`);
+    
+    await prisma.auditLog.create({
+      data: {
+        category: "billing",
+        action: "stripe.webhook.checkout_completed",
+        targetType: "user",
+        targetId: session.metadata.userId,
+        severity: "info",
+        metadata: { subscriptionId: subscription.id, customerId: subscription.customer as string, status: subscription.status }
+      }
+    });
   }
 
   if (event.type === "invoice.payment_succeeded") {
@@ -65,6 +76,17 @@ export async function POST(req: Request) {
       );
 
       console.log(`[STRIPE_SUBSCRIPTION] Invoice paid: subscriptionId=${subscription.id}, customerId=${subscription.customer}, status=${subscription.status}`);
+
+      await prisma.auditLog.create({
+        data: {
+          category: "billing",
+          action: "stripe.webhook.payment_succeeded",
+          targetType: "subscription",
+          targetId: subscription.id,
+          severity: "info",
+          metadata: { customerId: subscription.customer as string, status: subscription.status }
+        }
+      });
     }
   }
 
@@ -85,6 +107,17 @@ export async function POST(req: Request) {
       );
 
       console.log(`[STRIPE_SUBSCRIPTION] Payment failed: subscriptionId=${subscription.id}, customerId=${subscription.customer}, status=${subscription.status}`);
+
+      await prisma.auditLog.create({
+        data: {
+          category: "billing",
+          action: "stripe.webhook.payment_failed",
+          targetType: "subscription",
+          targetId: subscription.id,
+          severity: "warning",
+          metadata: { customerId: subscription.customer as string, status: subscription.status }
+        }
+      });
     }
   }
 
@@ -101,12 +134,33 @@ export async function POST(req: Request) {
     );
 
     console.log(`[STRIPE_SUBSCRIPTION] Subscription updated: subscriptionId=${subscription.id}, customerId=${subscription.customer}, status=${subscription.status}`);
+
+    await prisma.auditLog.create({
+      data: {
+        category: "billing",
+        action: "stripe.webhook.subscription_updated",
+        targetType: "subscription",
+        targetId: subscription.id,
+        metadata: { customerId: subscription.customer as string, status: subscription.status }
+      }
+    });
   }
   
   if (event.type === "customer.subscription.deleted") {
     const subscription = eventObject as Stripe.Subscription;
     await subscriptionService.handleSubscriptionDeleted(subscription.id);
     console.log(`[STRIPE_SUBSCRIPTION] Subscription deleted: subscriptionId=${subscription.id}, customerId=${subscription.customer}, status=${subscription.status}`);
+
+    await prisma.auditLog.create({
+      data: {
+        category: "billing",
+        action: "stripe.webhook.subscription_deleted",
+        targetType: "subscription",
+        targetId: subscription.id,
+        severity: "warning",
+        metadata: { customerId: subscription.customer as string, status: subscription.status }
+      }
+    });
   }
 
   return new NextResponse(null, { status: 200 });
