@@ -6,6 +6,8 @@ import { buildContextProfile } from "@/lib/memory/context-profile";
 import { ContextProfileSection } from "@/components/memory/ContextProfileSection";
 import { MemoryCard } from "@/components/memory/memory-card";
 import { PageTitle, SectionTitle, Body, Caption } from "@/components/ui/typography";
+import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "YOHAKU - ダッシュボード",
@@ -80,11 +82,18 @@ export default async function DashboardPage() {
         {/* 3. Recent Inbox */}
         {recentItems.length > 0 && (
           <section className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-500 fill-mode-both">
-            <SectionTitle>最近の沈殿</SectionTitle>
-            <Body className="text-muted-foreground/80">
-              直近で保存した記憶です。思考の入口として機能します。
-            </Body>
-            <div className="grid grid-cols-1 gap-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <SectionTitle>最近の余白</SectionTitle>
+                <Body className="text-muted-foreground/80 mt-1">
+                  直近で保存した記憶です。思考の入口として機能します。
+                </Body>
+              </div>
+              <Link href="/inbox" className="text-sm font-medium text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors">
+                すべて見る <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3">
               {recentItems.map((item) => (
                 <MemoryCard key={item.id} memory={item} />
               ))}
