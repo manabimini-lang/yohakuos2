@@ -14,7 +14,7 @@ import { Card } from "@/components/ui/card";
 import { Metadata } from "next";
 import Link from "next/link";
 import { ChevronRight, MessageSquare, ArrowRight } from "lucide-react";
-import { PWAInstallCTA } from "@/components/pwa/pwa-install-cta";
+import { PWAInstallCTA } from "@/pwa-install-cta";
 import { getStarterJourneyStatus } from "@/lib/ai/starter-journey";
 
 export const metadata: Metadata = {

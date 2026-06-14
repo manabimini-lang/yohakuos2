@@ -13,7 +13,7 @@ import {
   Cloud,
   History
 } from "lucide-react";
-import { PWAInstallCTA } from "@/components/pwa/pwa-install-cta";
+import { PWAInstallCTA } from "@/pwa-install-cta";
 
 const journeySteps = [
   {

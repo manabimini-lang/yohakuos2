@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { usePWAInstall } from "@/hooks/usePWAInstall";
+import { usePWAInstall } from "@/usePWAInstall";
 import { IOSInstallGuide } from "./ios-install-guide";
 import { Button } from "@/components/ui/button"; // shadcn/ui想定
 
