@@ -24,37 +24,11 @@ export async function getRelatedMemories(
   userId: string,
   limit: number = 3
 ): Promise<RelatedMemoryViewModel[]> {
-<<<<<<< HEAD
   const current = await prisma.contentItem.findUnique({
     where: { id: contentId }
   });
 
   if (!current) return [];
-=======
-  const CACHE_KEY = `related:${contentId}`;
-  
-  // 1. Try Cache
-  if (redis) {
-    try {
-      const cached = await redis.get<RelatedMemoryViewModel[]>(CACHE_KEY);
-      if (cached) {
-        return cached;
-      }
-    } catch (e) {
-      console.warn("Redis cache read failed:", e);
-    }
-  }
-
-  // 2. Check if target item exists
-  const exists = await prisma.contentItem.findUnique({
-    where: { id: contentId },
-    select: { id: true },
-  });
-
-  if (!exists) {
-    return [];
-  }
->>>>>>> recovery
 
   // Fetch candidate pool (exclude current)
   // Optimization: fetch recent or random sample if DB is huge
@@ -68,6 +42,7 @@ export async function getRelatedMemories(
 
   const now = new Date().getTime();
   const currentDate = new Date(current.createdAt).getTime();
+  const currentTags = new Set(current.aiTags || []);
 
   const scoredCandidates = candidates.map(candidate => {
     let score = 0;
@@ -75,8 +50,7 @@ export async function getRelatedMemories(
     // 1. Content Similarity (50%)
     // Mock: Check aiTags overlap
     let tagScore = 0;
-    if (current.aiTags?.length && candidate.aiTags?.length) {
-      const currentTags = new Set(current.aiTags);
+    if (currentTags.size && candidate.aiTags?.length) {
       const overlap = candidate.aiTags.filter(t => currentTags.has(t)).length;
       tagScore = (overlap / Math.max(current.aiTags.length, 1)) * 50;
     }
