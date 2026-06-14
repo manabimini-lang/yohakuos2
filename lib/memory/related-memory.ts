@@ -39,13 +39,13 @@ export async function getRelatedMemories(
     }
   }
 
-  // 2. Fetch target item embedding
-  const currentItem = await prisma.contentItem.findUnique({
+  // 2. Check if target item exists
+  const exists = await prisma.contentItem.findUnique({
     where: { id: contentId },
-    select: { embedding: true },
+    select: { id: true },
   });
 
-  if (!currentItem) {
+  if (!exists) {
     return [];
   }
 
