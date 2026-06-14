@@ -24,11 +24,37 @@ export async function getRelatedMemories(
   userId: string,
   limit: number = 3
 ): Promise<RelatedMemoryViewModel[]> {
+<<<<<<< HEAD
   const current = await prisma.contentItem.findUnique({
     where: { id: contentId }
   });
 
   if (!current) return [];
+=======
+  const CACHE_KEY = `related:${contentId}`;
+  
+  // 1. Try Cache
+  if (redis) {
+    try {
+      const cached = await redis.get<RelatedMemoryViewModel[]>(CACHE_KEY);
+      if (cached) {
+        return cached;
+      }
+    } catch (e) {
+      console.warn("Redis cache read failed:", e);
+    }
+  }
+
+  // 2. Check if target item exists
+  const exists = await prisma.contentItem.findUnique({
+    where: { id: contentId },
+    select: { id: true },
+  });
+
+  if (!exists) {
+    return [];
+  }
+>>>>>>> recovery
 
   // Fetch candidate pool (exclude current)
   // Optimization: fetch recent or random sample if DB is huge
