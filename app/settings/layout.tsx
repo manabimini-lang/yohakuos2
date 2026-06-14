@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import BottomNav from "@/components/layout/BottomNav";
+import BottomNav from "@/components/ui/BottomNav";
 
 export default function SettingsLayout({
   children,
