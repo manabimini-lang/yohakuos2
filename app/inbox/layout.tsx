@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import BottomNav from "@/components/ui/BottomNav";
+import BottomNav from "@/components/layout/BottomNav";
 
 export default function InboxLayout({
   children,

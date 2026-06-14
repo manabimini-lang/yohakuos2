@@ -13,7 +13,6 @@ import {
   Cloud,
   History
 } from "lucide-react";
-import { PWAInstallCTA } from "@/pwa-install-cta";
 
 const journeySteps = [
   {
@@ -77,8 +76,6 @@ export default function LandingPage() {
               YOHAKUは、毎日の記録・AI整理・小さな実践をひとつにまとめ、
               静かに戻ってこられる場所をつくります。
             </p>
-
-            <PWAInstallCTA />
           </div>
         </div>
       </section>

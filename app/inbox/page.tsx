@@ -14,7 +14,6 @@ import { Card } from "@/components/ui/card";
 import { Metadata } from "next";
 import Link from "next/link";
 import { ChevronRight, MessageSquare, ArrowRight } from "lucide-react";
-import { PWAInstallCTA } from "@/pwa-install-cta";
 import { getStarterJourneyStatus } from "@/lib/ai/starter-journey";
 
 export const metadata: Metadata = {
@@ -44,11 +43,15 @@ export default async function InboxPage() {
     take: 12,
   });
 
-  const [userSettings, starterJourney] = await Promise.all([
+  const [userSettings, starterJourney, user] = await Promise.all([
     prisma.userAISettings.findUnique({
       where: { userId },
     }),
     getStarterJourneyStatus(userId),
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: { discordId: true },
+    }),
   ]);
 
   const contextProfile = await buildContextProfile(userId);
@@ -64,6 +67,7 @@ export default async function InboxPage() {
 
   const hasAiAccess = userSettings?.isEnabled || starterJourney.active;
   const showHiddenFeatures = recentItems.length >= 5 && hasAiAccess;
+  const isDiscordConnected = !!user?.discordId;
 
   return (
     <main className="min-h-screen bg-background pb-24 text-foreground/80">
@@ -77,10 +81,6 @@ export default async function InboxPage() {
             </Body>
           </div>
         </header>
-
-        <div className="mt-6 border-b border-slate-100 pb-8">
-          <PWAInstallCTA />
-        </div>
 
         <div className="mt-8">
           <ContextProfileSection profile={contextProfile} />
@@ -97,15 +97,17 @@ export default async function InboxPage() {
                 <Caption>Discord Connection</Caption>
               </div>
               <SectionTitle>
-                コミュニティとのつながりを、設定から整えましょう。
+                {isDiscordConnected ? "Discord同期中" : "コミュニティとのつながりを整える"}
               </SectionTitle>
               <Body className="max-w-2xl">
-                Discord連携は設定画面で行えます。連携すると、小さな実践の共有やコミュニティの声を静かに受け取れます。
+                {isDiscordConnected 
+                  ? "あなたの記録は静かに同期されています。連携は設定からいつでも解除可能です。"
+                  : "Discordを連携すると、小さな実践の共有やコミュニティの声を静かに受け取れます。"}
               </Body>
             </div>
-            <Link href="/member/settings/account" tabIndex={-1}>
-              <Button variant="ghost" className="gap-2">
-                Discordを設定する
+            <Link href="/settings/account" tabIndex={-1}>
+              <Button variant={isDiscordConnected ? "outline" : "ghost"} className="gap-2">
+                {isDiscordConnected ? "設定を確認" : "Discordを設定する"}
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </Link>

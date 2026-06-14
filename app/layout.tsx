@@ -4,6 +4,7 @@ import { SessionProvider } from "next-auth/react";
 import { CaptureLayer } from "@/components/capture/CaptureLayer";
 import { auth } from "@/lib/auth";
 import { Inter, Noto_Sans_JP } from "next/font/google";
+import { PWAInstallCTA } from "@/components/features/pwa/PWAInstallCTA";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
@@ -57,6 +58,7 @@ export default async function RootLayout({
             <div className="min-h-screen">
               {children}
               {session && <CaptureLayer />}
+              <PWAInstallCTA />
             </div>
           </PWAProvider>
         </SessionProvider>

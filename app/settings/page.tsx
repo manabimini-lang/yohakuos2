@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Key, MessageSquare, CreditCard, Database, Settings, ChevronRight } from "lucide-react";
+import { Key, MessageSquare, CreditCard, Database, Settings, ChevronRight, Sliders } from "lucide-react";
 
 export default function SettingsPage() {
   return (
@@ -20,6 +20,18 @@ export default function SettingsPage() {
       <div className="space-y-4">
         <h2 className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">空間を整える</h2>
         <div className="divide-y divide-slate-100 border border-slate-100 rounded-2xl bg-white overflow-hidden text-sm shadow-sm">
+          {/* General Settings */}
+          <Link 
+            href="/settings/general"
+            className="flex items-center justify-between p-5 text-slate-700 hover:bg-slate-50 transition-colors"
+          >
+            <div className="flex items-center space-x-3">
+              <Sliders className="w-4 h-4 text-muted-foreground stroke-[1.5]" />
+              <span className="font-medium text-[13px]">全般（外観・通知・プライバシー）</span>
+            </div>
+            <ChevronRight className="w-4 h-4 text-muted-foreground" />
+          </Link>
+
           {/* Gemini Key Config */}
           <Link 
             href="/settings/ai"
