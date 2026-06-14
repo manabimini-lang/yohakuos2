@@ -1,0 +1,1 @@
+// This file has been moved to components/layout/bottom-nav.tsx

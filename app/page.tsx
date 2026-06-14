@@ -13,6 +13,7 @@ import {
   Cloud,
   History
 } from "lucide-react";
+import { PWAInstallCTA } from "@/components/pwa/pwa-install-cta";
 
 const journeySteps = [
   {
@@ -77,21 +78,7 @@ export default function LandingPage() {
               静かに戻ってこられる場所をつくります。
             </p>
 
-            <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center">
-              <Link
-                href="/login"
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-slate-950 px-6 py-3.5 text-sm font-medium text-white shadow-[0_12px_40px_rgba(15,23,42,0.15)] transition-transform duration-200 hover:-translate-y-0.5 hover:bg-slate-900"
-              >
-                ログインして始める
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-              <Link
-                href="/signup"
-                className="inline-flex items-center justify-center rounded-full border border-slate-300/80 bg-white/70 px-6 py-3.5 text-sm font-medium text-slate-700 backdrop-blur transition-colors duration-200 hover:bg-white hover:text-slate-900"
-              >
-                アカウントを作成
-              </Link>
-            </div>
+            <PWAInstallCTA />
           </div>
         </div>
       </section>

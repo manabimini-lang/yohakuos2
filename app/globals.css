@@ -33,6 +33,13 @@
     --input: 220 13% 91%;
     --ring: 220 13% 18%;
 
+    /* Notion & Brand Tokens */
+    --notion-bg: 0 0% 100%;
+    --notion-text: 44 6% 20%;
+    --notion-hover: 60 5% 94%;
+    --notion-border: 60 5% 91%;
+    --brand: 259 81% 59%;
+
     --radius: 0.75rem;                /* rounded-xl ベース */
   }
 
@@ -64,6 +71,13 @@
     --border: 220 18% 20%;
     --input: 220 18% 20%;
     --ring: 220 14% 80%;
+
+    /* Notion & Brand Tokens (Dark) */
+    --notion-bg: 220 20% 10%;
+    --notion-text: 220 14% 93%;
+    --notion-hover: 220 18% 18%;
+    --notion-border: 220 18% 20%;
+    --brand: 259 81% 65%;
   }
 }
 
@@ -112,31 +126,31 @@
 
   /* 静かなカード */
   .yohaku-card {
-    @apply rounded-2xl border border-slate-100 bg-white shadow-sm;
+    @apply rounded-2xl border border-border bg-card shadow-sm;
   }
 
   /* 静かな入力欄 */
   .yohaku-input {
-    @apply w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-2.5 text-sm
-           transition-colors focus:border-slate-300 focus:bg-white focus:outline-none;
+    @apply w-full rounded-xl border border-input bg-muted/50 px-4 py-2.5 text-sm
+           transition-colors focus:border-ring focus:bg-background focus:outline-none;
   }
 
   /* 静かなボタン（プライマリ） */
   .yohaku-btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900
-           px-5 py-2.5 text-sm font-medium text-foreground transition-opacity
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-primary
+           px-5 py-2.5 text-sm font-medium text-primary-foreground transition-opacity
            hover:opacity-90 disabled:opacity-40 disabled:pointer-events-none;
   }
 
   /* 静かなボタン（セカンダリ） */
   .yohaku-btn-ghost {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200
-           bg-white px-5 py-2.5 text-sm font-medium text-slate-600 transition-colors
-           hover:bg-slate-50 disabled:opacity-40 disabled:pointer-events-none;
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-border
+           bg-transparent px-5 py-2.5 text-sm font-medium text-muted-foreground transition-colors
+           hover:bg-muted disabled:opacity-40 disabled:pointer-events-none;
   }
 
   /* 静かなバッジ */
   .yohaku-tag {
-    @apply inline-flex items-center gap-1.5 rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600;
+    @apply inline-flex items-center gap-1.5 rounded-md bg-muted px-2 py-1 text-xs font-medium text-muted-foreground;
   }
 }

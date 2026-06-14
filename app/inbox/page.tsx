@@ -14,6 +14,7 @@ import { Card } from "@/components/ui/card";
 import { Metadata } from "next";
 import Link from "next/link";
 import { ChevronRight, MessageSquare, ArrowRight } from "lucide-react";
+import { PWAInstallCTA } from "@/components/pwa/pwa-install-cta";
 import { getStarterJourneyStatus } from "@/lib/ai/starter-journey";
 
 export const metadata: Metadata = {
@@ -76,6 +77,10 @@ export default async function InboxPage() {
             </Body>
           </div>
         </header>
+
+        <div className="mt-6 border-b border-slate-100 pb-8">
+          <PWAInstallCTA />
+        </div>
 
         <div className="mt-8">
           <ContextProfileSection profile={contextProfile} />

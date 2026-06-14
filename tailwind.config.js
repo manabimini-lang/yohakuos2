@@ -11,12 +11,12 @@ export default {
         sans: ['var(--font-inter)', 'var(--font-noto-sans-jp)', 'sans-serif'],
       },
       colors: {
-        brand: "#7C3AED",
+        brand: "hsl(var(--brand))",
         notion: {
-          bg: "#FFFFFF",
-          text: "#37352F",
-          hover: "#f1f1ef",
-          border: "#e9e9e7",
+          bg: "hsl(var(--notion-bg))",
+          text: "hsl(var(--notion-text))",
+          hover: "hsl(var(--notion-hover))",
+          border: "hsl(var(--notion-border))",
         },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",

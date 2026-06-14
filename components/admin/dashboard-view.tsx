@@ -129,7 +129,7 @@ export function AdminDashboardView() {
     <div className="space-y-8 max-w-5xl mx-auto">
       {/* Toast Notification */}
       {toast && (
-        <div className="fixed bottom-6 right-6 z-50 rounded-xl bg-slate-900 px-4 py-3 text-sm font-medium text-foreground shadow-lg animate-in slide-in-from-bottom-4 fade-in duration-300">
+        <div className="fixed bottom-6 right-6 z-50 rounded-xl bg-primary px-4 py-3 text-sm font-medium text-primary-foreground shadow-lg animate-in slide-in-from-bottom-4 fade-in duration-300">
           {toast}
         </div>
       )}
@@ -159,7 +159,7 @@ export function AdminDashboardView() {
 
       {/* ① 今日の状態 (Notion-style simple metrics) */}
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white border border-slate-200/60 rounded-xl p-5 shadow-sm space-y-2">
+        <div className="bg-card border border-border rounded-xl p-5 shadow-sm space-y-2">
           <div className="flex items-center justify-between text-muted-foreground">
             <span className="text-xs font-medium">登録ユーザー数</span>
             <Users className="w-4 h-4 stroke-[1.5]" />
@@ -170,7 +170,7 @@ export function AdminDashboardView() {
           </div>
         </div>
 
-        <div className="bg-white border border-slate-200/60 rounded-xl p-5 shadow-sm space-y-2">
+        <div className="bg-card border border-border rounded-xl p-5 shadow-sm space-y-2">
           <div className="flex items-center justify-between text-muted-foreground">
             <span className="text-xs font-medium">有料会員数</span>
             <Sparkles className="w-4 h-4 text-amber-500 stroke-[1.5]" />
@@ -181,7 +181,7 @@ export function AdminDashboardView() {
           </div>
         </div>
 
-        <div className="bg-white border border-slate-200/60 rounded-xl p-5 shadow-sm space-y-2">
+        <div className="bg-card border border-border rounded-xl p-5 shadow-sm space-y-2">
           <div className="flex items-center justify-between text-muted-foreground">
             <span className="text-xs font-medium">今日のアクティブ</span>
             <Activity className="w-4 h-4 text-indigo-500 stroke-[1.5]" />
@@ -192,7 +192,7 @@ export function AdminDashboardView() {
           </div>
         </div>
 
-        <div className="bg-white border border-slate-200/60 rounded-xl p-5 shadow-sm space-y-2">
+        <div className="bg-card border border-border rounded-xl p-5 shadow-sm space-y-2">
           <div className="flex items-center justify-between text-muted-foreground">
             <span className="text-xs font-medium">AI解析失敗件数</span>
             <AlertTriangle className="w-4 h-4 text-rose-500 stroke-[1.5]" />
@@ -205,22 +205,22 @@ export function AdminDashboardView() {
       </section>
 
       {/* ② 今日のYOHAKU (Saves, logs, etc.) */}
-      <section className="bg-slate-50 border border-slate-200/60 rounded-2xl p-6 space-y-4">
+      <section className="bg-muted border border-border rounded-2xl p-6 space-y-4">
         <h2 className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">今日のYOHAKU (余白の創出状況)</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-white border border-slate-200/40 rounded-xl p-4 shadow-sm space-y-1">
+          <div className="bg-background border border-border rounded-xl p-4 shadow-sm space-y-1">
             <span className="text-[10px] text-muted-foreground font-medium">本日の保存数</span>
             <span className="text-lg font-semibold text-foreground">{dashboardData.todayYohaku.savesToday} 件</span>
           </div>
-          <div className="bg-white border border-slate-200/40 rounded-xl p-4 shadow-sm space-y-1">
+          <div className="bg-background border border-border rounded-xl p-4 shadow-sm space-y-1">
             <span className="text-[10px] text-muted-foreground font-medium">本日の振り返り</span>
             <span className="text-lg font-semibold text-foreground">{dashboardData.todayYohaku.logsToday} 件</span>
           </div>
-          <div className="bg-white border border-slate-200/40 rounded-xl p-4 shadow-sm space-y-1">
+          <div className="bg-background border border-border rounded-xl p-4 shadow-sm space-y-1">
             <span className="text-[10px] text-muted-foreground font-medium">本日の提案閲覧</span>
             <span className="text-lg font-semibold text-foreground">{dashboardData.todayYohaku.suggestionsViewedToday} 件</span>
           </div>
-          <div className="bg-white border border-slate-200/40 rounded-xl p-4 shadow-sm space-y-1">
+          <div className="bg-background border border-border rounded-xl p-4 shadow-sm space-y-1">
             <span className="text-[10px] text-muted-foreground font-medium">Discord共有</span>
             <span className="text-lg font-semibold text-foreground">{dashboardData.todayYohaku.discordSharesToday} 件</span>
           </div>

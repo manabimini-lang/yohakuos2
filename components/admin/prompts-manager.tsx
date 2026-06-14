@@ -104,7 +104,7 @@ export function PromptsManager() {
     <div className="mx-auto max-w-3xl space-y-6">
       {/* Toast notifications */}
       {success && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-sm font-medium text-foreground shadow-lg animate-in slide-in-from-bottom-4 fade-in duration-300">
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-medium text-primary-foreground shadow-lg animate-in slide-in-from-bottom-4 fade-in duration-300">
           <CheckCircle2 className="w-4 h-4 text-emerald-400" />
           <span>プロンプト文脈を保存しました</span>
         </div>
@@ -128,7 +128,7 @@ export function PromptsManager() {
         </p>
       </div>
 
-      <div className="bg-white border border-slate-100 rounded-2xl p-6 md:p-8 shadow-sm space-y-6">
+      <div className="bg-card border border-border rounded-2xl p-6 md:p-8 shadow-sm space-y-6">
         {/* Road selector dropdown */}
         <div className="space-y-2">
           <label htmlFor="road-select" className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider font-mono">
@@ -138,7 +138,7 @@ export function PromptsManager() {
             id="road-select"
             value={selectedRoadId}
             onChange={(e) => handleRoadChange(e.target.value)}
-            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-foreground focus:border-slate-350 focus:outline-none focus:ring-0 transition-colors"
+            className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm text-foreground focus:border-ring focus:outline-none focus:ring-0 transition-colors"
           >
             {roads.map((r) => (
               <option key={r.id} value={r.id}>
@@ -150,9 +150,9 @@ export function PromptsManager() {
 
         {/* Selected road details */}
         {selectedRoad && (
-          <div className="rounded-2xl bg-slate-50/50 border border-slate-100/50 p-4 space-y-1">
+          <div className="rounded-2xl bg-muted/50 border border-border/50 p-4 space-y-1">
             <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider font-mono">ロードの説明</span>
-            <p className="text-xs text-slate-650 leading-relaxed">{selectedRoad.description}</p>
+            <p className="text-xs text-muted-foreground leading-relaxed">{selectedRoad.description}</p>
           </div>
         )}
 
@@ -174,7 +174,7 @@ export function PromptsManager() {
             onChange={(e) => setSystemPrompt(e.target.value)}
             placeholder={`例：${selectedRoad?.title || "このロード"}の文脈において、ユーザーが教育現場で抱える特有の感情や悩みに対して、共感的かつ客観的に状態を整理してください。`}
             rows={10}
-            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-4 text-sm text-foreground placeholder:text-slate-350 focus:border-slate-350 focus:outline-none focus:ring-0 resize-y leading-relaxed font-mono"
+            className="w-full rounded-xl border border-input bg-background px-4 py-4 text-sm text-foreground placeholder:text-muted-foreground focus:border-ring focus:outline-none focus:ring-0 resize-y leading-relaxed font-mono"
             disabled={saving}
           />
           <p className="text-[10px] text-muted-foreground leading-relaxed">
@@ -183,11 +183,11 @@ export function PromptsManager() {
         </div>
 
         {/* Save button */}
-        <div className="pt-4 border-t border-slate-100 flex justify-end">
+        <div className="pt-4 border-t border-border flex justify-end">
           <button
             onClick={handleSave}
             disabled={saving || !selectedRoadId}
-            className="inline-flex items-center gap-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-foreground font-medium px-5 py-2.5 text-xs shadow-sm transition-colors disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-xl bg-primary hover:opacity-90 text-primary-foreground font-medium px-5 py-2.5 text-xs shadow-sm transition-colors disabled:opacity-50"
           >
             <Save className="w-3.5 h-3.5" />
             <span>{saving ? "保存中..." : "保存する"}</span>

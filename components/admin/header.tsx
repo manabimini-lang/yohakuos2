@@ -1,4 +1,5 @@
-import { Menu } from "lucide-react";
+import { Menu, Settings } from "lucide-react";
+import Link from "next/link";
 
 import { signOut } from "@/lib/auth";
 import { SidebarNav } from "@/components/admin/sidebar";
@@ -29,6 +30,13 @@ export function AdminHeader({ user }: AdminHeaderProps) {
         </details>
 
         <div className="ml-auto flex items-center gap-3">
+          <Link 
+            href="/settings"
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-900"
+            title="設定"
+          >
+            <Settings className="h-4 w-4" />
+          </Link>
           {user.image ? (
             <img
               src={user.image}

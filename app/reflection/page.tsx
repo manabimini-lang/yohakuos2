@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { MessageCircle, ArrowRight } from "lucide-react";
 
 export const metadata = {
   title: "Reflection | YOHAKU",
@@ -39,6 +40,21 @@ export default async function ReflectionPage() {
               今日はひとつの断片だけを静かに見つめる時間です。
             </p>
           </div>
+        </section>
+
+        <section>
+          <Link
+            href="/companion"
+            className="group flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-6 transition-all hover:border-slate-300 hover:shadow-sm"
+          >
+            <div className="flex items-center gap-4">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-900 text-white">
+                <MessageCircle className="h-5 w-5" />
+              </div>
+              <span className="font-medium text-slate-900">YOHAKUと話す</span>
+            </div>
+            <ArrowRight className="h-5 w-5 text-slate-300 transition-transform group-hover:translate-x-1" />
+          </Link>
         </section>
 
         <section className="space-y-4 rounded-2xl border border-border bg-card p-6">

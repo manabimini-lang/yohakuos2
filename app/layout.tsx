@@ -18,6 +18,10 @@ export const metadata: Metadata = {
   },
   description: "止まっても、戻ってこれる場所。",
   manifest: "/manifest.json",
+  icons: {
+    icon: "/icon-192x192.png",
+    apple: "/apple-touch-icon.png",
+  },
   openGraph: {
     title: "YOHAKU",
     description: "止まっても、戻ってこれる場所。",
