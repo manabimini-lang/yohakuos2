@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Feather, History, MessageCircle, Settings, Share2 } from "lucide-react";
+import { Feather, History, MessageCircle, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
@@ -22,11 +22,6 @@ const NAV_ITEMS = [
     icon: MessageCircle,
   },
   {
-    label: "共有",
-    href: "/share",
-    icon: Share2,
-  },
-  {
     label: "設定",
     href: "/settings",
     icon: Settings,
@@ -38,7 +33,7 @@ export default function BottomNav() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-slate-200 bg-white/80 backdrop-blur-lg pb-safe">
-      <div className="mx-auto flex h-16 max-w-lg items-center justify-around px-2">
+      <div className="mx-auto flex h-16 max-w-md items-center justify-around px-4">
         {NAV_ITEMS.map((item) => {
           const isActive = pathname.startsWith(item.href);
           const Icon = item.icon;

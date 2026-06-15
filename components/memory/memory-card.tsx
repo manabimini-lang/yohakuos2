@@ -1,15 +1,19 @@
 import React from "react";
-import { ContentItem } from "@prisma/client";
+import { ContentItem, ThemeType } from "@prisma/client";
 import { Card } from "@/components/ui/card";
 import { Body, Caption } from "@/components/ui/typography";
 import { Badge } from "@/components/ui/badge";
-import { Youtube, FileText, Link as LinkIcon, FileImage } from "lucide-react";
+import { Youtube, FileText, Link as LinkIcon, FileImage, Layers } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ja } from "date-fns/locale";
 import Link from "next/link";
+import { THEME_LABELS } from "@/lib/constants/theme-labels";
 
 interface MemoryCardProps {
-  memory: ContentItem;
+  memory: ContentItem & { 
+    theme?: ThemeType | null;
+    _count?: { connectionsFrom: number; connectionsTo: number } 
+  };
   className?: string;
 }
 
@@ -25,6 +29,8 @@ export function MemoryCard({ memory, className = "" }: MemoryCardProps) {
     addSuffix: true,
     locale: ja,
   });
+
+  const hasConnections = (memory._count?.connectionsFrom ?? 0) + (memory._count?.connectionsTo ?? 0) > 0;
 
   return (
     <Link href={`/inbox/${memory.id}`} className="block group">
@@ -55,11 +61,22 @@ export function MemoryCard({ memory, className = "" }: MemoryCardProps) {
           {/* 3 & 4. Tags and Saved Date */}
           <div className="flex items-center justify-between">
             <div className="flex flex-wrap gap-1">
-              {memory.aiTags && memory.aiTags.slice(0, 3).map((tag, i) => (
+              {memory.theme && (
+                <Badge className="text-[10px] px-1.5 py-0 bg-blue-50 text-blue-700 border-blue-100 hover:bg-blue-50">
+                  {THEME_LABELS[memory.theme]}
+                </Badge>
+              )}
+              {memory.tags && memory.tags.slice(0, 3).map((tag, i) => (
                 <Badge key={i} className="text-[10px] px-1.5 py-0 bg-secondary/50">
                   #{tag}
                 </Badge>
               ))}
+              {hasConnections && (
+                <div className="flex items-center gap-1 text-[10px] text-muted-foreground bg-slate-50 px-1.5 py-0 rounded border border-slate-100">
+                  <Layers className="w-2.5 h-2.5" />
+                  <span>続きの記憶</span>
+                </div>
+              )}
             </div>
             <Caption className="text-[10px] text-muted-foreground shrink-0">
               {relativeDate}

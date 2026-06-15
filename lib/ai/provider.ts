@@ -29,12 +29,37 @@ export interface TagOptions {
 
 export type ContentItemType =
   | "youtube"
+  | "instagram"
+  | "x"
   | "note"
   | "article"
   | "pdf"
-  | "x_post"
-  | "instagram"
-  | "other";
+  | "image"
+  | "website";
+
+// Memory Object Metadata structure
+export interface MemoryMetadata {
+  title?: string;
+  description?: string;
+  siteName?: string;
+  thumbnailUrl?: string | null;
+  author?: string;
+  publishedAt?: string;
+  duration?: string | null; // For YouTube, nullable for future API
+  videoId?: string; // For YouTube
+  channelName?: string; // For YouTube
+  isReel?: boolean; // For Instagram
+  tweetText?: string; // For X
+  pageCount?: number; // For PDF
+}
+
+// Future Expansion Interfaces (Phase 7+)
+export interface MemoryExpansion {
+  hoverPreview?: string; // URL to a small preview video or GIF
+  livePreview?: boolean; // If true, can be rendered as an iframe
+  aiSummaryOverlay?: string; // Content summarized by AI to overlay
+  memoryConnections?: string[]; // IDs of related memories
+}
 
 export interface AIProvider {
   /**

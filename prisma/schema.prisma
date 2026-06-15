@@ -80,6 +80,33 @@ enum CardStyle {
   COMFORTABLE
 }
 
+enum ThemeType {
+  WORK
+  LEARNING
+  HEALTH
+  FAMILY
+  PARENTING
+  SIDEBUSINESS
+  CREATION
+  AI
+  ENGLISH
+  HOBBY
+  OTHER
+}
+
+enum ContextType {
+  LEARNING
+  CONTINUITY
+  CHALLENGE
+  CREATION
+  EXPLORATION
+  HEALTH
+  FAMILY
+  WORK
+  SHARING
+  REFLECTION
+}
+
 // ===================================================
 // YOHAKU RBAC — Role & Permission Models
 // ===================================================
@@ -1260,8 +1287,9 @@ model ContentItem {
   memoryState String @default("active") @map("memory_state")
 
   // AI Meaning Layer
-  summary             String?                     @db.Text
-  aiTags              String[]                    @map("ai_tags")
+  summary             String?
+  tags                String[]
+  theme               ThemeType? // YOHAKU v1: Theme Engine が抽出する主要テーマ
   contentType         String?                     @map("content_type")
   reflection          String?                     @db.Text
   embedding           Unsupported("vector(768)")?
@@ -1269,6 +1297,14 @@ model ContentItem {
   embeddingDimensions Int?                        @map("embedding_dimensions")
   aiVersion           String?                     @map("ai_version")
   aiProcessedAt       DateTime?                   @map("ai_processed_at")
+
+  meaningStatus       String?                     @default("pending")
+  meaningJobs         MeaningJob[]
+
+  connectionsFrom MemoryConnection[] @relation("ConnectionSource")
+  connectionsTo   MemoryConnection[] @relation("ConnectionTarget")
+  connectionJobs  ConnectionJob[]
+  memoryRoadId    String?            @map("memory_road_id")
 
   // Memory OS 拡張
   lastViewedAt DateTime? @map("last_viewed_at")
@@ -1291,6 +1327,48 @@ model ContentItem {
   @@index([userId])
   @@index([createdAt])
   @@map("content_items")
+}
+
+model MeaningJob {
+  id            String      @id @default(cuid())
+  contentItemId String      @map("content_item_id")
+  contentItem   ContentItem @relation(fields: [contentItemId], references: [id], onDelete: Cascade)
+  status        String      @default("pending")
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+
+  @@map("meaning_jobs")
+}
+
+model MemoryConnection {
+  id        String   @id @default(cuid())
+  sourceId  String   @map("source_id")
+  targetId  String   @map("target_id")
+  score     Float
+  reason    String?
+  contextType ContextType? @map("context_type") // YOHAKU v1: Context Engine が抽出する文脈タイプ
+  createdAt DateTime @default(now()) @map("created_at")
+
+  source ContentItem @relation("ConnectionSource", fields: [sourceId], references: [id], onDelete: Cascade)
+  target ContentItem @relation("ConnectionTarget", fields: [targetId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceId, targetId])
+  @@index([sourceId])
+  @@index([targetId])
+  @@map("memory_connections")
+}
+
+model ConnectionJob {
+  id            String      @id @default(cuid())
+  contentItemId String      @map("content_item_id")
+  contentItem   ContentItem @relation(fields: [contentItemId], references: [id], onDelete: Cascade)
+  status        String      @default("pending")
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+
+  @@index([contentItemId])
+  @@index([status])
+  @@map("connection_jobs")
 }
 
 // ===================================================

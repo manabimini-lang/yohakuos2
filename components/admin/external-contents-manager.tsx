@@ -34,7 +34,15 @@ type RoadOption = {
   title: string;
 };
 
-type ContentType = "note" | "youtube" | "article" | "pdf" | "discord" | "app";
+type ContentType =
+  | "youtube"
+  | "instagram"
+  | "x"
+  | "note"
+  | "article"
+  | "pdf"
+  | "image"
+  | "website";
 
 type ContentViewModel = {
   source: ExternalContent;
@@ -96,12 +104,13 @@ function detectType(url: string, fallback: ContentType): ContentType {
   const lowerUrl = url.toLowerCase();
 
   if (lowerUrl.includes("youtube.com") || lowerUrl.includes("youtu.be")) return "youtube";
+  if (lowerUrl.includes("instagram.com")) return "instagram";
+  if (lowerUrl.includes("x.com") || lowerUrl.includes("twitter.com")) return "x";
   if (lowerUrl.includes("note.com")) return "note";
-  if (lowerUrl.includes("discord.com") || lowerUrl.includes("discord.gg")) return "discord";
   if (lowerUrl.endsWith(".pdf")) return "pdf";
-  if (lowerUrl.includes("app.") || lowerUrl.includes("tool") || lowerUrl.includes("webapp")) return "app";
+  if (lowerUrl.match(/\.(jpg|jpeg|png|webp|gif)$/i)) return "image";
 
-  return fallback;
+  return "website";
 }
 
 function getDomain(url: string) {
