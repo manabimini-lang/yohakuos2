@@ -12,11 +12,14 @@ import {
   FileText, 
   MessageSquare, 
   Smartphone, 
-  ExternalLink,
-  Share2
+  ExternalLink, 
+  Share2,
+  Loader2
 } from "lucide-react";
 import { ThemeType, ContextType } from "@prisma/client";
 import { THEME_LABELS, CONTEXT_LABELS, getThemeLabel, getContextLabel } from "@/lib/constants/theme-labels";
+import { shareToDiscordAction } from "@/lib/actions/share/share-actions";
+import { generateShareMarkdown } from "@/lib/ai/share-generator";
 
 const DEFAULT_ROADS = [
   { id: "beginner", slug: "beginner", title: "初任者ロード", icon: "🌱" },
@@ -59,6 +62,7 @@ export function DashboardClient({ initialYohakuData }: DashboardClientProps) {
   const [content, setContent] = useState("");
   const [currentRoad, setCurrentRoad] = useState<string>("beginner");
   const [isSaving, setIsSaving] = useState(false);
+  const [isSharingDiscord, setIsSharingDiscord] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   
   const [practices, setPractices] = useState<SharedKnowledge[]>([]);
@@ -188,6 +192,27 @@ export function DashboardClient({ initialYohakuData }: DashboardClientProps) {
     }
   };
 
+  // handleShareDiscord 関数を追加
+  const handleShareDiscord = async () => {
+    setIsSharingDiscord(true);
+    try {
+      const markdown = generateShareMarkdown(
+        initialYohakuData.dominantThemes,
+        initialYohakuData.dominantContexts,
+        initialYohakuData.reflection
+      );
+      await shareToDiscordAction(markdown);
+      setToastMessage("Discordに共有しました");
+      setTimeout(() => setToastMessage(null), 3000);
+    } catch (error) {
+      console.error(error);
+      setToastMessage("共有に失敗しました");
+      setTimeout(() => setToastMessage(null), 3000);
+    } finally {
+      setIsSharingDiscord(false);
+    }
+  };
+
   const currentRoadData = roads.find(r => r.id === currentRoad) || roads[0] || DEFAULT_ROADS[0];
 
   return (
@@ -252,9 +277,20 @@ export function DashboardClient({ initialYohakuData }: DashboardClientProps) {
               <p className="text-base font-serif text-slate-700 leading-loose text-center whitespace-pre-wrap italic">
                 {initialYohakuData.reflection}
               </p>
+
+              <div className="mt-8 flex justify-center">
+                <button 
+                  onClick={handleShareDiscord}
+                  disabled={isSharingDiscord}
+                  className="flex items-center gap-2 px-4 py-2 rounded-full bg-slate-900/5 hover:bg-slate-900/10 text-slate-600 text-xs font-medium transition-colors disabled:opacity-50"
+                >
+                  {isSharingDiscord ? <Loader2 className="w-3 h-3 animate-spin" /> : <Share2 className="w-3 h-3" />}
+                  <span>Discordに共有</span>
+                </button>
+              </div>
             </div>
           </div>
-        )}
+        </div>
       </section>
 
       <div className="h-px bg-slate-100 w-full" />

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Feather, History, MessageCircle, Settings, Share2 } from "lucide-react";
+import { Feather, History, MessageCircle, Settings } from "lucide-react"; // Share2 を削除
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
@@ -20,11 +20,6 @@ const NAV_ITEMS = [
     label: "対話",
     href: "/dialogue",
     icon: MessageCircle,
-  },
-  {
-    label: "共有",
-    href: "/share",
-    icon: Share2,
   },
   {
     label: "設定",
