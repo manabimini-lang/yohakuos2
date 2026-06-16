@@ -1,6 +1,5 @@
 import { ContentItem, ContextType } from "@prisma/client";
 import { generateJSON } from "./gemini";
-import { parseContext } from "./parsers";
 
 export interface AIConnectionJudgment {
   targetId: string;
@@ -102,7 +101,7 @@ ${candidates.map((c) => `ID: ${c.id}\nタイトル: ${c.title}\n要約: ${c.summ
         targetId: j.targetId,
         related: j.related,
         reason: j.reason,
-        contextType: parseContext(j.contextType),
+        contextType: j.contextType as ContextType,
       }));
   } catch (error) {
     console.error("[getAIConnectionJudgments] error:", error);

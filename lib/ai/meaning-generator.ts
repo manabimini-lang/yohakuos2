@@ -50,7 +50,7 @@ export async function generateMeaning(params: {
     return {
       summary: result.data.summary.slice(0, 50),
       tags: result.data.tags.slice(0, 5),
-      theme: result.data.theme,
+      theme: result.data.theme as ThemeType,
     };
   } catch (error) {
     console.error("[generateMeaning] AI generation error:", error);
