@@ -196,7 +196,7 @@ export async function generateJSON<T>(
     const text = response.text();
 
     // Extract JSON from response (handle markdown code blocks)
-    const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/) || text.match(/{[\s\S]*?}/);
+    const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/) || text.match(/[\[{][\s\S]*[\]}]/);
     const jsonStr = jsonMatch ? jsonMatch[1] || jsonMatch[0] : text;
     const data = JSON.parse(jsonStr.trim()) as T;
 
