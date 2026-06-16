@@ -1,5 +1,6 @@
 import { generateJSON } from "./gemini";
 import { ThemeType } from "@prisma/client";
+import { parseTheme } from "./parsers";
 
 export interface MeaningResult {
   summary: string;
@@ -50,7 +51,7 @@ export async function generateMeaning(params: {
     return {
       summary: result.data.summary.slice(0, 50),
       tags: result.data.tags.slice(0, 5),
-      theme: result.data.theme as ThemeType,
+      theme: parseTheme(result.data.theme),
     };
   } catch (error) {
     console.error("[generateMeaning] AI generation error:", error);

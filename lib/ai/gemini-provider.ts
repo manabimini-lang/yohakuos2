@@ -1,4 +1,4 @@
-import { generateJSON, generateText } from "./gemini";
+import { generateJSON, generateText, getApiCredentials } from "./gemini";
 import type {
   AIProvider,
   ContentItemType,
@@ -51,9 +51,10 @@ const CLASSIFIER_SYSTEM = `URLとテキストからコンテンツの種類を1�
 - note
 - article
 - pdf
-- x_post
+- image
+- x
 - instagram
-- other
+- website
 
 JSONのみ出力: {"type": "article"}`;
 
@@ -135,7 +136,7 @@ export class GeminiProvider implements AIProvider {
         return "youtube";
       if (urlLower.includes("note.com")) return "note";
       if (urlLower.includes("twitter.com") || urlLower.includes("x.com"))
-        return "x_post";
+        return "x";
       if (urlLower.includes("instagram.com")) return "instagram";
     }
 
@@ -148,27 +149,17 @@ export class GeminiProvider implements AIProvider {
         CLASSIFIER_SYSTEM,
         this.getRequestOptions()
       );
-      return result.data?.type ?? "other";
+      return result.data?.type ?? "website";
     } catch (error) {
       console.error("[GeminiProvider.classify] error:", error);
-      return "other";
+      return "website";
     }
   }
 
   async embed(text: string): Promise<number[]> {
-    let apiKey = this.apiKey;
-    if (!apiKey && this.userId) {
-      try {
-        const { getApiCredentials } = await import("./gemini");
-        const creds = await getApiCredentials(this.userId);
-        apiKey = creds.apiKey;
-      } catch {
-        // ignore
-      }
-    }
-    if (!apiKey) {
-      apiKey = process.env.GEMINI_API_KEY;
-    }
+    // Get credentials using the unified utility
+    const creds = await getApiCredentials(this.getRequestOptions());
+    const apiKey = creds.apiKey;
 
     if (!apiKey) {
       console.warn("[GeminiProvider.embed] No API key, skipping embedding");

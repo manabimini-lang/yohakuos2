@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { ThemeType, ContextType } from "@prisma/client";
 import { THEME_LABELS, CONTEXT_LABELS, getThemeLabel, getContextLabel } from "@/lib/constants/theme-labels";
-import { shareToDiscordAction } from "@/lib/actions/share/share-actions";
+import { shareToDiscordAction } from "@/lib/actions/share/share-actions"; // パスが一致していることを確認
 import { generateShareMarkdown } from "@/lib/ai/share-generator";
 
 const DEFAULT_ROADS = [

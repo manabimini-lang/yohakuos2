@@ -2,7 +2,7 @@ import { GoogleGenerativeAI, GenerativeModel } from '@google/generative-ai';
 import { prisma } from '@/lib/prisma';
 import { decryptKey } from '@/lib/encryption';
 
-const GEMINI_MODEL = 'gemini-2.5-flash';
+const GEMINI_MODEL = 'gemini-1.5-flash';
 
 export type AIRequestOptions = string | {
     userId?: string;
