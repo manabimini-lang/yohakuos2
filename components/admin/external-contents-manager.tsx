@@ -5,13 +5,15 @@ import {
   ExternalLink,
   Feather,
   FileText,
+  FileImage,
+  Globe,
+  Instagram,
   Loader2,
   Link2,
-  MessageSquare,
   Plus,
   Settings,
-  Smartphone,
   Trash2,
+  Twitter,
   Youtube,
   BookOpen,
 } from "lucide-react";
@@ -72,10 +74,12 @@ const TYPE_OPTIONS: Array<{
 }> = [
   { id: "note", label: "note", icon: BookOpen, className: "text-emerald-600 bg-emerald-50 border-emerald-100" },
   { id: "youtube", label: "YouTube", icon: Youtube, className: "text-rose-600 bg-rose-50 border-rose-100" },
+  { id: "instagram", label: "Instagram", icon: Instagram, className: "text-purple-600 bg-purple-50 border-purple-100" },
+  { id: "x", label: "X (Twitter)", icon: Twitter, className: "text-slate-900 bg-slate-50 border-slate-200" },
   { id: "article", label: "外部記事", icon: FileText, className: "text-blue-600 bg-blue-50 border-blue-100" },
-  { id: "discord", label: "Discord", icon: MessageSquare, className: "text-indigo-600 bg-indigo-50 border-indigo-100" },
   { id: "pdf", label: "PDF", icon: FileText, className: "text-red-600 bg-red-50 border-red-100" },
-  { id: "app", label: "Webアプリ/ツール", icon: Smartphone, className: "text-amber-600 bg-amber-50 border-amber-100" },
+  { id: "image", label: "画像", icon: FileImage, className: "text-orange-600 bg-orange-50 border-orange-100" },
+  { id: "website", label: "Webサイト", icon: Globe, className: "text-slate-600 bg-slate-50 border-slate-100" },
 ];
 
 function extractYouTubeId(url: string) {

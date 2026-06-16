@@ -66,7 +66,7 @@ export function MemoryCard({ memory, className = "" }: MemoryCardProps) {
                   {THEME_LABELS[memory.theme]}
                 </Badge>
               )}
-              {memory.tags && memory.tags.slice(0, 3).map((tag, i) => (
+              {memory.aiTags && memory.aiTags.slice(0, 3).map((tag, i) => (
                 <Badge key={i} className="text-[10px] px-1.5 py-0 bg-secondary/50">
                   #{tag}
                 </Badge>

@@ -36,7 +36,7 @@ export async function runMeaningWorker() {
       where: { id: job.contentItemId },
       data: {
         summary,
-        tags: tags,
+        aiTags: tags, // AI Meaning Layer の成果物として aiTags に保存
         theme: theme, // Theme Engine が抽出したテーマを保存
         meaningStatus: "completed",
         aiProcessedAt: new Date(),

@@ -1288,7 +1288,8 @@ model ContentItem {
 
   // AI Meaning Layer
   summary             String?
-  tags                String[]
+  tags                String[]                    // 人間が付与するタグ
+  aiTags              String[]                    @map("ai_tags") // AIが生成するタグ (Phase 2)
   theme               ThemeType? // YOHAKU v1: Theme Engine が抽出する主要テーマ
   contentType         String?                     @map("content_type")
   reflection          String?                     @db.Text
