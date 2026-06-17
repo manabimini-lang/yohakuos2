@@ -48,7 +48,7 @@ export function filterCandidates(current: ContentItem, candidates: ContentItem[]
   const scored = candidates.map(c => {
     const tagSim = calculateTagSimilarity(current.aiTags, c.aiTags);
     const sumSim = calculateStringSimilarity(current.summary || "", c.summary || "");
-    const ctxSim = calculateStringSimilarity(current.savedContext || "", c.savedContext || "");
+    const ctxSim = calculateStringSimilarity((current as any).reflection || "", (c as any).reflection || "");
     
     // 仮の初期スコアでソート用に算出
     const initialScore = tagSim * 0.3 + sumSim * 0.5 + ctxSim * 0.2;
@@ -79,7 +79,7 @@ export async function getAIConnectionJudgments(
 【対象の記録】
 タイトル: ${current.title}
 要約: ${current.summary || "なし"}
-保存時の理由: ${current.savedContext || "なし"}
+保存時の理由: ${current.reflection || "なし"}
 タグ: ${current.aiTags.join(", ")}
 
 【候補リスト】
@@ -116,7 +116,7 @@ ${candidates.map((c) => `ID: ${c.id}\nタイトル: ${c.title}\n要約: ${c.summ
 export function calculateFinalScore(current: ContentItem, target: ContentItem): number {
   const tagSimilarity = calculateTagSimilarity(current.aiTags, target.aiTags);
   const summarySimilarity = calculateStringSimilarity(current.summary || "", target.summary || "");
-  const contextSimilarity = calculateStringSimilarity(current.savedContext || "", target.savedContext || "");
+  const contextSimilarity = calculateStringSimilarity(current.reflection || "", target.reflection || "");
 
   // Step 5: (tagSimilarity * 0.3) + (summarySimilarity * 0.5) + (contextSimilarity * 0.2)
   return (

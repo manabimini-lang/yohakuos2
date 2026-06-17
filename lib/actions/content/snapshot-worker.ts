@@ -62,7 +62,6 @@ export async function runSnapshotWorker() {
       where: { id: job.contentItemId },
       data: {
         snapshotUrl,
-        snapshotStatus: "completed",
       },
     });
 

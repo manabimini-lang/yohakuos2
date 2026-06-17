@@ -11,7 +11,7 @@ export async function saveMemoryAction(url: string, context?: string) {
   // Step 3: URL判定 & Metadata生成
   const processed = await generateMemoryMetadata(url);
 
-  // Step 4 & 9: ContentItem 作成（savedContext を保持）
+  // Step 4 & 9: ContentItem 作成（reflection を保持）
   const item = await prisma.contentItem.create({
     data: {
       userId: session.user.id,
@@ -19,18 +19,17 @@ export async function saveMemoryAction(url: string, context?: string) {
       title: processed.title,
       thumbnailUrl: processed.thumbnailUrl,
       contentType: processed.contentType,
-      metadata: {
-        ...(processed.metadata as any),
-        description: processed.description,
-      },
-      savedContext: context, 
-      snapshotStatus: "pending",
+      metadata: processed.metadata as any,
+      summary: "", // AI生成までの初期値
+      aiTags: [],  // AI生成までの初期値
+      reflection: context, 
       meaningStatus: "pending",
     }
   });
 
-  // SnapshotJob生成 (レスポンスは待たない)
-  void prisma.snapshotJob.create({
+  // SnapshotJob生成
+  // Server Action では実行環境の凍結を防ぐため、確実に await する必要があります
+  await prisma.snapshotJob.create({
     data: {
       contentItemId: item.id,
       url,
