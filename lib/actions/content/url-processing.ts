@@ -18,7 +18,7 @@ function extractYouTubeId(url: string) {
   return match?.[1];
 }
 
-export async function processUrlSave(url: string) {
+export async function generateMemoryMetadata(url: string) {
   const contentType = detectType(url);
   
   // ここで本来は OGP Scraping を実行する（省略）

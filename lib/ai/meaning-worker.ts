@@ -25,7 +25,7 @@ export async function runMeaningWorker() {
     // 2. AI要約 & タグ & テーマ生成
     const { summary, tags, theme } = await generateMeaning({
       title: job.contentItem.title || "",
-      description: job.contentItem.description || "",
+      description: (job.contentItem.metadata as any)?.description || "",
       contentType: job.contentItem.contentType || "website",
       metadata: job.contentItem.metadata,
       userId: job.contentItem.userId,
