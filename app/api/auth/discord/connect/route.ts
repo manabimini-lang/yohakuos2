@@ -24,19 +24,18 @@ export async function GET(req: Request) {
     // Generate secure CSRF state
     const state = crypto.randomBytes(16).toString("hex");
 
-    const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || "localhost:3000";
-    const protocol = req.headers.get("x-forwarded-proto") || (host.includes("localhost") ? "http" : "https");
-    const baseUrl = `${protocol}://${host}`;
+    const baseUrl = process.env.NEXTAUTH_URL
+      || `${req.headers.get("x-forwarded-proto") || "https"}://${req.headers.get("x-forwarded-host") || req.headers.get("host") || "localhost:3000"}`;
 
     const redirectUri = `${baseUrl}/api/auth/discord/callback`;
-    const discordAuthUrl = `https://discord.com/api/oauth2/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=identify&state=${state}`;
+    const discordAuthUrl = `https://discord.com/api/oauth2/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=identify%20email&state=${state}`;
 
     const response = NextResponse.redirect(discordAuthUrl);
     
     // Save state in cookie for callback verification
     response.cookies.set("discord_oauth_state", state, {
       httpOnly: true,
-      secure: protocol === "https",
+      secure: baseUrl.startsWith("https://"),
       sameSite: "lax",
       maxAge: 600, // 10 minutes
       path: "/",

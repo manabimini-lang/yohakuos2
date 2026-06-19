@@ -43,9 +43,8 @@ export async function GET(req: Request) {
       return new NextResponse("Configuration error", { status: 500 });
     }
 
-    const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || "localhost:3000";
-    const protocol = req.headers.get("x-forwarded-proto") || (host.includes("localhost") ? "http" : "https");
-    const baseUrl = `${protocol}://${host}`;
+    const baseUrl = process.env.NEXTAUTH_URL
+      || `${req.headers.get("x-forwarded-proto") || "https"}://${req.headers.get("x-forwarded-host") || req.headers.get("host") || "localhost:3000"}`;
 
     const redirectUri = `${baseUrl}/api/auth/discord/callback`;
 
@@ -66,7 +65,12 @@ export async function GET(req: Request) {
 
     if (!tokenResponse.ok) {
       const errorText = await tokenResponse.text();
-      console.error("Discord Token exchange failed:", errorText);
+      console.error("[DISCORD_TOKEN_EXCHANGE_FAILED]", {
+        status: tokenResponse.status,
+        statusText: tokenResponse.statusText,
+        redirectUri,
+        errorText,
+      });
       return new NextResponse("Failed to exchange code for token", { status: 400 });
     }
 
@@ -81,7 +85,10 @@ export async function GET(req: Request) {
     });
 
     if (!userResponse.ok) {
-      console.error("Failed to fetch Discord user profile");
+      console.error("[DISCORD_PROFILE_FETCH_FAILED]", {
+        status: userResponse.status,
+        statusText: userResponse.statusText,
+      });
       return new NextResponse("Failed to fetch Discord user profile", { status: 400 });
     }
 
