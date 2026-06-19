@@ -2,10 +2,18 @@
 // YOHAKU Companion — Layout
 // ===================================================
 
+import type { ReactNode } from "react";
+import MainBottomNav from "@/components/ui/main-bottom-nav";
+
 export default function CompanionLayout({
     children,
 }: {
-    children: React.ReactNode;
+    children: ReactNode;
 }) {
-    return <>{children}</>;
+    return (
+        <div className="relative min-h-screen">
+            {children}
+            <MainBottomNav />
+        </div>
+    );
 }
