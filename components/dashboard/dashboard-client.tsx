@@ -267,7 +267,7 @@ export function DashboardClient({ initialYohakuData }: DashboardClientProps) {
           {/* 3. Reflection */}
           <div className="max-w-md mx-auto">
             <div className="bg-slate-50/30 rounded-3xl p-8 border border-slate-100/50">
-              <h3 className="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-bold text-center mb-6">Reflection</h3>
+              <h3 className="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-bold text-center mb-6">今日の余白</h3>
               <p className="text-base font-serif text-slate-700 leading-loose text-center whitespace-pre-wrap italic">
                 {initialYohakuData.reflection}
               </p>
