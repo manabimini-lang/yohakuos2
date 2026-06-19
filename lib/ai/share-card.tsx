@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Share2, Loader2, Check } from "lucide-react";
-import { shareToDiscordAction } from "@/lib/actions/share/share-actions";
+import { shareToDiscordAction } from "@/lib/ai/share-actions";
 import { ThemeType, ContextType } from "@prisma/client";
 
 interface ShareCardProps {

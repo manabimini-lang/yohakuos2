@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import chromium from "@sparticuz/chromium";
 import { chromium as playwright } from "playwright-core";
-import { getSnapshotStorage } from "@/lib/storage/snapshot-storage";
+import { getSnapshotStorage } from "@/lib/snapshot-storage";
 
 /**
  * YOHAKU Snapshot Worker
@@ -9,7 +9,7 @@ import { getSnapshotStorage } from "@/lib/storage/snapshot-storage";
  */
 export async function runSnapshotWorker() {
   // 1. status=pending のジョブ取得
-  const job = await prisma.snapshotJob.findFirst({
+  const job = await prisma.captureJob.findFirst({
     where: { status: "pending" },
     orderBy: { createdAt: "asc" },
   });
@@ -17,10 +17,12 @@ export async function runSnapshotWorker() {
   if (!job) return;
 
   // ジョブを処理中に更新
-  await prisma.snapshotJob.update({
-    where: { id: job.id },
+  const claimed = await prisma.captureJob.updateMany({
+    where: { id: job.id, status: "pending" },
     data: { status: "processing" },
   });
+
+  if (claimed.count === 0) return;
 
   // 2. Playwright起動
   const browser = await playwright.launch({
@@ -50,7 +52,7 @@ export async function runSnapshotWorker() {
     const snapshotUrl = await storage.save(job.id, screenshotBuffer);
 
     // 7. Job更新 & ContentItemへ反映
-    await prisma.snapshotJob.update({
+    await prisma.captureJob.update({
       where: { id: job.id },
       data: {
         snapshotUrl,
@@ -67,7 +69,7 @@ export async function runSnapshotWorker() {
 
   } catch (error) {
     console.error(`Snapshot failed for job ${job.id}:`, error);
-    await prisma.snapshotJob.update({
+    await prisma.captureJob.update({
       where: { id: job.id },
       data: { status: "failed" },
     });

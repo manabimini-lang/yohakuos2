@@ -1299,11 +1299,13 @@ model ContentItem {
   aiVersion           String?                     @map("ai_version")
   aiProcessedAt       DateTime?                   @map("ai_processed_at")
 
+  snapshotUrl         String?                     @map("snapshot_url")
   meaningStatus       String?                     @default("pending")
   meaningJobs         MeaningJob[]
 
   connectionsFrom MemoryConnection[] @relation("ConnectionSource")
   connectionsTo   MemoryConnection[] @relation("ConnectionTarget")
+  captureJobs     CaptureJob[]
   connectionJobs  ConnectionJob[]
   memoryRoadId    String?            @map("memory_road_id")
 
@@ -1328,6 +1330,19 @@ model ContentItem {
   @@index([userId])
   @@index([createdAt])
   @@map("content_items")
+}
+
+model CaptureJob {
+  id            String      @id @default(cuid())
+  contentItemId String      @map("content_item_id")
+  contentItem   ContentItem @relation(fields: [contentItemId], references: [id], onDelete: Cascade)
+  url           String
+  status        String      @default("pending") // JobStatus enumを使わない場合はString
+  snapshotUrl   String?     @map("snapshot_url")
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+
+  @@map("snapshot_jobs")
 }
 
 model MeaningJob {

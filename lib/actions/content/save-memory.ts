@@ -16,6 +16,7 @@ export async function saveMemoryAction(url: string, context?: string) {
     data: {
       userId: session.user.id,
       url,
+      type: processed.contentType === "pdf" ? "pdf" : "url", // Schemaの制約 'url' | 'pdf' に合わせる
       title: processed.title,
       thumbnailUrl: processed.thumbnailUrl,
       contentType: processed.contentType,
@@ -27,9 +28,9 @@ export async function saveMemoryAction(url: string, context?: string) {
     }
   });
 
-  // SnapshotJob生成
-  // Server Action では実行環境の凍結を防ぐため、確実に await する必要があります
-  await prisma.snapshotJob.create({
+  // CaptureJob生成
+  // Serverless環境（Vercel）での関数終了による消失を防ぐため、確実に await します
+  await prisma.captureJob.create({
     data: {
       contentItemId: item.id,
       url,

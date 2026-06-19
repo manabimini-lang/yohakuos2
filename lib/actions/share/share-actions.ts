@@ -1,10 +1,15 @@
 "use server";
 
-export async function shareToDiscordAction(markdown: string) {
+import { generateShareMarkdown } from "@/lib/ai/share-generator";
+import type { YohakuResult } from "@/lib/ai/yohaku-generator";
+
+export async function shareToDiscordAction(yohaku: YohakuResult) {
   const webhookUrl = process.env.DISCORD_SHARE_WEBHOOK_URL;
   if (!webhookUrl) {
     throw new Error("Discord Webhook URL is not configured");
   }
+
+  const markdown = generateShareMarkdown(yohaku);
 
   const response = await fetch(webhookUrl, {
     method: "POST",

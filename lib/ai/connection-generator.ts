@@ -48,7 +48,7 @@ export function filterCandidates(current: ContentItem, candidates: ContentItem[]
   const scored = candidates.map(c => {
     const tagSim = calculateTagSimilarity(current.aiTags, c.aiTags);
     const sumSim = calculateStringSimilarity(current.summary || "", c.summary || "");
-    const ctxSim = calculateStringSimilarity((current as any).reflection || "", (c as any).reflection || "");
+    const ctxSim = calculateStringSimilarity(current.reflection || "", c.reflection || "");
     
     // 仮の初期スコアでソート用に算出
     const initialScore = tagSim * 0.3 + sumSim * 0.5 + ctxSim * 0.2;

@@ -17,9 +17,8 @@ import {
   Loader2
 } from "lucide-react";
 import { ThemeType, ContextType } from "@prisma/client";
-import { THEME_LABELS, CONTEXT_LABELS, getThemeLabel, getContextLabel } from "@/lib/constants/theme-labels";
-import { shareToDiscordAction } from "@/lib/actions/share/share-actions"; // パスが一致していることを確認
-import { generateShareMarkdown } from "@/lib/ai/share-generator";
+import { getThemeLabel, getContextLabel } from "@/lib/constants/theme-labels";
+import { shareToDiscordAction } from "@/lib/actions/share/share-actions";
 
 const DEFAULT_ROADS = [
   { id: "beginner", slug: "beginner", title: "初任者ロード", icon: "🌱" },
@@ -196,12 +195,7 @@ export function DashboardClient({ initialYohakuData }: DashboardClientProps) {
   const handleShareDiscord = async () => {
     setIsSharingDiscord(true);
     try {
-      const markdown = generateShareMarkdown(
-        initialYohakuData.dominantThemes,
-        initialYohakuData.dominantContexts,
-        initialYohakuData.reflection
-      );
-      await shareToDiscordAction(markdown);
+      await shareToDiscordAction(initialYohakuData);
       setToastMessage("Discordに共有しました");
       setTimeout(() => setToastMessage(null), 3000);
     } catch (error) {
@@ -282,10 +276,10 @@ export function DashboardClient({ initialYohakuData }: DashboardClientProps) {
                 <button 
                   onClick={handleShareDiscord}
                   disabled={isSharingDiscord}
-                  className="flex items-center gap-2 px-4 py-2 rounded-full bg-slate-900/5 hover:bg-slate-900/10 text-slate-600 text-xs font-medium transition-colors disabled:opacity-50"
+                  className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-medium text-slate-600 transition-colors hover:border-slate-300 hover:bg-slate-50 disabled:opacity-50"
                 >
                   {isSharingDiscord ? <Loader2 className="w-3 h-3 animate-spin" /> : <Share2 className="w-3 h-3" />}
-                  <span>Discordに共有</span>
+                  <span>{isSharingDiscord ? "共有中..." : "Discordに共有"}</span>
                 </button>
               </div>
             </div>

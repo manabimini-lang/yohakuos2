@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { generateYohaku } from "@/lib/ai/yohaku-generator";
 import { generateShareMarkdown } from "@/lib/ai/share-generator";
-import { ShareCard } from "@/components/share/share-card";
+import { ShareCard } from "@/lib/ai/share-card";
 import { redirect } from "next/navigation";
 
 export default async function SharePage() {
@@ -11,11 +11,7 @@ export default async function SharePage() {
   }
 
   const yohakuData = await generateYohaku(session.user.id);
-  const markdown = generateShareMarkdown(
-    yohakuData.dominantThemes,
-    yohakuData.dominantContexts,
-    yohakuData.reflection
-  );
+  const markdown = generateShareMarkdown(yohakuData);
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-12 md:py-24 space-y-8">
