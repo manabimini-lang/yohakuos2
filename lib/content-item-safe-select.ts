@@ -15,7 +15,6 @@ export const CONTENT_ITEM_SAFE_SELECT = {
   aiTags: true,
   contentType: true,
   reflection: true,
-  embedding: true,
   embeddingModel: true,
   embeddingDimensions: true,
   aiVersion: true,
