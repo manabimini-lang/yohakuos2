@@ -38,7 +38,6 @@ export default async function InboxPage() {
     domain: true,
     reflection: true,
     aiTags: true,
-    theme: true,
     createdAt: true,
     metadata: true,
     meaningStatus: true,

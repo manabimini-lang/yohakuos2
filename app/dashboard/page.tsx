@@ -32,7 +32,6 @@ export default async function DashboardPage() {
     domain: true,
     reflection: true,
     aiTags: true,
-    theme: true,
     createdAt: true,
     metadata: true,
     meaningStatus: true,
