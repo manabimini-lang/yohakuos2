@@ -13,6 +13,7 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { getStarterJourneyStatus } from "@/lib/ai/starter-journey";
 import { StarterJourneyBanner } from "@/components/ai/StarterJourneyBanner";
+import { checkAIAvailability } from "@/lib/ai/gemini";
 
 export const metadata = {
     title: "静かな対話 | YOHAKU Companion",
@@ -26,12 +27,13 @@ export default async function CompanionPage() {
     }
 
     const userId = session.user.id;
-    const userSettings = await prisma.userAISettings.findUnique({
-        where: { userId },
-    });
+    const [userSettings, starterJourney, aiAvailability] = await Promise.all([
+        prisma.userAISettings.findUnique({ where: { userId } }),
+        getStarterJourneyStatus(userId),
+        checkAIAvailability(userId),
+    ]);
 
-    const starterJourney = await getStarterJourneyStatus(userId);
-    const hasAiAccess = userSettings?.isEnabled || starterJourney.active;
+    const hasAiAccess = aiAvailability.available || starterJourney.active;
 
     if (!hasAiAccess) {
         return (
@@ -39,17 +41,24 @@ export default async function CompanionPage() {
                 <div className="max-w-md w-full p-8 rounded-2xl border border-border bg-card space-y-6 text-center">
                     <h2 className="text-lg font-light text-foreground tracking-wider">静かな対話</h2>
                     <p className="text-sm text-muted-foreground leading-relaxed font-light">
-                        AI接続がまだ行われていません。
+                        現在、会話を始めるための Gemini 接続が見つかりません。
                     </p>
                     <p className="text-xs text-muted-foreground leading-relaxed font-light">
-                        Gemini APIキーを設定すると、保存した記録が静かに整えられ、パーソナルAIとの対話や、内面の風景の描画が始まります。
+                        環境変数の Gemini APIキー、または設定画面で有効化されたユーザーキーがあれば会話できます。
                     </p>
-                    <div className="pt-2">
+                    <div className="pt-2 flex items-center justify-center gap-4">
                         <Link 
                             href="/member/settings"
                             className="inline-flex items-center text-xs font-light text-muted-foreground hover:text-foreground transition-colors group"
                         >
                             AI設定へ
+                            <ChevronRight className="w-3 h-3 ml-1 group-hover:translate-x-1 transition-transform" />
+                        </Link>
+                        <Link 
+                            href="/memory"
+                            className="inline-flex items-center text-xs font-light text-muted-foreground hover:text-foreground transition-colors group"
+                        >
+                            記憶を見る
                             <ChevronRight className="w-3 h-3 ml-1 group-hover:translate-x-1 transition-transform" />
                         </Link>
                     </div>

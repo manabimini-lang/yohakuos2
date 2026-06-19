@@ -330,5 +330,9 @@ export async function checkAIAvailability(userId: string): Promise<AIAvailabilit
         return { available: true, source: (settings.provider as AIAvailabilitySource) || "user_ai_settings" };
     }
 
+    if (process.env.STARTER_GEMINI_API_KEY || process.env.GEMINI_API_KEY) {
+        return { available: true, source: "legacy_api_key" };
+    }
+
     return { available: false, source: null };
 }

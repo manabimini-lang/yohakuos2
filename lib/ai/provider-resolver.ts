@@ -1,4 +1,5 @@
 import { getUserOwnedApiCredentials } from "./gemini";
+import { getApiCredentials } from "./gemini";
 import { GeminiProvider } from "./gemini-provider";
 import { getStarterJourneyStatus } from "./starter-journey";
 
@@ -22,6 +23,15 @@ export async function resolveProvider(userId: string): Promise<GeminiProvider | 
   if (starterJourney.active && starterApiKey) {
     return new GeminiProvider({
       apiKey: starterApiKey,
+    });
+  }
+
+  const fallbackCredentials = await getApiCredentials({ userId, allowEnvFallback: true });
+  if (fallbackCredentials.apiKey) {
+    return new GeminiProvider({
+      userId,
+      apiKey: fallbackCredentials.apiKey,
+      model: fallbackCredentials.modelName,
     });
   }
 
