@@ -8,6 +8,7 @@ import { MemoryCard } from "@/components/memory/memory-card";
 import { PageTitle, SectionTitle, Body, Caption } from "@/components/ui/typography";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import { CONTENT_ITEM_SAFE_SELECT } from "@/lib/content-item-safe-select";
 
 export const metadata: Metadata = {
   title: "YOHAKU - ダッシュボード",
@@ -21,23 +22,6 @@ export default async function DashboardPage() {
   }
 
   const userId = session.user.id;
-  const contentItemSelect = {
-    id: true,
-    title: true,
-    url: true,
-    type: true,
-    thumbnailUrl: true,
-    fileUrl: true,
-    fileName: true,
-    domain: true,
-    reflection: true,
-    aiTags: true,
-    createdAt: true,
-    metadata: true,
-    meaningStatus: true,
-    summary: true,
-  } as const;
-
   // 1. Current Context
   const contextProfile = await buildContextProfile(userId);
 
@@ -52,8 +36,8 @@ export default async function DashboardPage() {
       reflection: { not: null },
       createdAt: { lt: threeMonthsAgo },
     },
-    select: contentItemSelect,
-    orderBy: { contextScore: "desc" },
+    select: CONTENT_ITEM_SAFE_SELECT,
+    orderBy: { createdAt: "desc" },
     take: 1,
   }) as any[];
   const quietReturnItem = quietReturnCandidates[0] || null;
@@ -62,7 +46,7 @@ export default async function DashboardPage() {
   // Top 3 recent items
   const recentItems = await prisma.contentItem.findMany({
     where: { userId },
-    select: contentItemSelect,
+    select: CONTENT_ITEM_SAFE_SELECT,
     orderBy: { createdAt: "desc" },
     take: 3,
   }) as any[];

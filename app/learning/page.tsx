@@ -5,6 +5,7 @@ import { QuietAudioPlayer } from "@/components/audio/QuietAudioPlayer";
 import { QuietQuestionCard } from "@/components/learning/QuietQuestionCard";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
+import { CONTENT_ITEM_SAFE_SELECT } from "@/lib/content-item-safe-select";
 
 export const dynamic = "force-dynamic";
 
@@ -39,7 +40,8 @@ export default async function LearningFeedPage() {
 
   const contentItems = contentItemIds.length > 0
     ? await prisma.contentItem.findMany({
-        where: { id: { in: contentItemIds } }
+        where: { id: { in: contentItemIds } },
+        select: CONTENT_ITEM_SAFE_SELECT,
       })
     : [];
 

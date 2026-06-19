@@ -3,15 +3,22 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { getRelatedContent } from "@/app/actions/related-content";
-import { ContentItem } from "@prisma/client";
 import { Link2 } from "lucide-react";
 
 interface RelatedContentProps {
   contentItemId: string;
 }
 
+type RelatedItem = {
+  id: string;
+  title: string | null;
+  fileName: string | null;
+  url: string | null;
+  createdAt: Date;
+};
+
 export function RelatedContent({ contentItemId }: RelatedContentProps) {
-  const [relatedItems, setRelatedItems] = useState<ContentItem[]>([]);
+  const [relatedItems, setRelatedItems] = useState<RelatedItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {

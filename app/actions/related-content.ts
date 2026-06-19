@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { CONTENT_ITEM_SAFE_SELECT } from "@/lib/content-item-safe-select";
 
 export async function getRelatedContent(contentItemId: string) {
   try {
@@ -33,6 +34,7 @@ export async function getRelatedContent(contentItemId: string) {
           },
         ],
       },
+      select: CONTENT_ITEM_SAFE_SELECT,
       take: 3,
       orderBy: { createdAt: "desc" },
     });

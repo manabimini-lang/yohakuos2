@@ -4,6 +4,7 @@ import { redirect, notFound } from "next/navigation";
 import { QuietAudioPlayer } from "@/components/audio/QuietAudioPlayer";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
+import { CONTENT_ITEM_SAFE_SELECT } from "@/lib/content-item-safe-select";
 
 export const dynamic = "force-dynamic";
 
@@ -31,12 +32,7 @@ export default async function ReflectionDetailPage({ params }: ReflectionDetailP
   const contentItem = reflection.contentItemId
     ? await prisma.contentItem.findUnique({
         where: { id: reflection.contentItemId },
-        select: {
-          id: true,
-          title: true,
-          aiTags: true,
-          summary: true,
-        },
+        select: CONTENT_ITEM_SAFE_SELECT,
       })
     : null;
 

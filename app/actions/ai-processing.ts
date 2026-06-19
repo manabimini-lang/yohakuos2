@@ -9,6 +9,7 @@ import { shouldGenerateReflection } from "@/lib/ai/should-generate-reflection";
 import { isStarterJourneyUsingSharedKey } from "@/lib/ai/starter-journey";
 import { maybeEnqueueLifeOSJobs } from "@/lib/life/queue-life-jobs";
 import { maybeEnqueueReturnJobs } from "@/lib/memory/queue-return-jobs";
+import { CONTENT_ITEM_SAFE_SELECT } from "@/lib/content-item-safe-select";
 
 // Current AI version — bump when prompts or models change (enables re-analysis)
 const AI_VERSION = "1.0";
@@ -32,6 +33,7 @@ export async function processAIAnalysis(
     // 2. Fetch the content item
     const item = await prisma.contentItem.findUnique({
       where: { id: contentItemId },
+      select: CONTENT_ITEM_SAFE_SELECT,
     });
 
     if (!item) {
@@ -159,14 +161,7 @@ export async function processAIAnalysis(
     async function enqueueAudioReflectionIfEligible(contentItemId: string, userId: string) {
       const contentItem = await prisma.contentItem.findUnique({
         where: { id: contentItemId },
-        select: {
-          reflection: true,
-          summary: true,
-          aiTags: true,
-          contentType: true,
-          title: true,
-          url: true,
-        },
+        select: CONTENT_ITEM_SAFE_SELECT,
       });
       if (!contentItem) return;
 

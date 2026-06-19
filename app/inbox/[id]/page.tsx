@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
+import { CONTENT_ITEM_SAFE_SELECT } from "@/lib/content-item-safe-select";
 
 export const dynamic = "force-dynamic";
 
@@ -59,6 +60,7 @@ export default async function InboxDetailPage({ params }: { params: { id: string
 
   const item = await prisma.contentItem.findUnique({
     where: { id: params.id },
+    select: CONTENT_ITEM_SAFE_SELECT,
   });
 
   if (!item || item.userId !== session.user.id) {

@@ -14,6 +14,7 @@ import { Metadata } from "next";
 import Link from "next/link";
 import { ChevronRight, MessageSquare, ArrowRight } from "lucide-react";
 import { getStarterJourneyStatus } from "@/lib/ai/starter-journey";
+import { CONTENT_ITEM_SAFE_SELECT } from "@/lib/content-item-safe-select";
 
 export const metadata: Metadata = {
   title: "Inbox | YOHAKU",
@@ -27,27 +28,10 @@ export default async function InboxPage() {
   }
 
   const userId = session.user.id;
-  const contentItemSelect = {
-    id: true,
-    title: true,
-    url: true,
-    type: true,
-    thumbnailUrl: true,
-    fileUrl: true,
-    fileName: true,
-    domain: true,
-    reflection: true,
-    aiTags: true,
-    createdAt: true,
-    metadata: true,
-    meaningStatus: true,
-    summary: true,
-  } as const;
-
   // Priority 3: Fetch Recent Items (sorted by createdAt, limit 12)
   const recentItems = await prisma.contentItem.findMany({
     where: { userId },
-    select: contentItemSelect,
+    select: CONTENT_ITEM_SAFE_SELECT,
     orderBy: { createdAt: "desc" },
     take: 12,
   }) as any[];
@@ -55,8 +39,8 @@ export default async function InboxPage() {
   // Priority 3: Fetch Context Items (sorted by contextScore, limit 12)
   const contextItems = await prisma.contentItem.findMany({
     where: { userId },
-    select: contentItemSelect,
-    orderBy: { contextScore: "desc" },
+    select: CONTENT_ITEM_SAFE_SELECT,
+    orderBy: { createdAt: "desc" },
     take: 12,
   }) as any[];
 
