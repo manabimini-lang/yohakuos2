@@ -21,6 +21,23 @@ export default async function DashboardPage() {
   }
 
   const userId = session.user.id;
+  const contentItemSelect = {
+    id: true,
+    title: true,
+    url: true,
+    type: true,
+    thumbnailUrl: true,
+    fileUrl: true,
+    fileName: true,
+    domain: true,
+    reflection: true,
+    aiTags: true,
+    theme: true,
+    createdAt: true,
+    metadata: true,
+    meaningStatus: true,
+    summary: true,
+  } as const;
 
   // 1. Current Context
   const contextProfile = await buildContextProfile(userId);
@@ -36,18 +53,20 @@ export default async function DashboardPage() {
       reflection: { not: null },
       createdAt: { lt: threeMonthsAgo },
     },
+    select: contentItemSelect,
     orderBy: { contextScore: "desc" },
     take: 1,
-  });
+  }) as any[];
   const quietReturnItem = quietReturnCandidates[0] || null;
 
   // 3. Recent Inbox
   // Top 3 recent items
   const recentItems = await prisma.contentItem.findMany({
     where: { userId },
+    select: contentItemSelect,
     orderBy: { createdAt: "desc" },
     take: 3,
-  });
+  }) as any[];
 
   return (
     <main className="min-h-screen bg-background pb-32">

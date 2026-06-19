@@ -1,4 +1,3 @@
-import { calculateMemoryScore } from "@/lib/memory/score";
 import { buildContextProfile } from "@/lib/memory/context-profile";
 import { getContextMemories } from "@/lib/memory/context-memory";
 import { ContextProfileSection } from "@/components/memory/ContextProfileSection";
@@ -28,20 +27,39 @@ export default async function InboxPage() {
   }
 
   const userId = session.user.id;
+  const contentItemSelect = {
+    id: true,
+    title: true,
+    url: true,
+    type: true,
+    thumbnailUrl: true,
+    fileUrl: true,
+    fileName: true,
+    domain: true,
+    reflection: true,
+    aiTags: true,
+    theme: true,
+    createdAt: true,
+    metadata: true,
+    meaningStatus: true,
+    summary: true,
+  } as const;
 
   // Priority 3: Fetch Recent Items (sorted by createdAt, limit 12)
   const recentItems = await prisma.contentItem.findMany({
     where: { userId },
+    select: contentItemSelect,
     orderBy: { createdAt: "desc" },
     take: 12,
-  });
+  }) as any[];
 
   // Priority 3: Fetch Context Items (sorted by contextScore, limit 12)
   const contextItems = await prisma.contentItem.findMany({
     where: { userId },
+    select: contentItemSelect,
     orderBy: { contextScore: "desc" },
     take: 12,
-  });
+  }) as any[];
 
   const [userSettings, starterJourney, user] = await Promise.all([
     prisma.userAISettings.findUnique({
