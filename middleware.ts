@@ -56,6 +56,10 @@ export async function middleware(request: NextRequest) {
       }
     }
 
+    if (path === "/dialogue") {
+      return NextResponse.redirect(new URL("/companion", req.nextUrl.origin));
+    }
+
     // Centralized Premium route protection
     if (isPremiumRoute(path)) {
       const isLoggedIn = !!req.auth?.user;
