@@ -11,6 +11,9 @@ CREATE TABLE IF NOT EXISTS "snapshot_jobs" (
 
 CREATE INDEX IF NOT EXISTS "snapshot_jobs_content_item_id_idx" ON "snapshot_jobs" ("content_item_id");
 
+ALTER TABLE "content_items"
+    ADD COLUMN IF NOT EXISTS "snapshot_url" TEXT;
+
 DO $$
 BEGIN
   IF NOT EXISTS (
