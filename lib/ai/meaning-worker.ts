@@ -23,7 +23,7 @@ export async function runMeaningWorker() {
 
   try {
     // 2. AI要約 & タグ & テーマ生成
-    const { summary, tags, theme } = await generateMeaning({
+    const { summary, tags } = await generateMeaning({
       title: job.contentItem.title || "",
       description: (job.contentItem.metadata as any)?.description || "",
       contentType: job.contentItem.contentType || "website",
@@ -37,7 +37,6 @@ export async function runMeaningWorker() {
       data: {
         summary,
         aiTags: tags, // AI Meaning Layer の成果物として aiTags に保存
-        theme: theme, // Theme Engine が抽出したテーマを保存
         meaningStatus: "completed",
         aiProcessedAt: new Date(),
       },

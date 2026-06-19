@@ -9,6 +9,31 @@ export interface YohakuResult {
   reflection: string;
 }
 
+const THEME_KEYWORDS: Array<{ theme: ThemeType; keywords: string[] }> = [
+  { theme: ThemeType.WORK, keywords: ["仕事", "働く", "業務", "職場", "work"] },
+  { theme: ThemeType.LEARNING, keywords: ["学習", "勉強", "学び", "study", "learning"] },
+  { theme: ThemeType.HEALTH, keywords: ["健康", "体調", "睡眠", "運動", "health"] },
+  { theme: ThemeType.FAMILY, keywords: ["家族", "family"] },
+  { theme: ThemeType.PARENTING, keywords: ["子育て", "育児", "parenting"] },
+  { theme: ThemeType.SIDEBUSINESS, keywords: ["副業", "side", "business"] },
+  { theme: ThemeType.CREATION, keywords: ["創作", "制作", "執筆", "作る", "creation"] },
+  { theme: ThemeType.AI, keywords: ["AI", "人工知能", "生成ai", "generative ai"] },
+  { theme: ThemeType.ENGLISH, keywords: ["英語", "english"] },
+  { theme: ThemeType.HOBBY, keywords: ["趣味", "hobby"] },
+];
+
+function inferTheme(text: string): ThemeType | null {
+  const normalized = text.toLowerCase();
+
+  for (const { theme, keywords } of THEME_KEYWORDS) {
+    if (keywords.some((keyword) => normalized.includes(keyword.toLowerCase()))) {
+      return theme;
+    }
+  }
+
+  return null;
+}
+
 /**
  * Yohaku Generator
  * 直近72時間のデータから、人生の文脈を可視化する。
@@ -20,7 +45,7 @@ async function getRawYohaku(userId: string): Promise<YohakuResult> {
   const [memories, dialogues, connections] = await Promise.all([
     prisma.contentItem.findMany({
       where: { userId, createdAt: { gte: seventyTwoHoursAgo } },
-      select: { title: true, summary: true, theme: true },
+      select: { title: true, summary: true, aiTags: true },
     }),
     prisma.companionMessage.findMany({
       where: { 
@@ -43,7 +68,15 @@ async function getRawYohaku(userId: string): Promise<YohakuResult> {
   // 2. Theme 集計
   const themeCounts: Record<string, number> = {};
   memories.forEach(m => {
-    if (m.theme) themeCounts[m.theme] = (themeCounts[m.theme] || 0) + 1;
+    const sourceText = [
+      m.title,
+      m.summary,
+      ...(m.aiTags ?? []),
+    ].filter(Boolean).join(" ");
+    const inferredTheme = inferTheme(sourceText);
+    if (inferredTheme) {
+      themeCounts[inferredTheme] = (themeCounts[inferredTheme] || 0) + 1;
+    }
   });
   const dominantThemes = Object.entries(themeCounts)
     .sort((a, b) => b[1] - a[1])
