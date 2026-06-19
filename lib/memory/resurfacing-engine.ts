@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { generateReflectionPrompt } from "./reflection-generator";
+import { CONTENT_ITEM_SAFE_SELECT } from "@/lib/content-item-safe-select";
 
 const RESURFACING_EXCLUSION_DAYS = 30;
 const OLDER_THAN_DAYS = 14;
@@ -53,11 +54,12 @@ export async function generateDailyResurfacing(
     LIMIT 50
   `;
 
-  const candidates = candidateRows.length
-    ? await prisma.contentItem.findMany({
+    const candidates = candidateRows.length
+      ? await prisma.contentItem.findMany({
         where: { id: { in: candidateRows.map((row) => row.id) } },
+        select: CONTENT_ITEM_SAFE_SELECT,
       })
-    : [];
+      : [];
 
   if (candidates.length === 0) {
     console.log(`[RESURFACING_ENGINE] No eligible candidates for user ${userId}.`);

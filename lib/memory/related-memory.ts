@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { ContentItem } from "@prisma/client";
+import { CONTENT_ITEM_SAFE_SELECT } from "@/lib/content-item-safe-select";
 
 export interface RelatedMemoryViewModel {
   id: string;
@@ -25,7 +25,8 @@ export async function getRelatedMemories(
   limit: number = 3
 ): Promise<RelatedMemoryViewModel[]> {
   const current = await prisma.contentItem.findUnique({
-    where: { id: contentId }
+    where: { id: contentId },
+    select: CONTENT_ITEM_SAFE_SELECT,
   });
 
   if (!current) return [];
@@ -37,6 +38,7 @@ export async function getRelatedMemories(
       userId,
       id: { not: current.id }
     },
+    select: CONTENT_ITEM_SAFE_SELECT,
     take: 50,
   });
 

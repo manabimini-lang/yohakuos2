@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { CONTENT_ITEM_SAFE_SELECT } from "@/lib/content-item-safe-select";
 
 /**
  * Quiet Return Engine
@@ -61,12 +62,7 @@ export async function detectReturningFragments(
         createdAt: { lte: sixMonthsAgo },
         memoryState: "active",
       },
-      select: {
-        id: true,
-        createdAt: true,
-        aiTags: true,
-        title: true,
-      },
+      select: CONTENT_ITEM_SAFE_SELECT,
       orderBy: { createdAt: "desc" },
       take: 300, // Large historical window
     });
@@ -77,12 +73,7 @@ export async function detectReturningFragments(
         createdAt: { gte: new Date(nowDate.getTime() - 30 * 24 * 60 * 60 * 1000) },
         memoryState: "active",
       },
-      select: {
-        id: true,
-        createdAt: true,
-        aiTags: true,
-        title: true,
-      },
+      select: CONTENT_ITEM_SAFE_SELECT,
       orderBy: { createdAt: "desc" },
       take: 100,
     });
@@ -160,12 +151,7 @@ export async function detectTemporalEchoes(
         createdAt: { gte: oneYearAgo },
         memoryState: "active",
       },
-      select: {
-        id: true,
-        createdAt: true,
-        aiTags: true,
-        title: true,
-      },
+      select: CONTENT_ITEM_SAFE_SELECT,
       orderBy: { createdAt: "asc" },
     });
 
@@ -230,12 +216,7 @@ export async function detectCalmResurfacing(
         createdAt: { gte: oneYearAgo, lte: ninetyDaysAgo },
         memoryState: "active",
       },
-      select: {
-        id: true,
-        createdAt: true,
-        aiTags: true,
-        title: true,
-      },
+      select: CONTENT_ITEM_SAFE_SELECT,
       orderBy: { createdAt: "desc" },
       take: 200,
     });

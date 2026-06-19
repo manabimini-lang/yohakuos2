@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getDefaultProvider } from "@/lib/ai/provider";
+import { CONTENT_ITEM_SAFE_SELECT } from "@/lib/content-item-safe-select";
 
 const WEEKLY_REFLECTION_SYSTEM_PROMPT = `あなたはユーザーの1週間の記録を静かに見つめるAIです。
 過去7日間の記録から、最近の関心や思考の傾向を「静かな気付き」として言語化してください。
@@ -27,11 +28,7 @@ export async function generateWeeklyReflection(userId: string) {
         createdAt: { gte: startDate },
         memoryState: "active",
       },
-      select: {
-        aiTags: true,
-        reflection: true,
-        title: true,
-      },
+      select: CONTENT_ITEM_SAFE_SELECT,
       orderBy: { createdAt: "desc" },
     });
 

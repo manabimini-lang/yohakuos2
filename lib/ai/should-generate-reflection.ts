@@ -7,6 +7,7 @@
  */
 
 import { prisma } from "@/lib/prisma";
+import { CONTENT_ITEM_SAFE_SELECT } from "@/lib/content-item-safe-select";
 
 interface ReflectionEligibilityOptions {
   contentItemId: string;
@@ -49,6 +50,7 @@ export async function shouldGenerateReflection(
       userId,
       createdAt: { lte: twoDaysAgo },
     },
+    select: CONTENT_ITEM_SAFE_SELECT,
   });
 
   if (oldItem) {
@@ -59,7 +61,7 @@ export async function shouldGenerateReflection(
   // Check for thematic resonance: multiple items with same tag
   const contentItem = await prisma.contentItem.findUnique({
     where: { id: contentItemId },
-    select: { aiTags: true },
+    select: CONTENT_ITEM_SAFE_SELECT,
   });
 
   if (contentItem?.aiTags && contentItem.aiTags.length > 0) {

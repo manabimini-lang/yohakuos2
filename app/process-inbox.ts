@@ -4,6 +4,7 @@ import { generateContentTags } from "@/lib/ai/tagger";
 import { generateSummary } from "@/prisma/summarizer";
 import { getDefaultProvider } from "@/lib/ai/provider";
 import { generateMemoryLinks } from "@/lib/memory/link-generator"; // E-3D: Memory Link Generator
+import { CONTENT_ITEM_SAFE_SELECT } from "@/lib/content-item-safe-select";
 
 async function generateTags(content: string, _context?: string) {
   const provider = getDefaultProvider();
@@ -21,6 +22,7 @@ export async function processInboxQueue() {
         aiProcessedAt: null,
         memoryState: "active",
       },
+      select: CONTENT_ITEM_SAFE_SELECT,
       take: 5,
       orderBy: { createdAt: "asc" },
     });

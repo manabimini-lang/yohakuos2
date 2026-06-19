@@ -1,6 +1,15 @@
-import { ContentItem, ContextType } from "@prisma/client";
+import { ContextType } from "@prisma/client";
 import { generateJSON } from "./gemini";
 import { parseContext } from "./parsers";
+
+export type ConnectionContentItem = {
+  id: string;
+  userId: string;
+  title: string | null;
+  summary: string | null;
+  reflection: string | null;
+  aiTags: string[];
+};
 
 export interface AIConnectionJudgment {
   targetId: string;
@@ -44,7 +53,7 @@ function calculateTagSimilarity(tagsA: string[], tagsB: string[]): number {
 /**
  * Step 4: 候補の絞り込み (100件 -> 20件)
  */
-export function filterCandidates(current: ContentItem, candidates: ContentItem[]): ContentItem[] {
+export function filterCandidates(current: ConnectionContentItem, candidates: ConnectionContentItem[]): ConnectionContentItem[] {
   const scored = candidates.map(c => {
     const tagSim = calculateTagSimilarity(current.aiTags, c.aiTags);
     const sumSim = calculateStringSimilarity(current.summary || "", c.summary || "");
@@ -65,8 +74,8 @@ export function filterCandidates(current: ContentItem, candidates: ContentItem[]
  * Step 5: AI判定
  */
 export async function getAIConnectionJudgments(
-  current: ContentItem,
-  candidates: ContentItem[],
+  current: ConnectionContentItem,
+  candidates: ConnectionContentItem[],
   userId: string
 ): Promise<AIConnectionJudgment[]> {
   if (candidates.length === 0) return [];
@@ -113,7 +122,7 @@ ${candidates.map((c) => `ID: ${c.id}\nタイトル: ${c.title}\n要約: ${c.summ
 /**
  * Step 6: システム側での最終スコア算出
  */
-export function calculateFinalScore(current: ContentItem, target: ContentItem): number {
+export function calculateFinalScore(current: ConnectionContentItem, target: ConnectionContentItem): number {
   const tagSimilarity = calculateTagSimilarity(current.aiTags, target.aiTags);
   const summarySimilarity = calculateStringSimilarity(current.summary || "", target.summary || "");
   const contextSimilarity = calculateStringSimilarity(current.reflection || "", target.reflection || "");

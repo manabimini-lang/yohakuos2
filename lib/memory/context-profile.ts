@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import type { ContextProfileViewModel } from "./view-models/context-profile";
+import { CONTENT_ITEM_SAFE_SELECT } from "@/lib/content-item-safe-select";
 
 // Weights for the scoring algorithm
 const SAVE_WEIGHT = 3;
@@ -21,21 +22,18 @@ export async function buildContextProfile(userId: string): Promise<ContextProfil
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
   // Fetch recent items
-  const recentItems = await prisma.contentItem.findMany({
-    where: {
-      userId,
-      createdAt: {
-        gte: thirtyDaysAgo,
+    const recentItems = await prisma.contentItem.findMany({
+      where: {
+        userId,
+        createdAt: {
+          gte: thirtyDaysAgo,
       },
-      aiTags: {
-        isEmpty: false, // Must have some tags
+        aiTags: {
+          isEmpty: false, // Must have some tags
+        },
       },
-    },
-    select: {
-      aiTags: true,
-      metadata: true,
-    },
-  });
+      select: CONTENT_ITEM_SAFE_SELECT,
+    });
 
   if (recentItems.length === 0) {
     return null;

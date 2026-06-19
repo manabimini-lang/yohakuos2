@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { CONTENT_ITEM_SAFE_SELECT } from "@/lib/content-item-safe-select";
 import { getStarterJourneyStatus } from "@/lib/ai/starter-journey";
 import { enqueueArchiveRevisitGeneration } from "./archive-revisit";
 import { checkAIAvailability } from "@/lib/ai/gemini";
@@ -180,6 +181,7 @@ export async function maybeEnqueueReturnJobs(userId: string): Promise<void> {
           userId,
           createdAt: { lte: twoDaysAgo },
         },
+        select: CONTENT_ITEM_SAFE_SELECT,
       });
 
       if (!oldItem) {
@@ -195,6 +197,7 @@ export async function maybeEnqueueReturnJobs(userId: string): Promise<void> {
       userId,
       createdAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
     },
+    select: CONTENT_ITEM_SAFE_SELECT,
   });
 
   if (!recentActivity) {

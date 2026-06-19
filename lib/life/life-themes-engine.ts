@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { generatePhilosophyFragments } from "@/lib/memory/philosophy";
+import { CONTENT_ITEM_SAFE_SELECT } from "@/lib/content-item-safe-select";
 
 /**
  * Life OS Layer — Life Themes Extraction Engine
@@ -73,13 +74,7 @@ export async function extractLifeThemes(
         createdAt: { gte: periodStart },
         memoryState: "active",
       },
-      select: {
-        id: true,
-        aiTags: true,
-        title: true,
-        reflection: true,
-        createdAt: true,
-      },
+      select: CONTENT_ITEM_SAFE_SELECT,
       orderBy: { createdAt: "asc" },
     });
 
@@ -163,10 +158,7 @@ export async function detectReturningThemes(
         createdAt: { gte: oneYearAgo },
         memoryState: "active",
       },
-      select: {
-        aiTags: true,
-        createdAt: true,
-      },
+      select: CONTENT_ITEM_SAFE_SELECT,
       orderBy: { createdAt: "asc" },
     });
 

@@ -12,6 +12,7 @@
  */
 
 import { prisma } from "@/lib/prisma";
+import { CONTENT_ITEM_SAFE_SELECT } from "@/lib/content-item-safe-select";
 
 interface ReflectionScriptOptions {
   userId: string;
@@ -31,15 +32,9 @@ export async function generateReflectionScript(
       userId,
       createdAt: { gte: sevenDaysAgo },
     },
+    select: CONTENT_ITEM_SAFE_SELECT,
     orderBy: { createdAt: "desc" },
     take: 8,
-    select: {
-      id: true,
-      title: true,
-      aiTags: true,
-      summary: true,
-      reflection: true,
-    },
   });
 
   // Collect all tags from recent items

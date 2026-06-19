@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getDefaultProvider } from "@/lib/ai/provider";
+import { CONTENT_ITEM_SAFE_SELECT } from "@/lib/content-item-safe-select";
 
 const THEME_EXTRACTOR_SYSTEM_PROMPT = `あなたはユーザーの記録から、長期的なテーマや関心事を静かに抽出するAIです。
 以下のルールを絶対厳守してください：
@@ -22,10 +23,7 @@ export async function generateMemorySnapshot(
         createdAt: { gte: startDate },
         memoryState: "active",
       },
-      select: {
-        aiTags: true,
-        reflection: true,
-      },
+      select: CONTENT_ITEM_SAFE_SELECT,
       orderBy: { createdAt: "desc" },
       take: 50,
     });

@@ -1,10 +1,11 @@
 import { prisma } from "@/lib/prisma";
-import { ContentItem } from "@prisma/client";
+import { CONTENT_ITEM_SAFE_SELECT } from "@/lib/content-item-safe-select";
+import type { ContentCardItem } from "@/components/capture/ContentCard";
 
 export interface TimelineMonth {
   year: number;
   month: number;
-  items: ContentItem[];
+  items: ContentCardItem[];
   themes: string[]; // Mocked or derived themes for the month
 }
 
@@ -17,6 +18,7 @@ export async function buildMemoryTimeline(
         userId,
         memoryState: "active",
       },
+      select: CONTENT_ITEM_SAFE_SELECT,
       orderBy: { createdAt: "desc" },
     });
 

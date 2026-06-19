@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { generateText } from "./gemini";
 import { ThemeType, ContextType } from "@prisma/client";
 import { unstable_cache } from "next/cache";
+import { CONTENT_ITEM_SAFE_SELECT } from "@/lib/content-item-safe-select";
 
 export interface YohakuResult {
   dominantThemes: ThemeType[];
@@ -45,7 +46,7 @@ async function getRawYohaku(userId: string): Promise<YohakuResult> {
   const [memories, dialogues, connections] = await Promise.all([
     prisma.contentItem.findMany({
       where: { userId, createdAt: { gte: seventyTwoHoursAgo } },
-      select: { title: true, summary: true, aiTags: true },
+      select: CONTENT_ITEM_SAFE_SELECT,
     }),
     prisma.companionMessage.findMany({
       where: { 

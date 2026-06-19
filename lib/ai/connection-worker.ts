@@ -4,6 +4,7 @@ import {
   getAIConnectionJudgments, 
   calculateFinalScore 
 } from "@/lib/ai/connection-generator";
+import { CONTENT_ITEM_SAFE_SELECT } from "@/lib/content-item-safe-select";
 
 /**
  * Step 2: 重複接続防止のための正規化
@@ -49,6 +50,7 @@ export async function runConnectionWorker() {
         userId: current.userId,
         id: { not: current.id },
       },
+      select: CONTENT_ITEM_SAFE_SELECT,
       orderBy: { createdAt: "desc" },
       take: 100,
     });

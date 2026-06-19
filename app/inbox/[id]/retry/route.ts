@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { processAIAnalysis } from "@/app/actions/ai-processing";
+import { CONTENT_ITEM_SAFE_SELECT } from "@/lib/content-item-safe-select";
 
 export async function GET(
   request: NextRequest,
@@ -17,6 +18,7 @@ export async function GET(
   try {
     const item = await prisma.contentItem.findUnique({
       where: { id: contentItemId },
+      select: CONTENT_ITEM_SAFE_SELECT,
     });
 
     if (item && item.userId === session.user.id) {

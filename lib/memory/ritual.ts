@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { detectReturningThemes, detectLifeDirection } from "@/lib/life/life-themes-engine";
 import { getLatestPhilosophyFragments } from "@/lib/memory/philosophy";
+import { CONTENT_ITEM_SAFE_SELECT } from "@/lib/content-item-safe-select";
 
 interface DailyRitualPastMemory {
   source: string;
@@ -154,14 +155,7 @@ export async function generateDailyRitual(userId: string) {
         userId,
         memoryState: "active",
       },
-      select: {
-        id: true,
-        title: true,
-        summary: true,
-        reflection: true,
-        aiTags: true,
-        createdAt: true,
-      },
+      select: CONTENT_ITEM_SAFE_SELECT,
       orderBy: { createdAt: "desc" },
       take: 200,
     }),

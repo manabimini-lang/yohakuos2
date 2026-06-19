@@ -1,7 +1,21 @@
 import Link from "next/link";
-import { ContentItem } from "@prisma/client";
 
-export function ContentCard({ item }: { item: ContentItem & { memoryScore?: number } }) {
+export type ContentCardItem = {
+  id: string;
+  type: string;
+  title: string | null;
+  url: string | null;
+  fileName: string | null;
+  thumbnailUrl: string | null;
+  domain: string | null;
+  aiTags: string[];
+  reflection: string | null;
+  summary: string | null;
+  createdAt: Date;
+  memoryScore?: number;
+};
+
+export function ContentCard({ item }: { item: ContentCardItem }) {
   const isUrl = item.type === "url";
   const date = new Date(item.createdAt).toLocaleDateString("ja-JP");
   const summary = item.summary ? item.summary.slice(0, 80) : null;
