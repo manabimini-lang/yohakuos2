@@ -5,6 +5,7 @@ import { CaptureLayer } from "@/components/capture/CaptureLayer";
 import { auth } from "@/lib/auth";
 import { Inter, Noto_Sans_JP } from "next/font/google";
 import { PWAInstallCTA } from "@/components/pwa/pwa-install-cta";
+import { SettingsButton } from "@/components/ui/settings-button";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
@@ -59,6 +60,7 @@ export default async function RootLayout({
               {children}
               {session && <CaptureLayer />}
               <PWAInstallCTA />
+              {session && <SettingsButton />}
             </div>
           </PWAProvider>
         </SessionProvider>

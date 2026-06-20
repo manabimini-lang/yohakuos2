@@ -4,10 +4,16 @@ import { useState, useEffect } from "react";
 import { Caption, PageTitle, Body } from "@/components/ui/typography";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 export default function HeroSection() {
   const [showInstallPrompt, setShowInstallPrompt] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
+  const { data: session } = useSession();
+  const router = useRouter();
+
+  const isLoggedIn = !!session?.user;
 
   useEffect(() => {
     // PWAの状態検知（スタンドアロンモードかどうか）
@@ -39,23 +45,35 @@ export default function HeroSection() {
           // Mobile ではページ下部で一息つけるよう十分な余白を確保
           "pb-12 lg:pb-0"
         )}>
-          {/* Primary CTA: 扉をひらく */}
-          {/* Desktop/Mobile 共通の Primary スタイル */}
-          <Button variant="primary" className="w-full max-w-[320px] lg:min-w-[280px] h-14 rounded-2xl text-base font-medium shadow-sm transition-all hover:opacity-90 active:scale-[0.98]">
-            扉をひらく
-          </Button>
-
-          {/* Secondary & Utility CTAs: gap-3 以上を確保し重なりを防止 */}
-          <div className="flex items-center gap-3 w-full lg:w-auto">
-            <Button variant="outline" className="flex-1 lg:min-w-[160px] h-12 rounded-xl text-sm border-slate-200 text-slate-500 hover:text-foreground hover:bg-slate-50">
-              ＋余白に置く
+          {!isLoggedIn ? (
+            // 未ログイン時：認証導線（ログイン/はじめる）のみ表示
+            <Button 
+              onClick={() => router.push("/login")}
+              variant="primary" 
+              className="w-full max-w-[320px] lg:min-w-[280px] h-14 rounded-2xl text-base font-medium shadow-sm transition-all hover:opacity-90 active:scale-[0.98]"
+            >
+              扉をひらく
             </Button>
-            {showInstall && (
-              <Button variant="secondary" className="flex-1 lg:min-w-[160px] h-12 rounded-xl text-sm bg-slate-50 text-slate-500 hover:bg-slate-100 border-none">
-                インストールする
+          ) : (
+            // ログイン済み時：＋余白に置く
+            <div className="flex items-center gap-3 w-full lg:w-auto">
+              <Button 
+                onClick={() => router.push("/dashboard")} // 任意の導線
+                variant="outline" 
+                className="flex-1 lg:min-w-[160px] h-12 rounded-xl text-sm border-slate-200 text-slate-500 hover:text-foreground hover:bg-slate-50"
+              >
+                ＋余白に置く
               </Button>
-            )}
-          </div>
+              {showInstall && (
+                <Button 
+                  variant="secondary" 
+                  className="flex-1 lg:min-w-[160px] h-12 rounded-xl text-sm bg-slate-50 text-slate-500 hover:bg-slate-100 border-none"
+                >
+                  インストールする
+                </Button>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </main>

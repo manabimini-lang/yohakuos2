@@ -24,10 +24,8 @@ export async function GET(req: Request) {
     // Generate secure CSRF state
     const state = crypto.randomBytes(16).toString("hex");
 
-    const baseUrl = process.env.NEXTAUTH_URL
-      || `${req.headers.get("x-forwarded-proto") || "https"}://${req.headers.get("x-forwarded-host") || req.headers.get("host") || "localhost:3000"}`;
-
-    const redirectUri = `${baseUrl}/api/auth/discord/callback`;
+    const { origin } = new URL(req.url);
+    const redirectUri = `${origin}/api/auth/discord/callback`;
     const discordAuthUrl = `https://discord.com/api/oauth2/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=identify%20email&state=${state}`;
 
     const response = NextResponse.redirect(discordAuthUrl);

@@ -2,14 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Feather, History, MessageCircle, Settings } from "lucide-react";
+import { Feather, History, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
   { label: "余白", href: "/inbox", icon: Feather },
   { label: "記憶", href: "/memory", icon: History },
   { label: "対話", href: "/dialogue", icon: MessageCircle },
-  { label: "設定", href: "/settings", icon: Settings },
 ];
 
 export default function MainBottomNav() {

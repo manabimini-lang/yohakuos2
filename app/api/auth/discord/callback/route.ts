@@ -43,10 +43,8 @@ export async function GET(req: Request) {
       return new NextResponse("Configuration error", { status: 500 });
     }
 
-    const baseUrl = process.env.NEXTAUTH_URL
-      || `${req.headers.get("x-forwarded-proto") || "https"}://${req.headers.get("x-forwarded-host") || req.headers.get("host") || "localhost:3000"}`;
-
-    const redirectUri = `${baseUrl}/api/auth/discord/callback`;
+    const { origin } = new URL(req.url);
+    const redirectUri = `${origin}/api/auth/discord/callback`;
 
     // 1. Exchange code for token
     const tokenResponse = await fetch("https://discord.com/api/oauth2/token", {
@@ -115,7 +113,7 @@ export async function GET(req: Request) {
     });
 
     // 4. Redirect user back to account settings
-    return NextResponse.redirect(new URL("/member/settings/account?success=true", baseUrl));
+    return NextResponse.redirect(new URL("/member/settings/account?success=true", origin));
   } catch (error) {
     console.error("[DISCORD_CALLBACK_ERROR]", error);
     return new NextResponse("Internal Server Error", { status: 500 });
