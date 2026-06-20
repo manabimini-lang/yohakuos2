@@ -33,7 +33,7 @@ export async function GET(req: Request) {
     // Save state in cookie for callback verification
     response.cookies.set("discord_oauth_state", state, {
       httpOnly: true,
-      secure: baseUrl.startsWith("https://"),
+      secure: origin.startsWith("https://"),
       sameSite: "lax",
       maxAge: 600, // 10 minutes
       path: "/",
