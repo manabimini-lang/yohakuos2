@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { unstable_noStore as noStore } from "next/cache";
 import { auth } from "@/lib/auth";
@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 export const fetchCache = "force-no-store";
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   noStore();
   try {
     const session = await auth();
@@ -43,8 +43,11 @@ export async function GET(req: Request) {
       return new NextResponse("Configuration error", { status: 500 });
     }
 
-    const { origin } = new URL(req.url);
-    const redirectUri = `${origin}/api/auth/discord/callback`;
+    const baseUrl = process.env.NEXTAUTH_URL 
+      ? process.env.NEXTAUTH_URL.replace(/\/$/, "") 
+      : req.nextUrl.origin;
+
+    const redirectUri = `${baseUrl}/api/auth/discord/callback`;
 
     // 1. Exchange code for token
     const tokenResponse = await fetch("https://discord.com/api/oauth2/token", {
@@ -113,7 +116,7 @@ export async function GET(req: Request) {
     });
 
     // 4. Redirect user back to account settings
-    return NextResponse.redirect(new URL("/member/settings/account?success=true", origin));
+    return NextResponse.redirect(new URL("/member/settings/account?success=true", baseUrl));
   } catch (error) {
     console.error("[DISCORD_CALLBACK_ERROR]", error);
     return new NextResponse("Internal Server Error", { status: 500 });

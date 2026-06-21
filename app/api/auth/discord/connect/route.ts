@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { unstable_noStore as noStore } from "next/cache";
 import crypto from "crypto";
@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 export const fetchCache = "force-no-store";
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   noStore();
   try {
     const session = await auth();
@@ -24,8 +24,12 @@ export async function GET(req: Request) {
     // Generate secure CSRF state
     const state = crypto.randomBytes(16).toString("hex");
 
-    const { origin } = new URL(req.url);
-    const redirectUri = `${origin}/api/auth/discord/callback`;
+    // Extract base URL safely
+    const baseUrl = process.env.NEXTAUTH_URL 
+      ? process.env.NEXTAUTH_URL.replace(/\/$/, "") 
+      : req.nextUrl.origin;
+
+    const redirectUri = `${baseUrl}/api/auth/discord/callback`;
     const discordAuthUrl = `https://discord.com/api/oauth2/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=identify%20email&state=${state}`;
 
     const response = NextResponse.redirect(discordAuthUrl);
@@ -33,7 +37,7 @@ export async function GET(req: Request) {
     // Save state in cookie for callback verification
     response.cookies.set("discord_oauth_state", state, {
       httpOnly: true,
-      secure: origin.startsWith("https://"),
+      secure: baseUrl.startsWith("https://"),
       sameSite: "lax",
       maxAge: 600, // 10 minutes
       path: "/",
