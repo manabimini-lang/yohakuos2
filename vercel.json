@@ -2,7 +2,15 @@
   "crons": [
     {
       "path": "/api/internal/process-ai-jobs",
-      "schedule": "0 0 * * *"
+      "schedule": "0 22 * * *"
+    },
+    {
+      "path": "/api/internal/process-ai-jobs",
+      "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/internal/process-ai-jobs",
+      "schedule": "0 12 * * *"
     }
   ]
 }
