@@ -5,16 +5,21 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Sparkles, Loader2, Check, ArrowRight } from "lucide-react";
 import { hasPremiumAccess } from "@/lib/constants/plan";
+import { Turnstile } from "@marsidev/react-turnstile";
+import { createStripeCheckoutSession } from "@/app/actions/stripe-checkout";
 
 export function PricingClient() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
 
   const isPremium = !!session?.user && hasPremiumAccess(
     (session.user as any).plan,
     (session.user as any).role
   );
+
+  const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
   const handleSubscribe = async () => {
     if (status === "unauthenticated") {
@@ -24,6 +29,11 @@ export function PricingClient() {
 
     if (isPremium) return;
 
+    if (!turnstileToken && turnstileSiteKey) {
+      alert("アクセスを確認できませんでした。しばらくしてからお試しください。");
+      return;
+    }
+
     setLoading(true);
     try {
       const priceId = process.env.NEXT_PUBLIC_STRIPE_PRICE_ID;
@@ -32,22 +42,17 @@ export function PricingClient() {
         return;
       }
 
-      const res = await fetch("/api/stripe/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ priceId }),
+      const res = await createStripeCheckoutSession({ 
+        priceId, 
+        turnstileToken: turnstileToken || "test-token" // allow dev bypass if no sitekey
       });
 
-      if (!res.ok) {
-        throw new Error("Stripe checkout request failed");
+      if (!res.success || !res.url) {
+        alert(res.error || "通信中にエラーが発生しました。");
+        return;
       }
 
-      const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        alert("チェックアウトページの取得に失敗しました。時間をおいて再度お試しください。");
-      }
+      window.location.href = res.url;
     } catch (error) {
       console.error(error);
       alert("通信中にエラーが発生しました。");
@@ -100,7 +105,21 @@ export function PricingClient() {
         </ul>
 
         {/* Subscribe Button */}
-        <div className="pt-4">
+        <div className="pt-4 space-y-4">
+          {turnstileSiteKey && !isPremium && (
+            <div className="flex justify-center h-[65px] items-center">
+              <Turnstile
+                siteKey={turnstileSiteKey}
+                onSuccess={(token) => setTurnstileToken(token)}
+                onError={() => setTurnstileToken(null)}
+                onExpire={() => setTurnstileToken(null)}
+                options={{
+                  theme: "light",
+                  size: "invisible",
+                }}
+              />
+            </div>
+          )}
           {isPremium ? (
             <div className="space-y-3">
               <p className="text-center text-xs text-emerald-600 bg-emerald-50 py-2.5 rounded-xl border border-emerald-100 font-medium">
@@ -117,7 +136,7 @@ export function PricingClient() {
           ) : (
             <button
               onClick={handleSubscribe}
-              disabled={loading || status === "loading"}
+              disabled={loading || status === "loading" || (!turnstileToken && !!turnstileSiteKey)}
               className="w-full flex items-center justify-center space-x-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-foreground font-medium py-3 transition-colors disabled:opacity-50 text-sm shadow-sm"
             >
               {loading ? (

@@ -21,4 +21,5 @@ export const CONTENT_ITEM_SAFE_SELECT = {
   aiProcessedAt: true,
   createdAt: true,
   updatedAt: true,
+  meaningStatus: true,
 } as const;
