@@ -1,3 +1,4 @@
+import { hasPremiumAccess } from "@/lib/constants/plan";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
@@ -16,7 +17,7 @@ export default async function LearningFeedPage() {
   }
 
   const userId = session.user.id;
-  const isPremium = session.user.role === "PAID_MEMBER" || session.user.role === "ADMIN";
+  const isPremium = hasPremiumAccess(session.user.plan, session.user.role);
 
   // Fetch recent audio reflections
   const audioReflections = await prisma.audioReflection.findMany({

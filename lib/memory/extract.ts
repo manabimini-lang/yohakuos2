@@ -5,6 +5,7 @@ import { createFingerprint, findDuplicates } from './dedup';
 import { sanitizeMemoryContent, sanitizeConfidence } from './ethics';
 import { estimateCost, estimateTokenCount } from './cost';
 import { enqueueJob } from './queue';
+import { getExpiresAt } from "@/lib/services/retention.service";
 
 interface MemoryExtractionResult {
     values: Array<{ title: string; content: string; confidence: number }>;
@@ -59,6 +60,7 @@ async function extractMemories(cardId: string, userId: string): Promise<void> {
 
     // 5. Save each extraction as UserMemory
     const createdMemories: string[] = [];
+    const expiresAt = await getExpiresAt(userId);
 
     for (const [key, items] of Object.entries(data)) {
         const memoryType = MEMORY_TYPE_MAP[key];
@@ -96,6 +98,7 @@ async function extractMemories(cardId: string, userId: string): Promise<void> {
                     fingerprint: createFingerprint(item.title + item.content),
                     sourceCardId: card.id,
                     promptVersion: PROMPT_VERSION,
+                    expiresAt,
                 },
             });
 

@@ -34,9 +34,8 @@ export async function POST(req: Request) {
 
     // Check if Stripe is configured
     const stripeKey = process.env.STRIPE_SECRET_KEY;
-    if (!stripeKey || stripeKey.trim() === "" || stripeKey.startsWith("sk_live_...")) {
-      const mockUrl = `/member/checkout-mock?priceId=${priceId}`;
-      return NextResponse.json({ url: mockUrl });
+    if (!stripeKey) {
+      return new NextResponse("Stripe is not configured", { status: 500 });
     }
 
     const stripe = getStripe();

@@ -5,6 +5,7 @@ import { QuietAudioPlayer } from "@/components/audio/QuietAudioPlayer";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { checkAIAvailability } from "@/lib/ai/gemini";
+import { hasPremiumAccess } from "@/lib/constants/plan";
 
 export const dynamic = "force-dynamic";
 
@@ -32,7 +33,7 @@ export default async function ReflectionsPage() {
   }
 
   const userId = session.user.id;
-  const isPremium = session.user.role === "PAID_MEMBER" || session.user.role === "ADMIN";
+  const isPremium = hasPremiumAccess(session.user.plan, session.user.role);
 
   // Check AI connection status
   const hasAiConnection = (await checkAIAvailability(userId)).available;

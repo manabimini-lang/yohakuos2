@@ -145,8 +145,8 @@ export default async function InboxDetailPage({ params }: { params: { id: string
                 </Link>
               </div>
             </div>
-          ) : !item.summary ? (
-            <p className="text-sm leading-relaxed text-muted-foreground">まだ静かに整理されています。</p>
+          ) : !item.summary || item.meaningStatus === "pending" || item.meaningStatus === "processing" ? (
+            <p className="text-sm leading-relaxed text-muted-foreground animate-pulse">静かに意味を整理しています...</p>
           ) : null}
 
           {item.summary ? (

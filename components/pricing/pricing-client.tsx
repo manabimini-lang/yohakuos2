@@ -26,8 +26,12 @@ export function PricingClient() {
 
     setLoading(true);
     try {
-      const priceId = process.env.NEXT_PUBLIC_STRIPE_PRICE_ID || "price_placeholder";
-      
+      const priceId = process.env.NEXT_PUBLIC_STRIPE_PRICE_ID;
+      if (!priceId) {
+        alert("Stripe Price IDが設定されていません。管理者にお問い合わせください。");
+        return;
+      }
+
       const res = await fetch("/api/stripe/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -82,10 +86,11 @@ export function PricingClient() {
         {/* Features List */}
         <ul className="space-y-4 text-sm text-slate-600">
           {[
+            "思考を永続保存",
+            "人生のアーカイブ",
+            "第二の脳として育てる",
             "AIによる振り返り内容の自動整理",
-            "Discord共有を通じた知見の循環への参加",
             "今の自分に最適なAIロード整理",
-            "今後追加される全てのプレミアム機能へのアクセス",
           ].map((feature, idx) => (
             <li key={idx} className="flex items-start space-x-3">
               <Check className="w-4.5 h-4.5 text-slate-450 stroke-[2] shrink-0 mt-0.5" />

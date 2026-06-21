@@ -13,6 +13,7 @@
 import { prisma } from "@/lib/prisma";
 import { generateText } from "@/lib/ai/gemini";
 import { ContextHealthReport, DEFAULT_CONTEXT_LIFECYCLE } from "./types";
+import { getExpiresAt } from "@/lib/services/retention.service";
 
 /**
  * コンテキストヘルスレポートを生成
@@ -96,6 +97,8 @@ ${memoryText}
 
         const { text } = await generateText(prompt);
 
+        const expiresAt = await getExpiresAt(userId);
+
         // Create compressed memory
         await prisma.userMemory.create({
             data: {
@@ -105,6 +108,7 @@ ${memoryText}
                 content: `【自動圧縮 ${new Date().toLocaleDateString("ja-JP")}】\n${text}`,
                 confidence: 0.25,
                 promptVersion: "calm-compression-1.0.0",
+                expiresAt,
             },
         });
 

@@ -10,6 +10,7 @@ import { isStarterJourneyUsingSharedKey } from "@/lib/ai/starter-journey";
 import { maybeEnqueueLifeOSJobs } from "@/lib/life/queue-life-jobs";
 import { maybeEnqueueReturnJobs } from "@/lib/memory/queue-return-jobs";
 import { CONTENT_ITEM_SAFE_SELECT } from "@/lib/content-item-safe-select";
+import { getExpiresAt } from "@/lib/services/retention.service";
 
 // Current AI version — bump when prompts or models change (enables re-analysis)
 const AI_VERSION = "1.0";
@@ -26,7 +27,7 @@ export async function processAIAnalysis(
   // 1. Mark as processing
   await prisma.contentItem.update({
     where: { id: contentItemId },
-    data: { aiProcessedAt: null },
+    data: { aiProcessedAt: null, meaningStatus: "processing" },
   });
 
   try {
@@ -41,19 +42,17 @@ export async function processAIAnalysis(
     }
 
     // 3. Gather text to analyze
-    const textForAnalysis = [
-      item.reflection,
-      item.title,
-      item.url ?? item.fileName,
-    ]
-      .filter(Boolean)
-      .join("\n\n")
-      .trim();
+    const textParts = [];
+    if (item.reflection) textParts.push(`【ユーザーの保存理由 (Reflection)】\n${item.reflection}`);
+    if (item.title) textParts.push(`【タイトル】\n${item.title}`);
+    if (item.url || item.fileName) textParts.push(`【コンテンツ情報】\n${item.url ?? item.fileName}`);
+    
+    const textForAnalysis = textParts.join("\n\n").trim();
 
     if (!textForAnalysis) {
       await prisma.contentItem.update({
         where: { id: contentItemId },
-        data: { aiProcessedAt: new Date() },
+        data: { aiProcessedAt: new Date(), meaningStatus: "completed" },
       });
       return;
     }
@@ -68,7 +67,7 @@ export async function processAIAnalysis(
       // AI is disabled / not connected
       await prisma.contentItem.update({
         where: { id: contentItemId },
-        data: { aiProcessedAt: new Date() },
+        data: { aiProcessedAt: new Date(), meaningStatus: "failed" },
       });
       await prisma.aIJob.updateMany({
         where: {
@@ -120,6 +119,7 @@ export async function processAIAnalysis(
     const updateData: any = {
       aiVersion: AI_VERSION,
       aiProcessedAt: new Date(),
+      meaningStatus: "completed",
       ...(resolvedSummary !== null && { summary: resolvedSummary }),
       ...(resolvedSuggestedTitle !== null &&
         !item.title?.trim() && { title: resolvedSuggestedTitle }),
@@ -182,12 +182,15 @@ export async function processAIAnalysis(
       }
 
       const isStarter = await isStarterJourneyUsingSharedKey(userId);
+      const expiresAt = await getExpiresAt(userId);
+
       const reflection = await prisma.audioReflection.create({
         data: {
           userId,
           contentItemId,
           script: contentItem.reflection?.trim() || "今夜の思考を、静かに見つめ直す時間です。",
           status: "pending",
+          expiresAt,
         },
       });
 
@@ -234,7 +237,7 @@ export async function processAIAnalysis(
 
     await prisma.contentItem.update({
       where: { id: contentItemId },
-      data: { aiProcessedAt: new Date() },
+      data: { aiProcessedAt: new Date(), meaningStatus: "failed" },
     });
 
     await prisma.aIJob.updateMany({

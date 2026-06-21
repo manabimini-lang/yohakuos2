@@ -41,6 +41,10 @@ export function MemoryCard({ memory, className = "" }: MemoryCardProps) {
           <p className="text-foreground font-serif italic text-sm leading-relaxed line-clamp-3 group-hover:text-foreground transition-colors">
             「{memory.reflection}」
           </p>
+        ) : memory.meaningStatus === "pending" || memory.meaningStatus === "processing" ? (
+          <p className="text-muted-foreground/60 font-serif italic text-sm animate-pulse">
+            静かに意味を整理しています...
+          </p>
         ) : (
           <p className="text-muted-foreground/40 font-serif italic text-sm">
             (No reflection)

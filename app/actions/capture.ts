@@ -6,6 +6,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
 import { processAIAnalysis } from "./ai-processing";
 import { startStarterJourneyIfEligible } from "@/lib/ai/starter-journey";
+import { getExpiresAt } from "@/lib/services/retention.service";
 
 // ===================================================
 // Helper: Queue AI Job + kick fire-and-forget analysis
@@ -98,6 +99,8 @@ export async function saveUrlContent(url: string, reflection?: string): Promise<
       };
     }
 
+    const expiresAt = await getExpiresAt(session.user.id);
+
     const contentItem = await prisma.contentItem.create({
       data: {
         userId: session.user.id,
@@ -107,6 +110,7 @@ export async function saveUrlContent(url: string, reflection?: string): Promise<
         domain,
         thumbnailUrl,
         reflection: reflection?.trim() || null,
+        expiresAt,
       },
     });
 
@@ -186,6 +190,8 @@ export async function savePdfFile(formData: FormData): Promise<{
       data: { publicUrl },
     } = supabaseAdmin.storage.from("yohaku-content").getPublicUrl(filePath);
 
+    const expiresAt = await getExpiresAt(userId);
+
     const contentItem = await prisma.contentItem.create({
       data: {
         userId,
@@ -195,6 +201,7 @@ export async function savePdfFile(formData: FormData): Promise<{
         fileSize: file.size,
         title: file.name.replace(/\.pdf$/i, ""),
         reflection: reflection?.trim() || null,
+        expiresAt,
       },
     });
 

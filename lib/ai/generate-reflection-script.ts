@@ -13,161 +13,86 @@
 
 import { prisma } from "@/lib/prisma";
 import { CONTENT_ITEM_SAFE_SELECT } from "@/lib/content-item-safe-select";
+import { generateContextProfile, type ContextProfile } from "@/lib/ai/context-engine";
+import { resolveProvider } from "@/lib/ai/provider-resolver";
 
 interface ReflectionScriptOptions {
   userId: string;
   contentItemId?: string;
   themes?: string[];
+  contextProfile?: ContextProfile;
 }
+
+const NARRATIVE_SYSTEM_PROMPT = `あなたはユーザーの「学びの軌跡を映す鏡」としてのAIです。教師、コーチ、評価者ではありません。
+保存されたコンテンツの単なる要約ではなく、ユーザー自身の学習文脈（学びの履歴）のナラティブを語ってください。
+
+【出力構造の厳守】
+出力は必ず以下の3つの要素を含め、自然な文章で繋いでください：
+1. 続いているテーマ（過去90日で繰り返し現れるテーマ）
+2. 変化しているテーマ（興味関心の変化や発展）
+3. 今回の記録の位置づけ（今回保存した内容が学習履歴のどこに位置するか）
+
+【禁止事項（厳守）】
+- 説教（例：「もっと頑張りましょう」）
+- 自己啓発（例：「あなたには無限の可能性があります」）
+- 強い断定（例：「あなたの人生のテーマは教育です」）
+- AIコーチ化（例：「次はこれを学びましょう」）
+- 箇条書きや「1. 続いているテーマ」などの見出しを使わず、自然な段落の文章にすること
+
+【YOHAKUのトーン】
+- 静かで、間のある、落ち着いたトーン。
+- ユーザーに気づきを押し付けず、そっと鏡のように見せるだけ。`;
 
 export async function generateReflectionScript(
   options: ReflectionScriptOptions
 ): Promise<string> {
-  const { userId, contentItemId, themes = [] } = options;
+  const { userId, contentItemId, contextProfile: providedProfile } = options;
 
-  // Fetch recent content to understand context
-  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-  const recentItems = await prisma.contentItem.findMany({
-    where: {
-      userId,
-      createdAt: { gte: sevenDaysAgo },
-    },
-    select: CONTENT_ITEM_SAFE_SELECT,
-    orderBy: { createdAt: "desc" },
-    take: 8,
-  });
-
-  // Collect all tags from recent items
-  const allTags = recentItems
-    .flatMap((item) => item.aiTags || [])
-    .filter(Boolean);
-
-  // Count tag frequency
-  const tagFrequency = allTags.reduce(
-    (acc, tag) => {
-      acc[tag] = (acc[tag] || 0) + 1;
-      return acc;
-    },
-    {} as Record<string, number>
-  );
-
-  // Find the most resonant tags (appeared 2+ times)
-  const resonantTags = Object.entries(tagFrequency)
-    .filter(([, count]) => count >= 2)
-    .map(([tag]) => tag)
-    .slice(0, 3);
-
-  // User-provided themes take precedence
-  const primaryThemes = themes.length > 0 ? themes : resonantTags;
-
-  // Generate script based on patterns
-  return generateScript(recentItems, primaryThemes, userId);
-}
-
-function generateScript(
-  items: any[],
-  themes: string[],
-  userId: string
-): string {
-  if (items.length === 0) {
-    return generateEmptyStateScript();
+  let contextProfile = providedProfile;
+  if (!contextProfile) {
+    contextProfile = await generateContextProfile(userId);
   }
 
-  if (themes.length === 0) {
-    // No resonant pattern—generate a simple observation
-    return generateObservationalScript(items);
+  let currentContentStr = "（今回は新しく保存された記録の特定はありません）";
+  if (contentItemId) {
+    const item = await prisma.contentItem.findUnique({
+      where: { id: contentItemId },
+      select: CONTENT_ITEM_SAFE_SELECT,
+    });
+    if (item) {
+      currentContentStr = `[今回の記録]
+タイトル: ${item.title || "無題"}
+Reflection（保存理由）: ${item.reflection || "なし"}
+要約: ${item.summary || "なし"}
+付与されたタグ: ${(item.aiTags || []).join(", ")}`;
+    }
   }
 
-  // Themes detected—generate reflective connection script
-  return generateThematicScript(themes, items);
-}
+  const prompt = `
+[これまでの学びの文脈 (Context Profile)]
+- 続いているテーマ: ${contextProfile.recurringThemes.join(", ") || "特になし"}
+- 変化・現れ始めたテーマ: ${contextProfile.emergingThemes.join(", ") || "特になし"}
+- 過去のテーマ: ${contextProfile.dormantThemes.join(", ") || "特になし"}
+- 全体的なタイムライン要約: ${contextProfile.timelineSummary}
 
-function generateObservationalScript(items: any[]): string {
-  const observations = [
-    `最近、いくつもの記録が積み重なってきた。
-それぞれは独立しているように見えるけれど、
-時間がたつと、何かが静かに繋がり始める。
-その繋がりが見える瞬間ってあるんだ。
+${currentContentStr}
 
-今夜、そのつながりのような…
-言葉にならないもの感じながら、
-明日に向けてゆっくり呼吸していよう。`,
+上記の文脈から、ユーザーの学びの軌跡を映す静かなナラティブを生成してください。
+`;
 
-    `過去数日のことが、頭の片隅に残っている。
-完全には思い出せないけど、
-なんとなく記憶に引っかかっていると言った感じ。
-それが悪いわけじゃない。むしろ…
+  try {
+    const provider = await resolveProvider(userId);
+    if (!provider) {
+      return "静かに記録が積み重なっています。";
+    }
+    const narrative = await provider.generateInsight(NARRATIVE_SYSTEM_PROMPT, prompt);
+    if (narrative) {
+      return narrative;
+    }
+  } catch (error) {
+    console.error("[generateReflectionScript] Failed to generate narrative:", error);
+  }
 
-静かに積み重なった思考が、
-今、ゆっくり形を作ろうとしているのかもしれない。`,
-
-    `毎日を重ねていく中で、
-ふと気づくことがある。
-小さな気づきから大きな気づきまで、
-すべてがどこかで繋がっているような気がする。
-
-夜間に一人、そのつながりを感じてみること。
-それが、明日への道につながるんだと思う。`,
-
-    `この数日間、
-記録を通じて自分の思考の軌跡を辿ってみた。
-完結していないことも多いけど、
-その道のりそのものに価値があるんだと思う。
-
-今夜は、そうした探索の余韻のなかで、
-少し立ち止まっていたい。`,
-  ];
-
-  return observations[Math.floor(Math.random() * observations.length)];
-}
-
-function generateThematicScript(themes: string[], items: any[]): string {
-  const themeList = themes.slice(0, 2).join("」と「");
-
-  const scripts = [
-    `最近、「${themeList}」の記録が
-静かに積み重なっていることに気づいた。
-それぞれの記録は別々の出来事かもしれないけど、
-同じ何かに惹かれているんだと思う。
-
-人間の思考って面白い。
-時間をかけることで、
-点が線になっていく…そんな感覚。`,
-
-    `「${themeList}」という
-二つのテーマが最近よく目に入る。
-一見、別の世界に見えるかもしれないけど、
-実は深いところで繋がっているのかもしれない。
-
-そうした静かな共鳴が、
-思考を形づくっていくんだろう。`,
-
-    `ここ数日、
-「${themeList}」というテーマが
-繰り返し浮かんでいる。
-それぞれ違う形をしているけれど、
-共通の問いが流れているような気がする。
-
-その問いの方へと、
-少しずつ歩を進めていくこと。
-それが学びなんだと痛感している。`,
-
-    `「${themeList}」という
-二つの領域が、最近の記録のなかで
-静かに交差している。
-この交差点で何が起こっているのか…
-それを感じることが、今は大事な気がする。`,
-  ];
-
-  return scripts[Math.floor(Math.random() * scripts.length)];
-}
-
-function generateEmptyStateScript(): string {
-  return `記録が少しずつ集まり始めている。
-十分な形にはなっていないかもしれないけど、
-それでいい。
-
-物事は一気に形になるんじゃなくて、
-時間をかけて、静かに積層していくものなんだ。
-その時間を大事にしよう。`;
+  // Fallback
+  return "静かに記録が積み重なっています。時間をかけて、点と点が線になっていくのを感じてみてください。";
 }

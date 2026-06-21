@@ -53,7 +53,11 @@ export function SettingsClient({
   const handleSubscribe = async () => {
     setIsCheckoutLoading(true);
     try {
-      const priceId = process.env.NEXT_PUBLIC_STRIPE_PRICE_ID || "price_placeholder";
+      const priceId = process.env.NEXT_PUBLIC_STRIPE_PRICE_ID;
+      if (!priceId) {
+        alert("Stripe Price IDが設定されていません。管理者にお問い合わせください。");
+        return;
+      }
       
       const res = await fetch("/api/stripe/checkout", {
         method: "POST",

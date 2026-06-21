@@ -1105,6 +1105,7 @@ model UserMemory {
 
   promptVersion String? @map("prompt_version")
 
+  expiresAt DateTime? @map("expires_at")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -1193,6 +1194,7 @@ model CompanionConversation {
   title          String @default("")
   contextVersion Int    @default(1) @map("context_version")
 
+  expiresAt DateTime? @map("expires_at")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -1314,6 +1316,7 @@ model ContentItem {
   contextScore Float     @default(0) @map("context_score")
   viewCount    Int       @default(0) @map("view_count")
 
+  expiresAt DateTime? @map("expires_at")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -1545,6 +1548,7 @@ model AudioReflection {
   voiceModel        String?  @map("voice_model")
   duration          Int?
   status            String   @default("pending")
+  expiresAt         DateTime? @map("expires_at")
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @updatedAt @map("updated_at")
 

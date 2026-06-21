@@ -11,6 +11,10 @@
     {
       "path": "/api/internal/process-ai-jobs",
       "schedule": "0 12 * * *"
+    },
+    {
+      "path": "/api/internal/cleanup",
+      "schedule": "0 19 * * *"
     }
   ]
 }

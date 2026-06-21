@@ -3,6 +3,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { generateMemoryMetadata } from "@/lib/url-processing";
+import { getExpiresAt } from "@/lib/services/retention.service";
 
 export async function saveMemoryAction(url: string, context?: string) {
   const session = await auth();
@@ -10,6 +11,8 @@ export async function saveMemoryAction(url: string, context?: string) {
 
   // Step 3: URL判定 & Metadata生成
   const processed = await generateMemoryMetadata(url);
+
+  const expiresAt = await getExpiresAt(session.user.id);
 
   // Step 4 & 9: ContentItem 作成（reflection を保持）
   const item = await prisma.contentItem.create({
@@ -25,6 +28,7 @@ export async function saveMemoryAction(url: string, context?: string) {
       aiTags: [],  // AI生成までの初期値
       reflection: context, 
       meaningStatus: "pending",
+      expiresAt,
     }
   });
 

@@ -11,6 +11,7 @@
 
 import { registerJobHandler, enqueueJob } from "@/lib/memory/queue";
 import { generateWeeklyReflection } from "./engine";
+import { getExpiresAt } from "@/lib/services/retention.service";
 
 // ===================================================
 // Handlers
@@ -35,10 +36,12 @@ registerJobHandler("weekly_reflection", async (job) => {
     });
 
     if (!conversation) {
+        const expiresAt = await getExpiresAt(job.userId);
         conversation = await prisma.companionConversation.create({
             data: {
                 userId: job.userId,
                 title: `週次振り返り - ${new Date().toLocaleDateString("ja-JP")}`,
+                expiresAt,
             },
         });
     }
@@ -161,6 +164,8 @@ ${memoryText}
 
     const { text } = await generateText(compressionPrompt);
 
+    const expiresAt = await getExpiresAt(userId);
+
     // Create a compressed memory summary note
     await prisma.userMemory.create({
         data: {
@@ -170,6 +175,7 @@ ${memoryText}
             content: `【自動圧縮】${text}`,
             confidence: 0.3,
             promptVersion: "compression-1.0.0",
+            expiresAt,
         },
     });
 

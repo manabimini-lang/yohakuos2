@@ -26,6 +26,7 @@ import {
     CompanionContext,
 } from "./types";
 import { estimateTokenCount } from "@/lib/memory/cost";
+import { getExpiresAt } from "@/lib/services/retention.service";
 
 // ===================================================
 // Session Management
@@ -46,9 +47,10 @@ export async function getOrCreateConversation(
         return { id: existing.id, isNew: false };
     }
 
+    const expiresAt = await getExpiresAt(userId);
     // Create new if none exists
     const created = await prisma.companionConversation.create({
-        data: { userId, title },
+        data: { userId, title, expiresAt },
     });
 
     return { id: created.id, isNew: true };
