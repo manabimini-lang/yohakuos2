@@ -265,7 +265,7 @@ export default function CompanionChat() {
                         onKeyDown={handleKeyDown}
                         placeholder="そのまま、ここに置いてください"
                         rows={1}
-                        className="flex-1 resize-none rounded-2xl border border-border bg-[#080808] px-4 py-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-white/10 focus:border-border placeholder:text-muted-foreground"
+                        className="flex-1 resize-none rounded-2xl border border-border bg-background px-4 py-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-slate-300 focus:border-slate-300 placeholder:text-muted-foreground"
                         disabled={state.isLoading}
                     />
                     <button

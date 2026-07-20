@@ -9,6 +9,7 @@ import { PageTitle, SectionTitle, Body, Caption } from "@/components/ui/typograp
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { CONTENT_ITEM_SAFE_SELECT } from "@/lib/content-item-safe-select";
+import { DiscordFeed } from "@/components/dashboard/discord-feed";
 
 export const metadata: Metadata = {
   title: "YOHAKU - ダッシュボード",
@@ -81,7 +82,10 @@ export default async function DashboardPage() {
           </section>
         )}
 
-        {/* 3. Recent Inbox */}
+        {/* 3. Express — Discord Feed */}
+        <DiscordFeed />
+
+        {/* 4. Recent Inbox */}
         {recentItems.length > 0 && (
           <section className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-500 fill-mode-both">
             <div className="flex items-center justify-between">
