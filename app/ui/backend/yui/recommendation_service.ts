@@ -1,5 +1,5 @@
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { createYuiSuggestedTimeBlock, listYuiCalendarEvents, listYuiDecisionsSince, listYuiGoals, listYuiMemoriesSince, listYuiSuggestedTimeBlocks, listYuiConversationsSince, listYuiEvents, getYuiProfile } from "./service";
+import { createYuiEvent, createYuiSuggestedTimeBlock, listYuiCalendarEvents, listYuiDecisionsSince, listYuiGoals, listYuiMemoriesSince, listYuiSuggestedTimeBlocks, listYuiConversationsSince, listYuiEvents, getYuiProfile } from "./service";
 import type {
   CreateYuiRecommendationInput,
   YuiCalendarEvent,
@@ -335,6 +335,41 @@ function buildRecommendationTitle(topic: string) {
   return `${topic}の時間を作る`;
 }
 
+function recommendationEventTypeForStatus(status: string) {
+  if (status === "accepted") return "recommendation_accepted";
+  if (status === "rejected") return "recommendation_rejected";
+  if (status === "completed") return "recommendation_completed";
+  return "recommendation_status_updated";
+}
+
+async function writeRecommendationEvent(
+  user: SessionUser,
+  recommendation: YuiRecommendation,
+  action: "created" | "accepted" | "rejected" | "completed" | "updated",
+) {
+  const parsed = parseRecommendationContent(recommendation.content);
+  await createYuiEvent(user, {
+    event_type:
+      action === "created"
+        ? "recommendation_created"
+        : recommendationEventTypeForStatus(recommendation.status),
+    source: "yui",
+    title: recommendation.title,
+    content: parsed?.summary || recommendation.reason || recommendation.content || recommendation.title,
+    metadata: {
+      recommendation_id: recommendation.id,
+      recommendation_type: recommendation.type,
+      recommendation_status: recommendation.status,
+      recommendation_score: recommendation.score,
+      related_goal_id: recommendation.related_goal_id,
+      related_decision_ids: recommendation.related_decision_ids,
+      related_memory_ids: recommendation.related_memory_ids,
+      action,
+    },
+    occurred_at: new Date().toISOString(),
+  });
+}
+
 async function ensureSuggestedTimeBlockFromRecommendation(
   user: SessionUser,
   recommendation: YuiRecommendation,
@@ -464,7 +499,7 @@ export async function createYuiRecommendation(
   input: CreateYuiRecommendationInput,
 ): Promise<YuiRecommendation> {
   const type = normalizeRecommendationType(input.type);
-  return insertRecommendation(user.id, {
+  const recommendation = await insertRecommendation(user.id, {
     type,
     title: normalizeRecommendationText(input.title ?? "YUI recommendation"),
     content: normalizeRecommendationText(input.content ?? ""),
@@ -475,6 +510,9 @@ export async function createYuiRecommendation(
     related_memory_ids: normalizeIds(input.related_memory_ids),
     status: normalizeRecommendationStatus(input.status),
   });
+
+  await writeRecommendationEvent(user, recommendation, "created");
+  return recommendation;
 }
 
 export async function generateYuiRecommendation(
@@ -521,7 +559,7 @@ export async function generateYuiRecommendation(
     return duplicate;
   }
 
-  return insertRecommendation(user.id, {
+  const recommendation = await insertRecommendation(user.id, {
     type: "time_block",
     title,
     content,
@@ -532,6 +570,9 @@ export async function generateYuiRecommendation(
     related_memory_ids: relatedMemoryIds,
     status: "pending",
   });
+
+  await writeRecommendationEvent(user, recommendation, "created");
+  return recommendation;
 }
 
 export async function updateYuiRecommendationStatus(
@@ -570,6 +611,12 @@ export async function updateYuiRecommendationStatus(
 
   if (normalizedStatus === "accepted") {
     await ensureSuggestedTimeBlockFromRecommendation(user, data as YuiRecommendation);
+  }
+
+  if (normalizedStatus === "accepted" || normalizedStatus === "rejected" || normalizedStatus === "completed") {
+    await writeRecommendationEvent(user, data as YuiRecommendation, normalizedStatus);
+  } else {
+    await writeRecommendationEvent(user, data as YuiRecommendation, "updated");
   }
 
   return data as YuiRecommendation;
