@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { format } from "date-fns";
 import Link from "next/link";
+import { Settings } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { MemoryList } from "@/components/yui/MemoryList";
 import { YuiChat } from "@/components/yui/YuiChat";
@@ -513,21 +514,22 @@ export function YuiHome({ displayName }: YuiHomeProps) {
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(15,23,42,0.06),_transparent_35%),linear-gradient(180deg,_rgba(255,255,255,0.98),_rgba(248,250,252,1))] pb-20">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-10 md:px-8 md:py-14">
         <header className="space-y-4">
-          <p className="text-xs uppercase tracking-[0.28em] text-muted-foreground">YUI Personal OS</p>
+          <p className="text-xs uppercase tracking-[0.28em] text-muted-foreground">YOHAKU OS / YUI</p>
           <div className="flex flex-wrap items-start justify-between gap-4">
             <h1 className="text-3xl font-semibold tracking-tight md:text-5xl">
-              {displayName ? `${displayName} の` : "あなたの"} YUI 試作基盤
+              {displayName ? `${displayName} の` : "あなたの"} YUI Home
             </h1>
             <Link
               href="/yui/settings"
-              className="rounded-full border border-border bg-background px-4 py-2 text-sm transition hover:bg-muted"
+              className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-4 py-2 text-sm font-medium transition hover:bg-muted"
             >
-              Connections
+              <Settings className="h-4 w-4" />
+              <span>設定・接続</span>
             </Link>
           </div>
           <p className="max-w-2xl text-sm leading-7 text-muted-foreground md:text-base">
-            今日の状態を先に見せてから、記憶・会話・振り返り・設定へ進める構成にしています。
-            既存の YOHAKU 制作 OS は残したまま、YUI 用レイヤーだけを追加しています。
+            秘書YUIが今日どう動くかを提示する伴走空間です。
+            朝礼・優先事項・本日の状況から次の一歩を踏み出せます。
           </p>
         </header>
 
@@ -631,12 +633,12 @@ export function YuiHome({ displayName }: YuiHomeProps) {
             <Card className="space-y-5 p-6">
               <div className="space-y-2">
                 <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">YUI Today</p>
-                <h2 className="text-2xl font-semibold">今日の状態</h2>
+                <h2 className="text-2xl font-semibold">今日の状況</h2>
               </div>
 
               <div className="rounded-3xl border border-border bg-background p-5">
                 <p className="text-sm leading-7 text-foreground/90">
-                  {today?.summary ?? "今日の状態を読み込んでいます。"}
+                  {today?.summary ?? "今日の状況を読み込んでいます。"}
                 </p>
               </div>
 

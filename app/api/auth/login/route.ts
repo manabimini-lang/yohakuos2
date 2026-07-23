@@ -28,7 +28,7 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.redirect(
-      new URL(result.redirectTo ?? "/", request.url),
+      new URL(result.redirectTo ?? "/yui", request.url),
     );
   } catch (error) {
     console.error("[auth/login] Error:", error);

@@ -4,7 +4,7 @@
 
 export const authConfig = {
   /** Redirect destination after successful login */
-  redirectAfterLogin: "/",
+  redirectAfterLogin: "/yui",
   /** Redirect destination after logout */
   redirectAfterLogout: "/login",
   /** Redirect destination after sign-up */

@@ -58,8 +58,16 @@ export default async function DashboardPage() {
         
         {/* Header */}
         <header className="space-y-4">
-          <Caption>Welcome back</Caption>
-          <PageTitle>静かな再会</PageTitle>
+          <div className="flex items-center justify-between">
+            <Caption>System Management & Archive</Caption>
+            <Link
+              href="/yui"
+              className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
+            >
+              YUI Home へ移動 <ArrowRight className="h-3 w-3" />
+            </Link>
+          </div>
+          <PageTitle>静かな再会（管理ダッシュボード）</PageTitle>
         </header>
 
         {/* 1. Current Context */}
