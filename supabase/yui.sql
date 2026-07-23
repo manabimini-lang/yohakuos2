@@ -412,11 +412,19 @@ CREATE TABLE IF NOT EXISTS public.calendar_events (
   end_at         TIMESTAMPTZ NOT NULL,
   location       TEXT,
   status         TEXT NOT NULL DEFAULT 'confirmed',
+  source         TEXT NOT NULL DEFAULT 'external',
+  event_category TEXT,
   metadata       JSONB NOT NULL DEFAULT '{}'::jsonb,
   created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
   CONSTRAINT calendar_events_status_check CHECK (status IN ('confirmed', 'tentative', 'cancelled'))
 );
+
+ALTER TABLE public.calendar_events
+  ADD COLUMN IF NOT EXISTS source TEXT NOT NULL DEFAULT 'external';
+
+ALTER TABLE public.calendar_events
+  ADD COLUMN IF NOT EXISTS event_category TEXT;
 
 CREATE INDEX IF NOT EXISTS idx_calendar_events_user_id_start_at
   ON public.calendar_events (user_id, start_at);
@@ -592,7 +600,85 @@ CREATE TRIGGER trigger_suggested_time_blocks_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION public.set_suggested_time_blocks_updated_at();
 
--- 12. Recommendations
+-- 12. Calendar Actions
+CREATE TABLE IF NOT EXISTS public.calendar_actions (
+  id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id           TEXT NOT NULL,
+  time_block_id     UUID NOT NULL REFERENCES public.suggested_time_blocks(id) ON DELETE CASCADE,
+  provider          TEXT NOT NULL DEFAULT 'manual',
+  title             TEXT NOT NULL,
+  start_at          TIMESTAMPTZ NOT NULL,
+  end_at            TIMESTAMPTZ NOT NULL,
+  status            TEXT NOT NULL DEFAULT 'pending',
+  external_event_id TEXT,
+  scheduled_at      TIMESTAMPTZ,
+  reason            TEXT,
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CONSTRAINT calendar_actions_status_check CHECK (status IN ('pending', 'approved', 'scheduled', 'rejected')),
+  CONSTRAINT calendar_actions_provider_check CHECK (provider IN ('google_calendar', 'apple_calendar', 'manual'))
+);
+
+ALTER TABLE public.calendar_actions
+  ADD COLUMN IF NOT EXISTS external_event_id TEXT;
+
+ALTER TABLE public.calendar_actions
+  ADD COLUMN IF NOT EXISTS scheduled_at TIMESTAMPTZ;
+
+ALTER TABLE public.calendar_actions
+  ADD COLUMN IF NOT EXISTS reason TEXT;
+
+CREATE INDEX IF NOT EXISTS idx_calendar_actions_user_id_status
+  ON public.calendar_actions (user_id, status);
+
+CREATE INDEX IF NOT EXISTS idx_calendar_actions_user_id_created_at
+  ON public.calendar_actions (user_id, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_calendar_actions_time_block_id
+  ON public.calendar_actions (time_block_id);
+
+ALTER TABLE public.calendar_actions ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "calendar_actions_select_own" ON public.calendar_actions;
+CREATE POLICY "calendar_actions_select_own"
+  ON public.calendar_actions
+  FOR SELECT
+  USING (auth.uid()::text = user_id);
+
+DROP POLICY IF EXISTS "calendar_actions_insert_own" ON public.calendar_actions;
+CREATE POLICY "calendar_actions_insert_own"
+  ON public.calendar_actions
+  FOR INSERT
+  WITH CHECK (auth.uid()::text = user_id);
+
+DROP POLICY IF EXISTS "calendar_actions_update_own" ON public.calendar_actions;
+CREATE POLICY "calendar_actions_update_own"
+  ON public.calendar_actions
+  FOR UPDATE
+  USING (auth.uid()::text = user_id)
+  WITH CHECK (auth.uid()::text = user_id);
+
+DROP POLICY IF EXISTS "calendar_actions_delete_own" ON public.calendar_actions;
+CREATE POLICY "calendar_actions_delete_own"
+  ON public.calendar_actions
+  FOR DELETE
+  USING (auth.uid()::text = user_id);
+
+CREATE OR REPLACE FUNCTION public.set_calendar_actions_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trigger_calendar_actions_updated_at ON public.calendar_actions;
+CREATE TRIGGER trigger_calendar_actions_updated_at
+  BEFORE UPDATE ON public.calendar_actions
+  FOR EACH ROW
+  EXECUTE FUNCTION public.set_calendar_actions_updated_at();
+
+-- 13. Recommendations
 CREATE TABLE IF NOT EXISTS public.yui_recommendations (
   id                   UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id              TEXT NOT NULL,
@@ -706,3 +792,61 @@ CREATE POLICY "milestones_delete_own"
   ON public.milestones
   FOR DELETE
   USING (auth.uid()::text = user_id);
+
+-- 14. YUI Notification Settings
+CREATE TABLE IF NOT EXISTS public.yui_notification_settings (
+  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id          TEXT NOT NULL UNIQUE,
+  enabled          BOOLEAN NOT NULL DEFAULT true,
+  morning_enabled  BOOLEAN NOT NULL DEFAULT true,
+  morning_time     TEXT NOT NULL DEFAULT '07:00',
+  evening_enabled  BOOLEAN NOT NULL DEFAULT false,
+  evening_time     TEXT NOT NULL DEFAULT '20:00',
+  timezone         TEXT NOT NULL DEFAULT 'Asia/Tokyo',
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at       TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_yui_notification_settings_user_id
+  ON public.yui_notification_settings (user_id);
+
+ALTER TABLE public.yui_notification_settings ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "yui_notification_settings_select_own" ON public.yui_notification_settings;
+CREATE POLICY "yui_notification_settings_select_own"
+  ON public.yui_notification_settings
+  FOR SELECT
+  USING (auth.uid()::text = user_id);
+
+DROP POLICY IF EXISTS "yui_notification_settings_insert_own" ON public.yui_notification_settings;
+CREATE POLICY "yui_notification_settings_insert_own"
+  ON public.yui_notification_settings
+  FOR INSERT
+  WITH CHECK (auth.uid()::text = user_id);
+
+DROP POLICY IF EXISTS "yui_notification_settings_update_own" ON public.yui_notification_settings;
+CREATE POLICY "yui_notification_settings_update_own"
+  ON public.yui_notification_settings
+  FOR UPDATE
+  USING (auth.uid()::text = user_id)
+  WITH CHECK (auth.uid()::text = user_id);
+
+DROP POLICY IF EXISTS "yui_notification_settings_delete_own" ON public.yui_notification_settings;
+CREATE POLICY "yui_notification_settings_delete_own"
+  ON public.yui_notification_settings
+  FOR DELETE
+  USING (auth.uid()::text = user_id);
+
+CREATE OR REPLACE FUNCTION public.set_yui_notification_settings_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trigger_yui_notification_settings_updated_at ON public.yui_notification_settings;
+CREATE TRIGGER trigger_yui_notification_settings_updated_at
+  BEFORE UPDATE ON public.yui_notification_settings
+  FOR EACH ROW
+  EXECUTE FUNCTION public.set_yui_notification_settings_updated_at();

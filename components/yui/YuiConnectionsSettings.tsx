@@ -15,7 +15,7 @@ const CONNECTION_PROVIDERS: ConnectionProvider[] = [
   {
     provider: "google_calendar",
     label: "Google Calendar",
-    description: "予定と空き時間の読み取り準備を行います。",
+    description: "予定と空き時間の読み取り（Read Only）を行います。",
     permissions: { calendar_read: true, calendar_write: false },
   },
   {
@@ -68,6 +68,7 @@ export function YuiConnectionsSettings() {
   const [connections, setConnections] = useState<ConnectionsByProvider>({});
   const [error, setError] = useState<string | null>(null);
   const [loadingProvider, setLoadingProvider] = useState<string | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   const loadConnections = async () => {
     setError(null);
@@ -79,10 +80,13 @@ export function YuiConnectionsSettings() {
       }
 
       const payload = await response.json();
-      const nextConnections = (payload.connections ?? []).reduce((acc: ConnectionsByProvider, connection: YuiConnection) => {
-        acc[connection.provider] = connection;
-        return acc;
-      }, {});
+      const nextConnections = (payload.connections ?? []).reduce(
+        (acc: ConnectionsByProvider, connection: YuiConnection) => {
+          acc[connection.provider] = connection;
+          return acc;
+        },
+        {},
+      );
       setConnections(nextConnections);
     } catch (err) {
       setError(err instanceof Error ? err.message : "接続設定の取得に失敗しました");
@@ -93,7 +97,30 @@ export function YuiConnectionsSettings() {
     void loadConnections();
   }, []);
 
+  const handleManualSync = async () => {
+    setIsSyncing(true);
+    setError(null);
+    try {
+      const response = await fetch("/api/yui/google/sync", { method: "POST" });
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null);
+        throw new Error(payload?.error ?? "同期に失敗しました");
+      }
+      await loadConnections();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "同期に失敗しました");
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   const handleToggle = async (provider: ConnectionProvider) => {
+    if (provider.provider === "google_calendar") {
+      // Redirect to Google Connect OAuth Route
+      window.location.href = "/api/yui/google/connect";
+      return;
+    }
+
     setLoadingProvider(provider.provider);
     setError(null);
 
@@ -155,46 +182,80 @@ export function YuiConnectionsSettings() {
           const status = connection?.status ?? "disconnected";
           const isPending = status === "pending";
           const isConnected = status === "connected";
+          const isGoogleCalendar = provider.provider === "google_calendar";
+
+          const meta = (connection?.metadata as Record<string, unknown>) || {};
+          const googleAccount = typeof meta.googleAccount === "string" ? meta.googleAccount : "";
+          const lastSyncAt = typeof meta.lastSyncAt === "string" ? meta.lastSyncAt : "";
 
           return (
             <Card key={provider.provider} className="space-y-4 p-5">
               <div className="space-y-2">
                 <div className="flex items-center justify-between gap-3">
                   <h3 className="text-base font-semibold">{provider.label}</h3>
-                  <span className="rounded-full border border-border bg-muted/20 px-3 py-1 text-xs">
+                  <span
+                    className={`rounded-full px-3 py-1 text-xs font-medium ${
+                      isConnected
+                        ? "bg-emerald-100 text-emerald-800"
+                        : isPending
+                          ? "bg-amber-100 text-amber-800"
+                          : "border border-border bg-muted/20 text-muted-foreground"
+                    }`}
+                  >
                     {isConnected ? "接続済み" : isPending ? "接続待ち" : "未接続"}
                   </span>
                 </div>
                 <p className="text-sm leading-6 text-muted-foreground">{provider.description}</p>
               </div>
 
-              <div className="rounded-2xl border border-border bg-background px-4 py-3 text-sm">
-                <p className="font-medium">許可する情報</p>
-                <pre className="mt-2 overflow-x-auto text-xs text-muted-foreground">
-                  {JSON.stringify(provider.permissions, null, 2)}
-                </pre>
-              </div>
-
-              {connection?.connected_at && (
-                <p className="text-xs text-muted-foreground">
-                  connected_at: {new Date(connection.connected_at).toLocaleString()}
-                </p>
+              {isGoogleCalendar && isConnected && (
+                <div className="rounded-2xl border border-border bg-background p-4 space-y-2 text-xs">
+                  {googleAccount && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">アカウント:</span>
+                      <span className="font-semibold text-foreground">{googleAccount}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">最終同期日時:</span>
+                    <span>
+                      {lastSyncAt ? new Date(lastSyncAt).toLocaleString("ja-JP") : "未同期"}
+                    </span>
+                  </div>
+                </div>
               )}
 
-              <button
-                type="button"
-                disabled={loadingProvider === provider.provider}
-                onClick={() => void handleToggle(provider)}
-                className="yohaku-btn"
-              >
-                {loadingProvider === provider.provider
-                  ? "更新中..."
-                  : isConnected
-                    ? "切断する"
-                    : isPending
-                      ? "接続を完了"
-                      : "接続する"}
-              </button>
+              <div className="flex flex-wrap gap-2 pt-2">
+                <button
+                  type="button"
+                  disabled={loadingProvider === provider.provider}
+                  onClick={() => void handleToggle(provider)}
+                  className="yohaku-btn"
+                >
+                  {loadingProvider === provider.provider
+                    ? "更新中..."
+                    : isGoogleCalendar
+                      ? isConnected
+                        ? "Googleアカウントを再連携"
+                        : "Google Calendarと連携"
+                      : isConnected
+                        ? "切断する"
+                        : isPending
+                          ? "接続を完了"
+                          : "接続する"}
+                </button>
+
+                {isGoogleCalendar && isConnected && (
+                  <button
+                    type="button"
+                    disabled={isSyncing}
+                    onClick={() => void handleManualSync()}
+                    className="rounded-2xl border border-border bg-background px-4 py-2 text-sm font-semibold hover:bg-muted/30 transition disabled:opacity-50"
+                  >
+                    {isSyncing ? "同期中..." : "今すぐ同期"}
+                  </button>
+                )}
+              </div>
             </Card>
           );
         })}

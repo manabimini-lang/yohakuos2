@@ -3,6 +3,7 @@ import type {
   CreateYuiGoalInput,
   CreateYuiConversationInput,
   CreateYuiCalendarEventInput,
+  CreateYuiCalendarActionInput,
   CreateYuiEventInput,
   CreateYuiMemoryInput,
   CreateYuiMilestoneInput,
@@ -20,11 +21,13 @@ import {
   createYuiEvent,
   createYuiConnection,
   createYuiCalendarEvent,
+  createYuiCalendarAction,
   createYuiSuggestedTimeBlock,
   createYuiReflectionFromRecentWindow,
   createYuiMemory,
   getLatestYuiReflection,
   listYuiCalendarEvents,
+  listYuiCalendarActions,
   listYuiConnections,
   listYuiGoals,
   getYuiMemoryCandidateById,
@@ -41,6 +44,7 @@ import {
   updateYuiProfile,
   listYuiEvents,
   updateYuiConnectionStatus,
+  updateYuiCalendarActionStatus,
 } from "./service";
 import {
   generateYuiRecommendation,
@@ -225,3 +229,68 @@ export async function patchYuiRecommendation(recommendationId: string, status: s
   const session = await requireYuiSession();
   return updateYuiRecommendationStatus(session.user, recommendationId, status);
 }
+
+export async function getYuiCalendarActions(status?: string, limit = 20) {
+  const session = await requireYuiSession();
+  return listYuiCalendarActions(session.user.id, status ? { status, limit } : { limit });
+}
+
+export async function postYuiCalendarAction(input: CreateYuiCalendarActionInput) {
+  const session = await requireYuiSession();
+  return createYuiCalendarAction(session.user, input);
+}
+
+export async function patchYuiCalendarAction(actionId: string, status: string) {
+  const session = await requireYuiSession();
+  return updateYuiCalendarActionStatus(session.user, actionId, status);
+}
+
+export async function scheduleYuiCalendarAction(actionId: string) {
+  const session = await requireYuiSession();
+  const { scheduleYuiCalendarAction: scheduleAction } = await import("./service");
+  return scheduleAction(session.user, actionId);
+}
+
+export async function getYuiContext() {
+  const session = await requireYuiSession();
+  const { computeYuiContext } = await import("./context_service");
+  return computeYuiContext(session.user.id);
+}
+
+export async function getYuiMorningBrief() {
+  const session = await requireYuiSession();
+  const { getMorningBrief } = await import("./brief_service");
+  return getMorningBrief(session.user.id);
+}
+
+export async function getYuiNotificationSettings() {
+  const session = await requireYuiSession();
+  const { getNotificationSettings } = await import("./notification_service");
+  return getNotificationSettings(session.user.id);
+}
+
+export async function postYuiNotificationSettings(input: Record<string, unknown>) {
+  const session = await requireYuiSession();
+  const { saveNotificationSettings } = await import("./notification_service");
+  return saveNotificationSettings(session.user.id, input);
+}
+
+export async function getYuiNotificationPreviews() {
+  const session = await requireYuiSession();
+  const { generateNotificationPreviews } = await import("./notification_delivery_service");
+  return generateNotificationPreviews(session.user.id);
+}
+
+export async function getGoogleCalendarStatusForUser() {
+  const session = await requireYuiSession();
+  const { getGoogleCalendarStatus } = await import("./google_calendar_service");
+  return getGoogleCalendarStatus(session.user.id);
+}
+
+export async function syncGoogleCalendarForUser() {
+  const session = await requireYuiSession();
+  const { syncGoogleCalendarEvents } = await import("./google_calendar_service");
+  return syncGoogleCalendarEvents(session.user.id);
+}
+
+

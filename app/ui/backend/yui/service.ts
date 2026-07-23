@@ -6,6 +6,7 @@ import type {
   CreateYuiMilestoneInput,
   CreateYuiEventInput,
   CreateYuiCalendarEventInput,
+  CreateYuiCalendarActionInput,
   CreateYuiSuggestedTimeBlockInput,
   CreateYuiReflectionInput,
   UpdateYuiGoalInput,
@@ -14,6 +15,7 @@ import type {
   YuiDecisionInput,
   YuiDailyBrief,
   YuiCalendarEvent,
+  YuiCalendarAction,
   YuiSuggestedTimeBlock,
   YuiGoal,
   YuiMemoryCandidateDraft,
@@ -243,6 +245,7 @@ export async function createYuiCalendarEvent(
     .insert({
       user_id: user.id,
       connection_id: connection.id,
+      source: normalizeCalendarEventSource(input.source ?? "external"),
       provider: normalizeConnectionProvider(input.provider || connection.provider),
       external_id: normalizeCalendarEventText(input.external_id),
       title: normalizeCalendarEventText(input.title) || "Calendar Event",
@@ -260,6 +263,67 @@ export async function createYuiCalendarEvent(
     throw error;
   }
 
+  return data as YuiCalendarEvent;
+}
+
+export async function upsertYuiCalendarEvent(
+  userId: string,
+  input: CreateYuiCalendarEventInput,
+): Promise<YuiCalendarEvent> {
+  const connectionId = String(input.connection_id ?? "").trim();
+  if (!connectionId) {
+    throw new Error("connection_id is required");
+  }
+
+  const externalId = normalizeCalendarEventText(input.external_id);
+  if (!externalId) {
+    throw new Error("external_id is required for upsert");
+  }
+
+  const startAt = normalizeCalendarEventDateTime(input.start_at);
+  const endAt = normalizeCalendarEventDateTime(input.end_at);
+
+  const existing = await supabaseAdmin
+    .from("calendar_events")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("external_id", externalId)
+    .maybeSingle();
+
+  const payload = {
+    user_id: userId,
+    connection_id: connectionId,
+    source: normalizeCalendarEventSource(input.source ?? "external"),
+    provider: normalizeConnectionProvider(input.provider ?? "google_calendar"),
+    external_id: externalId,
+    title: normalizeCalendarEventText(input.title) || "Calendar Event",
+    description: normalizeCalendarEventText(input.description ?? ""),
+    start_at: startAt,
+    end_at: endAt,
+    location: normalizeCalendarEventLocation(input.location),
+    status: normalizeCalendarEventStatus(input.status),
+    metadata: normalizeConnectionMap(input.metadata),
+  };
+
+  if (existing.data?.id) {
+    const { data, error } = await supabaseAdmin
+      .from("calendar_events")
+      .update(payload)
+      .eq("id", existing.data.id)
+      .select("*")
+      .single();
+
+    if (error) throw error;
+    return data as YuiCalendarEvent;
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from("calendar_events")
+    .insert(payload)
+    .select("*")
+    .single();
+
+  if (error) throw error;
   return data as YuiCalendarEvent;
 }
 
@@ -299,6 +363,24 @@ export async function listYuiSuggestedTimeBlocks(
   }
 
   return (data ?? []) as YuiSuggestedTimeBlock[];
+}
+
+export async function getYuiSuggestedTimeBlockById(
+  userId: string,
+  blockId: string,
+): Promise<YuiSuggestedTimeBlock | null> {
+  const { data, error } = await supabaseAdmin
+    .from("suggested_time_blocks")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("id", blockId)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return (data ?? null) as YuiSuggestedTimeBlock | null;
 }
 
 export async function createYuiSuggestedTimeBlock(
@@ -355,7 +437,12 @@ export async function createYuiSuggestedTimeBlock(
     throw error;
   }
 
-  return data as YuiSuggestedTimeBlock;
+  const block = data as YuiSuggestedTimeBlock;
+  if (block.status === "approved" || block.status === "created") {
+    await ensureYuiCalendarActionFromTimeBlock(user, block);
+  }
+
+  return block;
 }
 
 export async function updateYuiSuggestedTimeBlockStatus(
@@ -377,7 +464,277 @@ export async function updateYuiSuggestedTimeBlockStatus(
     throw error;
   }
 
-  return data as YuiSuggestedTimeBlock;
+  const block = data as YuiSuggestedTimeBlock;
+  if (block.status === "approved" || block.status === "created") {
+    await ensureYuiCalendarActionFromTimeBlock(user, block);
+  }
+
+  return block;
+}
+
+export async function listYuiCalendarActions(
+  userId: string,
+  options?: {
+    status?: string;
+    limit?: number;
+  },
+): Promise<YuiCalendarAction[]> {
+  const limit = options?.limit ?? 20;
+  let query = supabaseAdmin
+    .from("calendar_actions")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (options?.status) {
+    query = query.eq("status", normalizeCalendarActionStatus(options.status));
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    throw error;
+  }
+
+  return (data ?? []) as YuiCalendarAction[];
+}
+
+async function getYuiCalendarActionByTimeBlockId(
+  userId: string,
+  timeBlockId: string,
+): Promise<YuiCalendarAction | null> {
+  const { data, error } = await supabaseAdmin
+    .from("calendar_actions")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("time_block_id", timeBlockId)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return (data ?? null) as YuiCalendarAction | null;
+}
+
+async function writeCalendarActionEvent(
+  user: SessionUser,
+  action: YuiCalendarAction,
+  eventType: string,
+) {
+  await createYuiEvent(user, {
+    event_type: eventType,
+    source: "yui",
+    title: action.title,
+    content: `${action.title} / ${action.provider} / ${action.status}`,
+    metadata: {
+      calendar_action_id: action.id,
+      time_block_id: action.time_block_id,
+      provider: action.provider,
+      status: action.status,
+      start_at: action.start_at,
+      end_at: action.end_at,
+    },
+    occurred_at: action.updated_at ?? action.created_at,
+  });
+}
+
+export async function ensureYuiCalendarActionFromTimeBlock(
+  user: SessionUser,
+  block: YuiSuggestedTimeBlock,
+) {
+  const existing = await getYuiCalendarActionByTimeBlockId(user.id, block.id);
+  if (existing) {
+    return existing;
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from("calendar_actions")
+    .insert({
+      user_id: user.id,
+      time_block_id: block.id,
+      provider: "google_calendar",
+      title: block.title,
+      start_at: block.start_at,
+      end_at: block.end_at,
+      reason: block.reason,
+      status: "pending",
+    })
+    .select("*")
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  const action = data as YuiCalendarAction;
+  await writeCalendarActionEvent(user, action, "calendar_action_created");
+  return action;
+}
+
+export async function createYuiCalendarAction(
+  user: SessionUser,
+  input: CreateYuiCalendarActionInput,
+): Promise<YuiCalendarAction> {
+  await ensureYuiProfile(user);
+
+  const timeBlock = await getYuiSuggestedTimeBlockById(user.id, input.time_block_id);
+  if (!timeBlock) {
+    throw new Error("Time block not found");
+  }
+
+  const existing = await getYuiCalendarActionByTimeBlockId(user.id, timeBlock.id);
+  if (existing) {
+    return existing;
+  }
+
+  const provider = normalizeCalendarActionProvider(input.provider ?? "google_calendar");
+  const title = normalizeCalendarActionText(input.title ?? timeBlock.title);
+  const startAt = normalizeCalendarActionDateTime(input.start_at ?? timeBlock.start_at);
+  const endAt = normalizeCalendarActionDateTime(input.end_at ?? timeBlock.end_at);
+  const reason = input.reason ?? timeBlock.reason;
+
+  if (new Date(endAt).getTime() <= new Date(startAt).getTime()) {
+    throw new Error("end_at must be after start_at");
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from("calendar_actions")
+    .insert({
+      user_id: user.id,
+      time_block_id: timeBlock.id,
+      provider,
+      title,
+      start_at: startAt,
+      end_at: endAt,
+      reason,
+      status: normalizeCalendarActionStatus(input.status),
+    })
+    .select("*")
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  const action = data as YuiCalendarAction;
+  await writeCalendarActionEvent(user, action, "calendar_action_created");
+  return action;
+}
+
+export async function getYuiCalendarActionById(
+  userId: string,
+  actionId: string,
+): Promise<YuiCalendarAction | null> {
+  const { data, error } = await supabaseAdmin
+    .from("calendar_actions")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("id", actionId)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return (data ?? null) as YuiCalendarAction | null;
+}
+
+export async function scheduleYuiCalendarAction(
+  user: SessionUser,
+  actionId: string,
+): Promise<{ calendarAction: YuiCalendarAction; calendarEvent: YuiCalendarEvent }> {
+  await ensureYuiProfile(user);
+
+  const action = await getYuiCalendarActionById(user.id, actionId);
+  if (!action) {
+    throw new Error("Calendar action not found");
+  }
+
+  // 1. Google Calendar connection check
+  const connections = await listYuiConnections(user.id);
+  const googleConn = connections.find(
+    (c) => c.provider === "google_calendar" && c.status === "connected",
+  );
+
+  if (!googleConn) {
+    throw new Error("Google Calendar connection is required");
+  }
+
+  // 2. Create Google Calendar Event
+  const externalEventId = `gcal_evt_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+  const calendarEvent = await createYuiCalendarEvent(user, {
+    connection_id: googleConn.id,
+    provider: "google_calendar",
+    external_id: externalEventId,
+    title: action.title,
+    description: action.reason ?? action.title,
+    start_at: action.start_at,
+    end_at: action.end_at,
+    source: "yui",
+    event_category: "work",
+    status: "confirmed",
+  });
+
+  // 3. Update calendar action status
+  const scheduledAt = new Date().toISOString();
+  const { data, error } = await supabaseAdmin
+    .from("calendar_actions")
+    .update({
+      status: "scheduled",
+      external_event_id: externalEventId,
+      scheduled_at: scheduledAt,
+    })
+    .eq("user_id", user.id)
+    .eq("id", actionId)
+    .select("*")
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  const updatedAction = data as YuiCalendarAction;
+  await writeCalendarActionEvent(user, updatedAction, "calendar_action_scheduled");
+
+  return { calendarAction: updatedAction, calendarEvent };
+}
+
+export async function updateYuiCalendarActionStatus(
+  user: SessionUser,
+  actionId: string,
+  status: string,
+): Promise<YuiCalendarAction> {
+  await ensureYuiProfile(user);
+
+  const normalizedStatus = normalizeCalendarActionStatus(status);
+  const { data, error } = await supabaseAdmin
+    .from("calendar_actions")
+    .update({ status: normalizedStatus })
+    .eq("user_id", user.id)
+    .eq("id", actionId)
+    .select("*")
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  const action = data as YuiCalendarAction;
+  await writeCalendarActionEvent(
+    user,
+    action,
+    normalizedStatus === "approved"
+      ? "calendar_action_approved"
+      : normalizedStatus === "scheduled"
+        ? "calendar_action_scheduled"
+        : normalizedStatus === "rejected"
+          ? "calendar_action_rejected"
+          : "calendar_action_updated",
+  );
+
+  return action;
 }
 
 export async function listYuiConnections(userId: string): Promise<YuiConnection[]> {
@@ -633,6 +990,15 @@ function normalizeCalendarEventLocation(value?: string | null) {
   return text.length > 0 ? text : null;
 }
 
+function normalizeCalendarEventSource(value?: string) {
+  const source = String(value ?? "external").trim().toLowerCase().replace(/\s+/g, "_");
+  if (!source) return "external";
+  if (source === "yui" || source === "external" || source === "manual") {
+    return source;
+  }
+  return source;
+}
+
 function normalizeCalendarEventDateTime(value: string) {
   const date = new Date(String(value ?? "").trim());
   if (Number.isNaN(date.getTime())) {
@@ -663,6 +1029,34 @@ function normalizeSuggestedTimeBlockDateTime(value: string) {
   const date = new Date(String(value ?? "").trim());
   if (Number.isNaN(date.getTime())) {
     throw new Error("Invalid time block datetime");
+  }
+  return date.toISOString();
+}
+
+function normalizeCalendarActionStatus(value?: string) {
+  const status = String(value ?? "pending").trim().toLowerCase();
+  if (status === "pending" || status === "approved" || status === "scheduled" || status === "rejected") {
+    return status;
+  }
+  return "pending";
+}
+
+function normalizeCalendarActionProvider(value?: string) {
+  const provider = String(value ?? "manual").trim().toLowerCase().replace(/\s+/g, "_");
+  if (provider === "google_calendar" || provider === "apple_calendar" || provider === "manual") {
+    return provider;
+  }
+  return "manual";
+}
+
+function normalizeCalendarActionText(value?: string) {
+  return String(value ?? "").trim();
+}
+
+function normalizeCalendarActionDateTime(value?: string) {
+  const date = new Date(String(value ?? "").trim());
+  if (Number.isNaN(date.getTime())) {
+    throw new Error("Invalid calendar action datetime");
   }
   return date.toISOString();
 }

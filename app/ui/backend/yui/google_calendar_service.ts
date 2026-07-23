@@ -1,0 +1,266 @@
+import { supabaseAdmin } from "@/lib/supabase/admin";
+import { upsertYuiCalendarEvent } from "./service";
+
+export type GoogleCalendarStatus = {
+  connected: boolean;
+  account: string;
+  lastSyncAt: string | null;
+};
+
+export function getGoogleAuthUrl(redirectUri: string): string {
+  const clientId = process.env.GOOGLE_CLIENT_ID || "";
+  const scopes = [
+    "openid",
+    "email",
+    "profile",
+    "https://www.googleapis.com/auth/calendar.readonly",
+  ].join(" ");
+
+  const params = new URLSearchParams({
+    client_id: clientId,
+    redirect_uri: redirectUri,
+    response_type: "code",
+    scope: scopes,
+    access_type: "offline",
+    prompt: "consent",
+  });
+
+  return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+}
+
+export async function getGoogleCalendarStatus(userId: string): Promise<GoogleCalendarStatus> {
+  const { data: connection } = await supabaseAdmin
+    .from("connections")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("provider", "google_calendar")
+    .maybeSingle();
+
+  if (!connection || connection.status !== "connected") {
+    return {
+      connected: false,
+      account: "",
+      lastSyncAt: null,
+    };
+  }
+
+  const metadata = (connection.metadata as Record<string, unknown>) || {};
+  return {
+    connected: true,
+    account: typeof metadata.googleAccount === "string" ? metadata.googleAccount : "",
+    lastSyncAt: typeof metadata.lastSyncAt === "string" ? metadata.lastSyncAt : null,
+  };
+}
+
+export async function handleGoogleCallback(userId: string, code: string, redirectUri: string) {
+  const clientId = process.env.GOOGLE_CLIENT_ID || "";
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET || "";
+
+  const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      code,
+      client_id: clientId,
+      client_secret: clientSecret,
+      redirect_uri: redirectUri,
+      grant_type: "authorization_code",
+    }),
+  });
+
+  if (!tokenResponse.ok) {
+    const errText = await tokenResponse.text();
+    throw new Error(`Google token exchange failed: ${errText}`);
+  }
+
+  const tokenData = await tokenResponse.json();
+  const accessToken = tokenData.access_token as string;
+  const refreshToken = tokenData.refresh_token as string | undefined;
+  const expiresIn = (tokenData.expires_in as number) || 3600;
+
+  // Fetch User Info to get email
+  let googleAccount = "";
+  try {
+    const userRes = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (userRes.ok) {
+      const userData = await userRes.json();
+      googleAccount = userData.email || "";
+    }
+  } catch (e) {
+    console.error("Failed to fetch Google user info", e);
+  }
+
+  // Get or create connection
+  const { data: existingConnection } = await supabaseAdmin
+    .from("connections")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("provider", "google_calendar")
+    .maybeSingle();
+
+  const existingMeta = (existingConnection?.metadata as Record<string, unknown>) || {};
+  const newMetadata = {
+    ...existingMeta,
+    googleAccount: googleAccount || existingMeta.googleAccount || "",
+    accessToken,
+    refreshToken: refreshToken || existingMeta.refreshToken || "",
+    tokenExpiresAt: new Date(Date.now() + expiresIn * 1000).toISOString(),
+  };
+
+  if (existingConnection) {
+    await supabaseAdmin
+      .from("connections")
+      .update({
+        status: "connected",
+        connected_at: new Date().toISOString(),
+        metadata: newMetadata,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", existingConnection.id);
+  } else {
+    await supabaseAdmin.from("connections").insert({
+      user_id: userId,
+      provider: "google_calendar",
+      status: "connected",
+      permissions: { readonly: true },
+      metadata: newMetadata,
+      connected_at: new Date().toISOString(),
+    });
+  }
+
+  // Automatically trigger sync
+  void syncGoogleCalendarEvents(userId);
+}
+
+export async function getValidAccessToken(userId: string): Promise<{ accessToken: string; connectionId: string }> {
+  const { data: connection } = await supabaseAdmin
+    .from("connections")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("provider", "google_calendar")
+    .maybeSingle();
+
+  if (!connection || connection.status !== "connected") {
+    throw new Error("Google Calendar is not connected");
+  }
+
+  const metadata = (connection.metadata as Record<string, unknown>) || {};
+  let accessToken = typeof metadata.accessToken === "string" ? metadata.accessToken : "";
+  const refreshToken = typeof metadata.refreshToken === "string" ? metadata.refreshToken : "";
+  const tokenExpiresAt = typeof metadata.tokenExpiresAt === "string" ? new Date(metadata.tokenExpiresAt).getTime() : 0;
+
+  // Refresh token if expired
+  if ((!accessToken || Date.now() >= tokenExpiresAt - 60000) && refreshToken) {
+    const clientId = process.env.GOOGLE_CLIENT_ID || "";
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET || "";
+
+    const refreshRes = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        client_id: clientId,
+        client_secret: clientSecret,
+        refresh_token: refreshToken,
+        grant_type: "refresh_token",
+      }),
+    });
+
+    if (refreshRes.ok) {
+      const refreshData = await refreshRes.json();
+      accessToken = refreshData.access_token as string;
+      const expiresIn = (refreshData.expires_in as number) || 3600;
+
+      const updatedMeta = {
+        ...metadata,
+        accessToken,
+        tokenExpiresAt: new Date(Date.now() + expiresIn * 1000).toISOString(),
+      };
+
+      await supabaseAdmin
+        .from("connections")
+        .update({ metadata: updatedMeta, updated_at: new Date().toISOString() })
+        .eq("id", connection.id);
+    }
+  }
+
+  if (!accessToken) {
+    throw new Error("No valid Google access token available");
+  }
+
+  return { accessToken, connectionId: connection.id };
+}
+
+export async function syncGoogleCalendarEvents(userId: string): Promise<{ syncedCount: number; lastSyncAt: string }> {
+  const { accessToken, connectionId } = await getValidAccessToken(userId);
+
+  const now = new Date();
+  const timeMin = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  const timeMax = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
+
+  const url = `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${encodeURIComponent(
+    timeMin,
+  )}&timeMax=${encodeURIComponent(timeMax)}&singleEvents=true&orderBy=startTime`;
+
+  const response = await fetch(url, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+
+  if (!response.ok) {
+    const errText = await response.text();
+    throw new Error(`Failed to fetch Google Calendar events: ${errText}`);
+  }
+
+  const data = await response.json();
+  const items = Array.isArray(data.items) ? data.items : [];
+
+  let syncedCount = 0;
+
+  for (const item of items) {
+    if (!item.id || item.status === "cancelled") continue;
+
+    const startAt = item.start?.dateTime || item.start?.date;
+    const endAt = item.end?.dateTime || item.end?.date;
+
+    if (!startAt || !endAt) continue;
+
+    await upsertYuiCalendarEvent(userId, {
+      connection_id: connectionId,
+      provider: "google_calendar",
+      external_id: item.id,
+      title: item.summary || "無題の予定",
+      description: item.description || "",
+      start_at: new Date(startAt).toISOString(),
+      end_at: new Date(endAt).toISOString(),
+      location: item.location || "",
+      status: "confirmed",
+      source: "external",
+      metadata: { googleHtmlLink: item.htmlLink || "" },
+    });
+
+    syncedCount++;
+  }
+
+  const lastSyncAt = new Date().toISOString();
+
+  // Update connection metadata with lastSyncAt
+  const { data: connection } = await supabaseAdmin
+    .from("connections")
+    .select("*")
+    .eq("id", connectionId)
+    .single();
+
+  if (connection) {
+    const meta = (connection.metadata as Record<string, unknown>) || {};
+    await supabaseAdmin
+      .from("connections")
+      .update({
+        metadata: { ...meta, lastSyncAt },
+        updated_at: lastSyncAt,
+      })
+      .eq("id", connectionId);
+  }
+
+  return { syncedCount, lastSyncAt };
+}

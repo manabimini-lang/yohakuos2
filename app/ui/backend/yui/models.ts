@@ -131,6 +131,7 @@ export type YuiCalendarEvent = {
   id: string;
   user_id: string;
   connection_id: string;
+  source: string;
   provider: string;
   external_id: string;
   title: string;
@@ -139,6 +140,7 @@ export type YuiCalendarEvent = {
   end_at: string;
   location: string | null;
   status: YuiCalendarEventStatus;
+  event_category?: string | null;
   metadata: Record<string, unknown>;
   created_at: string;
   updated_at: string;
@@ -149,11 +151,13 @@ export type YuiCalendarEventInput = {
   provider: string;
   external_id: string;
   title: string;
+  source?: string;
   description?: string;
   start_at: string;
   end_at: string;
   location?: string | null;
   status?: string;
+  event_category?: string | null;
   metadata?: Record<string, unknown>;
 };
 
@@ -186,6 +190,40 @@ export type YuiSuggestedTimeBlockInput = {
 };
 
 export type YuiSuggestedTimeBlockStatusInput = {
+  status: string;
+};
+
+export type YuiCalendarActionStatus = "pending" | "approved" | "scheduled" | "rejected" | string;
+
+export type YuiCalendarActionProvider = "google_calendar" | "apple_calendar" | "manual" | string;
+
+export type YuiCalendarAction = {
+  id: string;
+  user_id: string;
+  time_block_id: string;
+  provider: YuiCalendarActionProvider;
+  title: string;
+  start_at: string;
+  end_at: string;
+  status: YuiCalendarActionStatus;
+  external_event_id: string | null;
+  scheduled_at: string | null;
+  reason: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type YuiCalendarActionInput = {
+  time_block_id: string;
+  provider?: string;
+  title?: string;
+  start_at?: string;
+  end_at?: string;
+  status?: string;
+  reason?: string;
+};
+
+export type YuiCalendarActionStatusInput = {
   status: string;
 };
 
@@ -353,4 +391,27 @@ export type CreateYuiCalendarEventInput = YuiCalendarEventInput;
 
 export type CreateYuiSuggestedTimeBlockInput = YuiSuggestedTimeBlockInput;
 
+export type CreateYuiCalendarActionInput = YuiCalendarActionInput;
+
 export type CreateYuiRecommendationInput = YuiRecommendationInput;
+
+export interface YuiNotificationPreferences {
+  id: string;
+  userId: string;
+  enabled: boolean;
+  morningEnabled: boolean;
+  morningTime: string;
+  eveningEnabled: boolean;
+  eveningTime: string;
+  timezone: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type YuiNotificationPreview = {
+  type: "morning" | "evening";
+  title: string;
+  message: string;
+  generatedAt: string;
+};
+

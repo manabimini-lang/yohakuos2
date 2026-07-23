@@ -8,6 +8,7 @@ import { MemoryList } from "@/components/yui/MemoryList";
 import { YuiChat } from "@/components/yui/YuiChat";
 import type {
   YuiConversation,
+  YuiCalendarAction,
   YuiDecision,
   YuiConnection,
   YuiGoal,
@@ -18,8 +19,11 @@ import type {
   YuiProfileSettings,
   YuiReflection,
   YuiRecommendation,
+  YuiSuggestedTimeBlock,
   YuiToday,
 } from "@/app/ui/backend/yui/models";
+import type { YuiContextSummary } from "@/app/ui/backend/yui/context_service";
+import type { YuiMorningBrief } from "@/app/ui/backend/yui/brief_service";
 
 type YuiHomeProps = {
   displayName?: string | null;
@@ -72,6 +76,8 @@ function looksLikeTimePlanningRequest(content: string) {
 
 export function YuiHome({ displayName }: YuiHomeProps) {
   const [today, setToday] = useState<YuiToday | null>(null);
+  const [morningBrief, setMorningBrief] = useState<YuiMorningBrief | null>(null);
+  const [contextSummary, setContextSummary] = useState<YuiContextSummary | null>(null);
   const [profile, setProfile] = useState<YuiProfile | null>(null);
   const [memories, setMemories] = useState<YuiMemory[]>([]);
   const [memoryCandidates, setMemoryCandidates] = useState<YuiMemoryCandidate[]>([]);
@@ -82,6 +88,8 @@ export function YuiHome({ displayName }: YuiHomeProps) {
   const [milestones, setMilestones] = useState<YuiMilestone[]>([]);
   const [reflections, setReflections] = useState<YuiReflection[]>([]);
   const [recommendations, setRecommendations] = useState<YuiRecommendation[]>([]);
+  const [timeBlocks, setTimeBlocks] = useState<YuiSuggestedTimeBlock[]>([]);
+  const [calendarActions, setCalendarActions] = useState<YuiCalendarAction[]>([]);
   const [latestReflection, setLatestReflection] = useState<YuiReflection | null>(null);
   const [profileForm, setProfileForm] = useState<YuiProfileSettings>({
     display_name: displayName ?? "",
@@ -114,6 +122,8 @@ export function YuiHome({ displayName }: YuiHomeProps) {
     try {
       const [
         todayRes,
+        briefRes,
+        contextRes,
         profileRes,
         memoriesRes,
         conversationsRes,
@@ -123,10 +133,14 @@ export function YuiHome({ displayName }: YuiHomeProps) {
         connectionsRes,
         reflectionsRes,
         recommendationsRes,
+        timeBlocksRes,
+        calendarActionsRes,
         reflectionRes,
         candidatesRes,
       ] = await Promise.all([
         fetch("/api/yui/today"),
+        fetch("/api/yui/morning-brief"),
+        fetch("/api/yui/context"),
         fetch("/api/yui/profile"),
         fetch("/api/yui/memories"),
         fetch("/api/yui/conversations"),
@@ -136,6 +150,8 @@ export function YuiHome({ displayName }: YuiHomeProps) {
         fetch("/api/yui/connections"),
         fetch("/api/yui/reflections"),
         fetch("/api/yui/recommendations"),
+        fetch("/api/yui/time-blocks?limit=100"),
+        fetch("/api/yui/calendar-actions"),
         fetch("/api/yui/reflections/latest"),
         fetch("/api/yui/memory-candidates"),
       ]);
@@ -143,6 +159,16 @@ export function YuiHome({ displayName }: YuiHomeProps) {
       if (todayRes.ok) {
         const payload = await todayRes.json();
         setToday(payload);
+      }
+
+      if (briefRes.ok) {
+        const payload = await briefRes.json();
+        setMorningBrief(payload);
+      }
+
+      if (contextRes.ok) {
+        const payload = await contextRes.json();
+        setContextSummary(payload);
       }
 
       if (profileRes.ok) {
@@ -212,6 +238,16 @@ export function YuiHome({ displayName }: YuiHomeProps) {
       if (recommendationsRes.ok) {
         const payload = await recommendationsRes.json();
         setRecommendations(payload.recommendations ?? []);
+      }
+
+      if (timeBlocksRes.ok) {
+        const payload = await timeBlocksRes.json();
+        setTimeBlocks(payload.timeBlocks ?? []);
+      }
+
+      if (calendarActionsRes.ok) {
+        const payload = await calendarActionsRes.json();
+        setCalendarActions(payload.calendarActions ?? []);
       }
 
       if (reflectionRes.ok) {
@@ -377,6 +413,40 @@ export function YuiHome({ displayName }: YuiHomeProps) {
     await loadData();
   };
 
+  const handleScheduleCalendarAction = async (actionId: string) => {
+    setError(null);
+    try {
+      const response = await fetch(`/api/yui/calendar-actions/${actionId}/schedule`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null);
+        throw new Error(payload?.error ?? "Google Calendarへの登録に失敗しました");
+      }
+
+      await loadData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Google Calendarへの登録に失敗しました");
+    }
+  };
+
+  const handleUpdateCalendarActionStatus = async (actionId: string, status: string) => {
+    const response = await fetch(`/api/yui/calendar-actions/${actionId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    });
+
+    if (!response.ok) {
+      const payload = await response.json().catch(() => null);
+      throw new Error(payload?.error ?? "予定登録候補の更新に失敗しました");
+    }
+
+    await loadData();
+  };
+
   const handleSaveGoal = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
@@ -465,6 +535,95 @@ export function YuiHome({ displayName }: YuiHomeProps) {
           <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
             {error}
           </div>
+        )}
+
+        {/* Morning Brief Section (Secretary Speech Interface) */}
+        {morningBrief && (
+          <Card className="relative overflow-hidden border-primary/30 bg-gradient-to-br from-primary/10 via-background to-muted/30 p-6 md:p-8 shadow-md">
+            <div className="flex flex-col gap-6">
+              {/* Header / Speech bubble indicator */}
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/40 pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground shadow-sm">
+                    YUI
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
+                      Morning Brief
+                    </p>
+                    <h2 className="text-lg font-semibold tracking-tight text-foreground">
+                      {morningBrief.greeting}、{profileForm.display_name || "ユーザー"} さん。
+                    </h2>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="rounded-full border border-border bg-background px-3 py-1 text-xs text-muted-foreground">
+                    通知内容として配信予定
+                  </span>
+                  <span className="rounded-full border border-border bg-background px-3 py-1 text-xs text-muted-foreground">
+                    今日の予定 {morningBrief.todayEventsCount}件
+                  </span>
+                  <span className="rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+                    YUI提案 {morningBrief.recommendationCount}件
+                  </span>
+                </div>
+
+              </div>
+
+              {/* Conversational Message Content */}
+              <div className="space-y-4 text-base leading-7 text-foreground/90 md:text-lg">
+                <p className="font-semibold text-foreground">
+                  {morningBrief.summary}
+                </p>
+                <p className="text-sm text-muted-foreground leading-7 md:text-base">
+                  {morningBrief.reason}
+                </p>
+                <div className="mt-2 rounded-2xl border border-primary/20 bg-background/90 p-4 text-sm font-medium leading-6 text-foreground md:text-base">
+                  <span className="text-xs font-semibold uppercase tracking-[0.2em] text-primary block mb-1">
+                    提案メッセージ
+                  </span>
+                  {morningBrief.nextAction}しませんか？
+                </div>
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {/* YUI Focus Section (Context Engine Output) */}
+        {contextSummary && (
+          <Card className="relative overflow-hidden border-primary/20 bg-gradient-to-r from-primary/5 via-background to-background p-6 shadow-sm">
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold uppercase tracking-[0.25em] text-primary">
+                  YUI Focus
+                </p>
+                <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+                  スコア: {contextSummary.priorityScore}
+                </span>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <h2 className="text-xs uppercase tracking-[0.2em] text-muted-foreground">今日の優先事項</h2>
+                  <p className="mt-1 text-xl font-bold tracking-tight text-foreground md:text-2xl">
+                    {contextSummary.priority}
+                  </p>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="rounded-2xl border border-border/60 bg-background/80 p-4">
+                    <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">理由</h3>
+                    <p className="mt-2 text-sm leading-6 text-foreground/90">{contextSummary.reason}</p>
+                  </div>
+                  <div className="rounded-2xl border border-primary/30 bg-primary/5 p-4">
+                    <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">次の一歩</h3>
+                    <p className="mt-2 text-sm font-medium leading-6 text-foreground">{contextSummary.nextAction}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Card>
         )}
 
         <section className="grid gap-6 lg:grid-cols-[1.3fr_0.7fr]">
@@ -559,11 +718,20 @@ export function YuiHome({ displayName }: YuiHomeProps) {
                     <div className="space-y-2">
                       {calendarEvents.slice(0, 3).map((event) => (
                         <div key={event.id} className="rounded-2xl border border-border bg-background px-3 py-2">
-                          <p className="text-sm font-medium">{event.title}</p>
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <p className="text-sm font-medium">{event.title}</p>
+                            {event.provider === "google_calendar" || event.source === "external" ? (
+                              <span className="rounded-full border border-emerald-300 bg-emerald-50 px-2.5 py-0.5 text-[10px] font-semibold text-emerald-800">
+                                Google Calendar
+                              </span>
+                            ) : event.source === "yui" ? (
+                              <span className="rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-[10px] font-semibold text-primary">
+                                YUI提案
+                              </span>
+                            ) : null}
+                          </div>
                           <p className="mt-1 text-xs text-muted-foreground">
                             {format(new Date(event.start_at), "HH:mm")} - {format(new Date(event.end_at), "HH:mm")}
-                            {" / "}
-                            {event.provider}
                           </p>
                           {event.location ? (
                             <p className="mt-1 text-xs text-muted-foreground">場所: {event.location}</p>
@@ -738,7 +906,9 @@ export function YuiHome({ displayName }: YuiHomeProps) {
                               </button>
                             </>
                           ) : recommendation.status === "accepted" ? (
-                            <p className="text-sm text-muted-foreground">時間提案を作成しました。</p>
+                            <p className="text-sm text-muted-foreground">
+                              時間提案を作成し、登録候補を準備しました。
+                            </p>
                           ) : recommendation.status === "rejected" ? (
                             <p className="text-sm text-muted-foreground">この提案は見送られました。</p>
                           ) : (
@@ -752,6 +922,122 @@ export function YuiHome({ displayName }: YuiHomeProps) {
               ) : (
                 <p className="text-sm text-muted-foreground">
                   まだ推薦はありません。会話で「時間を作りたい」と伝えるか、提案を作るを押してください。
+                </p>
+              )}
+            </Card>
+
+            <Card className="space-y-5 p-6">
+              <div className="space-y-2">
+                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Action Layer</p>
+                <h2 className="text-2xl font-semibold">予定登録候補</h2>
+                <p className="text-sm text-muted-foreground">
+                  Time Block を、まだ外部登録しない「予定登録候補」として保持します。
+                </p>
+              </div>
+
+              {calendarActions.length > 0 ? (
+                <div className="space-y-3">
+                  {calendarActions.slice(0, 3).map((action) => {
+                    const relatedTimeBlock = [...timeBlocks, ...suggestedTimeBlocks].find((block) => block.id === action.time_block_id) ?? null;
+                    return (
+                      <div key={action.id} className="rounded-3xl border border-border bg-muted/20 p-5">
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div className="space-y-2">
+                            <p className="text-sm font-semibold leading-6">{action.title}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {format(new Date(action.start_at), "MM/dd HH:mm")} - {format(new Date(action.end_at), "HH:mm")}
+                            </p>
+                          </div>
+                          <div className="rounded-full border border-border bg-background px-3 py-1 text-xs text-muted-foreground">
+                            {action.status}
+                          </div>
+                        </div>
+
+                        <div className="mt-3 grid gap-3 md:grid-cols-2">
+                          <div className="rounded-2xl border border-border bg-background px-4 py-3 text-sm leading-6">
+                            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">登録先</p>
+                            <p className="mt-2">
+                              {action.provider === "google_calendar"
+                                ? "Google Calendar"
+                                : action.provider === "apple_calendar"
+                                  ? "Apple Calendar"
+                                  : "Manual"}
+                            </p>
+                          </div>
+                          <div className="rounded-2xl border border-border bg-background px-4 py-3 text-sm leading-6">
+                            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">状態</p>
+                            <p className="mt-2">
+                              {action.status === "pending"
+                                ? "登録候補"
+                                : action.status === "approved"
+                                  ? "登録を承認済み"
+                                  : action.status === "scheduled"
+                                    ? "登録済み"
+                                    : "見送り"}
+                            </p>
+                          </div>
+                        </div>
+
+                        {action.reason || relatedTimeBlock?.reason ? (
+                          <div className="mt-3 rounded-2xl border border-border bg-background px-4 py-3 text-sm leading-6">
+                            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">なぜこの時間なのか</p>
+                            <p className="mt-2">{action.reason ?? relatedTimeBlock?.reason}</p>
+                          </div>
+                        ) : null}
+
+                        <div className="mt-3 rounded-2xl border border-border bg-background px-4 py-3 text-sm leading-6">
+                          <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">メッセージ</p>
+                          <p className="mt-2">
+                            {action.status === "pending"
+                              ? "この時間を確保すると、今のGoalに近づけます。Google Calendarへの登録候補として保持しています。"
+                              : action.status === "approved"
+                                ? "Google Calendarへの登録候補を保持しています。登録実行ボタンで外部に作成できます。"
+                                : action.status === "scheduled"
+                                  ? "✓ Google Calendarに登録済みです。"
+                                  : "この候補は見送られました。"}
+                          </p>
+                        </div>
+
+                        <div className="mt-4 flex flex-wrap items-center gap-3">
+                          {action.status === "pending" || action.status === "approved" ? (
+                            <>
+                              <button
+                                type="button"
+                                className="yohaku-btn"
+                                onClick={() => void handleScheduleCalendarAction(action.id)}
+                              >
+                                Google Calendarに登録する
+                              </button>
+                              <button
+                                type="button"
+                                className="rounded-full border border-border bg-background px-4 py-2 text-sm transition hover:bg-muted"
+                                onClick={() => void handleUpdateCalendarActionStatus(action.id, "pending")}
+                              >
+                                あとで検討
+                              </button>
+                              <button
+                                type="button"
+                                className="rounded-full border border-border bg-background px-4 py-2 text-sm transition hover:bg-muted"
+                                onClick={() => void handleUpdateCalendarActionStatus(action.id, "rejected")}
+                              >
+                                今回は不要
+                              </button>
+                            </>
+                          ) : action.status === "scheduled" ? (
+                            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-sm font-medium text-emerald-600 dark:text-emerald-400">
+                              ✓ Google Calendar登録済み
+                            </div>
+                          ) : (
+                            <p className="text-sm text-muted-foreground">この候補は見送られました。</p>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  まだ予定登録候補はありません。時間提案を承認するとここに出てきます。
                 </p>
               )}
             </Card>

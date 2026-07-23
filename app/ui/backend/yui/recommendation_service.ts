@@ -1,5 +1,5 @@
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { createYuiEvent, createYuiSuggestedTimeBlock, listYuiCalendarEvents, listYuiDecisionsSince, listYuiGoals, listYuiMemoriesSince, listYuiSuggestedTimeBlocks, listYuiConversationsSince, listYuiEvents, getYuiProfile } from "./service";
+import { createYuiEvent, createYuiSuggestedTimeBlock, ensureYuiCalendarActionFromTimeBlock, listYuiCalendarEvents, listYuiDecisionsSince, listYuiGoals, listYuiMemoriesSince, listYuiSuggestedTimeBlocks, listYuiConversationsSince, listYuiEvents, getYuiProfile } from "./service";
 import type {
   CreateYuiRecommendationInput,
   YuiCalendarEvent,
@@ -395,6 +395,7 @@ async function ensureSuggestedTimeBlockFromRecommendation(
   });
 
   if (matched) {
+    await ensureYuiCalendarActionFromTimeBlock(user, matched);
     return matched;
   }
 
