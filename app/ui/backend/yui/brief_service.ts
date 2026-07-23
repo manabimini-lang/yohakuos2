@@ -1,9 +1,12 @@
 import { computeYuiContext } from "./context_service";
+import { computeYuiContinuity } from "./continuity_service";
 import { listYuiCalendarEvents } from "./service";
 import { listYuiRecommendations } from "./recommendation_service";
+import { refineBriefWithAI } from "./ai_integration_service";
 
 export type YuiMorningBrief = {
   greeting: string;
+  yesterdaySummary: string;
   summary: string;
   priority: string;
   reason: string;
@@ -32,8 +35,9 @@ export async function getMorningBrief(userId: string): Promise<YuiMorningBrief> 
   const endOfDay = new Date(now);
   endOfDay.setHours(23, 59, 59, 999);
 
-  const [context, calendarEvents, recommendations] = await Promise.all([
+  const [context, continuity, calendarEvents, recommendations] = await Promise.all([
     computeYuiContext(userId),
+    computeYuiContinuity(userId),
     listYuiCalendarEvents(userId, { start: startOfDay, end: endOfDay, limit: 50 }),
     listYuiRecommendations(userId, { status: "pending", limit: 50 }),
   ]);
@@ -41,8 +45,9 @@ export async function getMorningBrief(userId: string): Promise<YuiMorningBrief> 
   const greeting = getGreeting(now);
   const summary = `${context.priority}が現在の最優先事項です。`;
 
-  return {
+  const rawBrief: YuiMorningBrief = {
     greeting,
+    yesterdaySummary: continuity.yesterdaySummary,
     summary,
     priority: context.priority,
     reason: context.reason,
@@ -50,4 +55,6 @@ export async function getMorningBrief(userId: string): Promise<YuiMorningBrief> 
     todayEventsCount: calendarEvents.length,
     recommendationCount: recommendations.length,
   };
+
+  return refineBriefWithAI(userId, rawBrief);
 }

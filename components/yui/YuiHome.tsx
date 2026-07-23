@@ -7,6 +7,7 @@ import { Settings } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { MemoryList } from "@/components/yui/MemoryList";
 import { YuiChat } from "@/components/yui/YuiChat";
+import { YuiFirstMeetingCard } from "@/components/yui/YuiFirstMeetingCard";
 import type {
   YuiConversation,
   YuiCalendarAction,
@@ -22,6 +23,7 @@ import type {
   YuiRecommendation,
   YuiSuggestedTimeBlock,
   YuiToday,
+  YuiNotificationDeliveryStatus,
 } from "@/app/ui/backend/yui/models";
 import type { YuiContextSummary } from "@/app/ui/backend/yui/context_service";
 import type { YuiMorningBrief } from "@/app/ui/backend/yui/brief_service";
@@ -113,6 +115,7 @@ export function YuiHome({ displayName }: YuiHomeProps) {
     title: "",
     status: "pending",
   });
+  const [deliveryStatus, setDeliveryStatus] = useState<YuiNotificationDeliveryStatus | null>(null);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isSavingGoal, setIsSavingGoal] = useState(false);
   const [isSavingMilestone, setIsSavingMilestone] = useState(false);
@@ -138,6 +141,7 @@ export function YuiHome({ displayName }: YuiHomeProps) {
         calendarActionsRes,
         reflectionRes,
         candidatesRes,
+        deliveryStatusRes,
       ] = await Promise.all([
         fetch("/api/yui/today"),
         fetch("/api/yui/morning-brief"),
@@ -155,11 +159,17 @@ export function YuiHome({ displayName }: YuiHomeProps) {
         fetch("/api/yui/calendar-actions"),
         fetch("/api/yui/reflections/latest"),
         fetch("/api/yui/memory-candidates"),
+        fetch("/api/yui/notifications/status"),
       ]);
 
       if (todayRes.ok) {
         const payload = await todayRes.json();
         setToday(payload);
+      }
+
+      if (deliveryStatusRes.ok) {
+        const payload = await deliveryStatusRes.json();
+        setDeliveryStatus(payload);
       }
 
       if (briefRes.ok) {
@@ -539,8 +549,20 @@ export function YuiHome({ displayName }: YuiHomeProps) {
           </div>
         )}
 
-        {/* Morning Brief Section (Secretary Speech Interface) */}
-        {morningBrief && (
+        {/* First Meeting / Onboarding Card */}
+        {profile && profile.has_completed_onboarding === false ? (
+          <YuiFirstMeetingCard
+            onComplete={() => {
+              setProfileForm((prev) => ({ ...prev, has_completed_onboarding: true }));
+              if (profile) {
+                profile.has_completed_onboarding = true;
+              }
+            }}
+          />
+        ) : (
+          <>
+            {/* Morning Brief Section (Secretary Speech Interface) */}
+            {morningBrief && (
           <Card className="relative overflow-hidden border-primary/30 bg-gradient-to-br from-primary/10 via-background to-muted/30 p-6 md:p-8 shadow-md">
             <div className="flex flex-col gap-6">
               {/* Header / Speech bubble indicator */}
@@ -559,10 +581,16 @@ export function YuiHome({ displayName }: YuiHomeProps) {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <span className="rounded-full border border-border bg-background px-3 py-1 text-xs text-muted-foreground">
-                    通知内容として配信予定
-                  </span>
+                <div className="flex flex-wrap items-center gap-2">
+                  {deliveryStatus?.isTodayMorningDelivered ? (
+                    <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-600">
+                      ✓ 本日 {deliveryStatus.morningTime} 配信済み
+                    </span>
+                  ) : (
+                    <span className="rounded-full border border-border bg-background px-3 py-1 text-xs text-muted-foreground">
+                      次回配信 {deliveryStatus?.morningTime || "07:30"}
+                    </span>
+                  )}
                   <span className="rounded-full border border-border bg-background px-3 py-1 text-xs text-muted-foreground">
                     今日の予定 {morningBrief.todayEventsCount}件
                   </span>
@@ -573,17 +601,33 @@ export function YuiHome({ displayName }: YuiHomeProps) {
 
               </div>
 
-              {/* Conversational Message Content */}
+              {/* Conversational Message Content (Continuity Layer) */}
               <div className="space-y-4 text-base leading-7 text-foreground/90 md:text-lg">
-                <p className="font-semibold text-foreground">
-                  {morningBrief.summary}
-                </p>
+                {morningBrief.yesterdaySummary && (
+                  <div className="rounded-2xl border border-border/60 bg-muted/40 p-4 text-sm text-muted-foreground leading-relaxed md:text-base">
+                    <span className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground block mb-1">
+                      昨日の振り返り
+                    </span>
+                    {morningBrief.yesterdaySummary}
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <span className="text-xs font-semibold uppercase tracking-[0.2em] text-primary block">
+                    今日の最優先事項
+                  </span>
+                  <p className="font-semibold text-foreground">
+                    {morningBrief.summary}
+                  </p>
+                </div>
+
                 <p className="text-sm text-muted-foreground leading-7 md:text-base">
                   {morningBrief.reason}
                 </p>
+
                 <div className="mt-2 rounded-2xl border border-primary/20 bg-background/90 p-4 text-sm font-medium leading-6 text-foreground md:text-base">
                   <span className="text-xs font-semibold uppercase tracking-[0.2em] text-primary block mb-1">
-                    提案メッセージ
+                    今日の一歩
                   </span>
                   {morningBrief.nextAction}しませんか？
                 </div>
@@ -1494,6 +1538,8 @@ export function YuiHome({ displayName }: YuiHomeProps) {
 
           </div>
         </section>
+        </>
+        )}
       </div>
     </main>
   );

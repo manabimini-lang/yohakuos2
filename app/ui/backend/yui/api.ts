@@ -293,4 +293,29 @@ export async function syncGoogleCalendarForUser() {
   return syncGoogleCalendarEvents(session.user.id);
 }
 
+export async function postYuiCompleteOnboarding() {
+  const session = await requireYuiSession();
+  const { completeYuiOnboarding } = await import("./service");
+  return completeYuiOnboarding(session.user.id);
+}
+
+export async function getYuiContinuity() {
+  const session = await requireYuiSession();
+  const { computeYuiContinuity } = await import("./continuity_service");
+  return computeYuiContinuity(session.user.id);
+}
+
+export async function getNotificationDeliveryStatusForUser() {
+  const session = await requireYuiSession();
+  const { getNotificationDeliveryStatus } = await import("./notification_scheduler");
+  return getNotificationDeliveryStatus(session.user.id);
+}
+
+export async function triggerNotificationDeliveryForUser(type: "morning" | "evening") {
+  const session = await requireYuiSession();
+  const { deliverNotification } = await import("./notification_scheduler");
+  return deliverNotification(session.user.id, type);
+}
+
+
 

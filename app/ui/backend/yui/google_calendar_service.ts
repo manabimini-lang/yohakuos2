@@ -130,8 +130,15 @@ export async function handleGoogleCallback(userId: string, code: string, redirec
     });
   }
 
-  // Automatically trigger sync
+  // Automatically trigger sync and complete onboarding
   void syncGoogleCalendarEvents(userId);
+
+  try {
+    const { completeYuiOnboarding } = await import("./service");
+    await completeYuiOnboarding(userId);
+  } catch (e) {
+    console.error("Failed to complete onboarding on Google callback", e);
+  }
 }
 
 export async function getValidAccessToken(userId: string): Promise<{ accessToken: string; connectionId: string }> {

@@ -13,9 +13,9 @@ export function GoogleSignInButton({ label }: GoogleSignInButtonProps) {
 
   const handleSignIn = async () => {
     setLoading(true);
-    console.log("[GOOGLE_SSO_START]", { callbackUrl: "/inbox" });
+    console.log("[GOOGLE_SSO_START]", { callbackUrl: "/yui" });
     try {
-      await signIn("google", { callbackUrl: "/inbox" });
+      await signIn("google", { callbackUrl: "/yui" });
     } catch (err) {
       console.error("[GOOGLE_SSO_ERROR] Google sign in failed:", err);
       window.location.href = `/login?error=google-error`;

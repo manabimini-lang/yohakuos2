@@ -9,6 +9,7 @@ export type YuiProfile = {
   tone: string | null;
   life_theme: string | null;
   focus_area: string | null;
+  has_completed_onboarding: boolean;
   preferences: YuiPreferences;
   notification_settings: YuiNotificationSettings;
   created_at: string;
@@ -21,6 +22,7 @@ export type YuiProfileSettings = {
   tone: string;
   life_theme: string;
   focus_area: string;
+  has_completed_onboarding?: boolean;
   notification_strength: string;
   summary_frequency: string;
   timezone: string;
@@ -414,4 +416,46 @@ export type YuiNotificationPreview = {
   message: string;
   generatedAt: string;
 };
+
+export type YuiContinuitySummary = {
+  yesterdaySummary: string;
+  todayFocus: string;
+  continuityMessage: string;
+};
+
+export type YuiNotificationLog = {
+  id: string;
+  user_id: string;
+  type: "morning" | "evening";
+  title: string;
+  body: string;
+  delivered_at: string;
+  provider: string;
+  status: string;
+};
+
+export type YuiNotificationDeliveryStatus = {
+  enabled: boolean;
+  morningTime: string;
+  eveningTime: string;
+  timezone: string;
+  lastDeliveredAt: string | null;
+  lastDeliveredType: "morning" | "evening" | null;
+  nextDeliveryTime: string | null;
+  isTodayMorningDelivered: boolean;
+  isTodayEveningDelivered: boolean;
+};
+
+export type YuiMemoryProfile = {
+  id: string;
+  user_id: string;
+  memory_key: string;
+  memory_value: string;
+  confidence: number;
+  last_observed_at: string;
+  updated_at: string;
+};
+
+
+
 

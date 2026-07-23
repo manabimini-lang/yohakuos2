@@ -34,6 +34,9 @@ ALTER TABLE public.yui_profiles
 ALTER TABLE public.yui_profiles
   ADD COLUMN IF NOT EXISTS focus_area TEXT;
 
+ALTER TABLE public.yui_profiles
+  ADD COLUMN IF NOT EXISTS has_completed_onboarding BOOLEAN DEFAULT false;
+
 CREATE INDEX IF NOT EXISTS idx_yui_profiles_user_id
   ON public.yui_profiles (user_id);
 
@@ -850,3 +853,39 @@ CREATE TRIGGER trigger_yui_notification_settings_updated_at
   BEFORE UPDATE ON public.yui_notification_settings
   FOR EACH ROW
   EXECUTE FUNCTION public.set_yui_notification_settings_updated_at();
+
+-- ==============================================================================
+-- 10. YUI notification logs
+-- ==============================================================================
+CREATE TABLE IF NOT EXISTS public.yui_notification_logs (
+  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id      TEXT NOT NULL,
+  type         TEXT NOT NULL, -- 'morning' | 'evening'
+  title        TEXT NOT NULL,
+  body         TEXT NOT NULL,
+  delivered_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  provider     TEXT NOT NULL DEFAULT 'mock',
+  status       TEXT NOT NULL DEFAULT 'delivered'
+);
+
+CREATE INDEX IF NOT EXISTS idx_yui_notification_logs_user_id
+  ON public.yui_notification_logs (user_id);
+
+-- ==============================================================================
+-- 11. YUI memory profiles (Behavioral tendencies)
+-- ==============================================================================
+CREATE TABLE IF NOT EXISTS public.yui_memory_profiles (
+  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id          TEXT NOT NULL,
+  memory_key       TEXT NOT NULL,
+  memory_value     TEXT NOT NULL,
+  confidence       NUMERIC NOT NULL DEFAULT 1.0,
+  last_observed_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE(user_id, memory_key)
+);
+
+CREATE INDEX IF NOT EXISTS idx_yui_memory_profiles_user_id
+  ON public.yui_memory_profiles (user_id);
+
+

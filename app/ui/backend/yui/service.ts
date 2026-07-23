@@ -1618,7 +1618,32 @@ export async function getYuiProfile(userId: string): Promise<YuiProfile | null> 
     throw error;
   }
 
-  return (data ?? null) as YuiProfile | null;
+  if (data) {
+    return {
+      ...data,
+      has_completed_onboarding: Boolean((data as any).has_completed_onboarding),
+    } as YuiProfile;
+  }
+
+  return null;
+}
+
+export async function completeYuiOnboarding(userId: string): Promise<YuiProfile | null> {
+  const { data, error } = await supabaseAdmin
+    .from("yui_profiles")
+    .update({
+      has_completed_onboarding: true,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("user_id", userId)
+    .select("*")
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return data as YuiProfile;
 }
 
 export async function updateYuiProfile(

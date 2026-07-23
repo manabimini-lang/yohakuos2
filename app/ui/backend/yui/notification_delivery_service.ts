@@ -1,5 +1,6 @@
 import { getMorningBrief } from "./brief_service";
 import { listYuiGoals, listYuiEvents, listYuiReflections } from "./service";
+import { refineNotificationWithAI } from "./ai_integration_service";
 import type { YuiNotificationPreview } from "./models";
 
 export async function generateNotificationPreviews(userId: string): Promise<{
@@ -22,11 +23,15 @@ export async function generateNotificationPreviews(userId: string): Promise<{
     listYuiReflections(userId, 1),
   ]);
 
-  // Generate Morning Notification Message
+  // Generate Morning Notification Message (Inherits AI refined message if present)
   const morningTitle = "今日の優先事項";
-  let morningMessage = `${morningBrief.greeting}。\n\n今日は「${morningBrief.priority}」を優先しましょう。\n\n${morningBrief.reason}`;
+  let morningMessage = `${morningBrief.greeting}。\n\n`;
+  if (morningBrief.yesterdaySummary) {
+    morningMessage += `${morningBrief.yesterdaySummary}\n\n`;
+  }
+  morningMessage += `今日は「${morningBrief.summary}」を優先しましょう。\n\n${morningBrief.reason}`;
   if (morningBrief.nextAction) {
-    morningMessage += `\n\nまず${morningBrief.nextAction}`;
+    morningMessage += `\n\nまず ${morningBrief.nextAction}`;
   }
 
   // Calculate today's events for Evening Preview
@@ -54,18 +59,27 @@ export async function generateNotificationPreviews(userId: string): Promise<{
 
   eveningMessage += "お疲れさまでした。";
 
+  const rawMorningPreview: YuiNotificationPreview = {
+    type: "morning",
+    title: morningTitle,
+    message: morningMessage,
+    generatedAt: isoString,
+  };
+
+  const rawEveningPreview: YuiNotificationPreview = {
+    type: "evening",
+    title: eveningTitle,
+    message: eveningMessage,
+    generatedAt: isoString,
+  };
+
+  const [refinedMorning, refinedEvening] = await Promise.all([
+    refineNotificationWithAI(userId, rawMorningPreview),
+    refineNotificationWithAI(userId, rawEveningPreview),
+  ]);
+
   return {
-    morning: {
-      type: "morning",
-      title: morningTitle,
-      message: morningMessage,
-      generatedAt: isoString,
-    },
-    evening: {
-      type: "evening",
-      title: eveningTitle,
-      message: eveningMessage,
-      generatedAt: isoString,
-    },
+    morning: refinedMorning,
+    evening: refinedEvening,
   };
 }
