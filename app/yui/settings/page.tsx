@@ -6,6 +6,7 @@ import { YuiConnectionsSettings } from "@/components/yui/YuiConnectionsSettings"
 import { YuiNotificationSettingsForm } from "@/components/yui/YuiNotificationSettingsForm";
 import { YuiNotificationPreviewCard } from "@/components/yui/YuiNotificationPreviewCard";
 import { YuiAiSettingsCard } from "@/components/yui/YuiAiSettingsCard";
+import { YuiHealthDashboard } from "@/components/yui/YuiHealthDashboard";
 
 export const metadata: Metadata = {
   title: "YUI Settings",
@@ -45,6 +46,7 @@ export default async function YuiSettingsPage() {
           </p>
         </header>
 
+        <YuiHealthDashboard />
         <YuiConnectionsSettings />
         <YuiAiSettingsCard initialSettings={initialAiSettings} />
         <YuiNotificationSettingsForm />

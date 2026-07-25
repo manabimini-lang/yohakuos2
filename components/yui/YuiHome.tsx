@@ -27,6 +27,20 @@ import type {
 } from "@/app/ui/backend/yui/models";
 import type { YuiContextSummary } from "@/app/ui/backend/yui/context_service";
 import type { YuiMorningBrief } from "@/app/ui/backend/yui/brief_service";
+import type { YuiDailyContext } from "@/app/ui/backend/yui/daily_context_service";
+import type { YuiMemoryLayer } from "@/app/ui/backend/yui/memory_layer_service";
+import type { YuiThreadInsight } from "@/app/ui/backend/yui/thread_intelligence_service";
+import type { YuiThreadProgress } from "@/app/ui/backend/yui/progress_service";
+import type { YuiTimeIntelligence } from "@/app/ui/backend/yui/time_intelligence_service";
+import type { YuiPlanningSuggestion } from "@/app/ui/backend/yui/planning_service";
+import type { YuiWeeklyReview } from "@/app/ui/backend/yui/weekly_review_service";
+import { YuiDailyContextCard } from "@/components/yui/YuiDailyContextCard";
+import { YuiMemoryLayerCard } from "@/components/yui/YuiMemoryLayerCard";
+import { YuiThreadInsightsCard } from "@/components/yui/YuiThreadInsightsCard";
+import { YuiProgressCard } from "@/components/yui/YuiProgressCard";
+import { YuiTimeInsightsCard } from "@/components/yui/YuiTimeInsightsCard";
+import { YuiPlanningCard } from "@/components/yui/YuiPlanningCard";
+import { YuiWeeklyReviewCard } from "@/components/yui/YuiWeeklyReviewCard";
 
 type YuiHomeProps = {
   displayName?: string | null;
@@ -80,6 +94,13 @@ function looksLikeTimePlanningRequest(content: string) {
 export function YuiHome({ displayName }: YuiHomeProps) {
   const [today, setToday] = useState<YuiToday | null>(null);
   const [morningBrief, setMorningBrief] = useState<YuiMorningBrief | null>(null);
+  const [dailyContext, setDailyContext] = useState<YuiDailyContext | null>(null);
+  const [memoryLayer, setMemoryLayer] = useState<YuiMemoryLayer | null>(null);
+  const [threadInsights, setThreadInsights] = useState<YuiThreadInsight[] | null>(null);
+  const [threadProgress, setThreadProgress] = useState<YuiThreadProgress[] | null>(null);
+  const [timeIntelligence, setTimeIntelligence] = useState<YuiTimeIntelligence | null>(null);
+  const [planningSuggestions, setPlanningSuggestions] = useState<YuiPlanningSuggestion[] | null>(null);
+  const [weeklyReview, setWeeklyReview] = useState<YuiWeeklyReview | null>(null);
   const [contextSummary, setContextSummary] = useState<YuiContextSummary | null>(null);
   const [profile, setProfile] = useState<YuiProfile | null>(null);
   const [memories, setMemories] = useState<YuiMemory[]>([]);
@@ -127,6 +148,13 @@ export function YuiHome({ displayName }: YuiHomeProps) {
       const [
         todayRes,
         briefRes,
+        dailyContextRes,
+        memoryLayerRes,
+        threadInsightsRes,
+        progressRes,
+        timeIntelligenceRes,
+        planningRes,
+        weeklyReviewRes,
         contextRes,
         profileRes,
         memoriesRes,
@@ -145,6 +173,13 @@ export function YuiHome({ displayName }: YuiHomeProps) {
       ] = await Promise.all([
         fetch("/api/yui/today"),
         fetch("/api/yui/morning-brief"),
+        fetch("/api/yui/daily-context"),
+        fetch("/api/yui/memory-layer"),
+        fetch("/api/yui/thread-insights"),
+        fetch("/api/yui/progress"),
+        fetch("/api/yui/time-intelligence"),
+        fetch("/api/yui/planning"),
+        fetch("/api/yui/weekly-review"),
         fetch("/api/yui/context"),
         fetch("/api/yui/profile"),
         fetch("/api/yui/memories"),
@@ -175,6 +210,41 @@ export function YuiHome({ displayName }: YuiHomeProps) {
       if (briefRes.ok) {
         const payload = await briefRes.json();
         setMorningBrief(payload);
+      }
+
+      if (dailyContextRes?.ok) {
+        const payload = await dailyContextRes.json();
+        setDailyContext(payload);
+      }
+
+      if (memoryLayerRes?.ok) {
+        const payload = await memoryLayerRes.json();
+        setMemoryLayer(payload);
+      }
+
+      if (threadInsightsRes?.ok) {
+        const payload = await threadInsightsRes.json();
+        setThreadInsights(payload.threads ?? []);
+      }
+
+      if (progressRes?.ok) {
+        const payload = await progressRes.json();
+        setThreadProgress(payload.threads ?? []);
+      }
+
+      if (timeIntelligenceRes?.ok) {
+        const payload = await timeIntelligenceRes.json();
+        setTimeIntelligence(payload);
+      }
+
+      if (planningRes?.ok) {
+        const payload = await planningRes.json();
+        setPlanningSuggestions(payload.suggestions ?? []);
+      }
+
+      if (weeklyReviewRes?.ok) {
+        const payload = await weeklyReviewRes.json();
+        setWeeklyReview(payload.review ?? null);
       }
 
       if (contextRes.ok) {
@@ -635,6 +705,27 @@ export function YuiHome({ displayName }: YuiHomeProps) {
             </div>
           </Card>
         )}
+
+        {/* Daily Context Card (Yesterday -> Today Continuity) */}
+        <YuiDailyContextCard data={dailyContext} isLoading={!dailyContext} />
+
+        {/* Memory Layer Card (Active & Dormant Threads, Memory Timeline) */}
+        <YuiMemoryLayerCard data={memoryLayer} isLoading={!memoryLayer} />
+
+        {/* Thread Intelligence (Context Analysis & Next Steps) */}
+        <YuiThreadInsightsCard threads={threadInsights} isLoading={threadInsights === null} />
+
+        {/* Progress Overview (Thread activity & momentum) */}
+        <YuiProgressCard threads={threadProgress} isLoading={threadProgress === null} />
+
+        {/* Time Insights (Calendar time analysis) */}
+        <YuiTimeInsightsCard data={timeIntelligence} isLoading={timeIntelligence === null} />
+
+        {/* Weekly Planning (Integrated suggestions) */}
+        <YuiPlanningCard suggestions={planningSuggestions} isLoading={planningSuggestions === null} />
+
+        {/* Weekly Review (Summary & next week focus) */}
+        <YuiWeeklyReviewCard review={weeklyReview} isLoading={weeklyReview === undefined} />
 
         {/* YUI Focus Section (Context Engine Output) */}
         {contextSummary && (

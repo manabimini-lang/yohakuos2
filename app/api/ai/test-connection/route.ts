@@ -22,10 +22,10 @@ export async function POST(req: Request) {
     };
 
     if (apiKey && apiKey !== "••••••••") {
-      if (!apiKey.startsWith("AIzaSy")) {
+      if (!apiKey.startsWith("AIza") && !apiKey.startsWith("AQ.") && apiKey.length < 20) {
         return NextResponse.json({
           connected: false,
-          error: "無効なGemini APIキーの形式です（通常、AIzaSyから始まります）。",
+          error: "無効なGemini APIキーの形式です（通常、AIza... または AQ... から始まります）。",
         }, { status: 400 });
       }
       options.apiKey = apiKey;

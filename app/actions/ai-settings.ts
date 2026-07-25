@@ -33,9 +33,9 @@ export async function saveAISettings(data: AiSettingsInput) {
 
     let encryptedApiKey: string | undefined = undefined;
     if (data.apiKey && data.apiKey !== "••••••••") {
-      // Basic verification of key format for Gemini keys (typically starts with AIzaSy)
-      if (!data.apiKey.startsWith("AIzaSy")) {
-        throw new Error("無効なGemini APIキーの形式です（通常、AIzaSyから始まります）。");
+      // Basic verification of key format for Gemini keys (starts with AIza or AQ, or is sufficient length)
+      if (!data.apiKey.startsWith("AIza") && !data.apiKey.startsWith("AQ.") && data.apiKey.length < 20) {
+        throw new Error("無効なGemini APIキーの形式です（通常、AIza... または AQ... から始まります）。");
       }
       encryptedApiKey = encryptKey(data.apiKey);
     }

@@ -129,7 +129,7 @@ export function YuiAiSettingsCard({ initialSettings }: YuiAiSettingsCardProps) {
             type="password"
             value={apiKey}
             onChange={(e) => setApiKey(e.target.value)}
-            placeholder="AIzaSy..."
+            placeholder="AIza... または AQ..."
             className="w-full rounded-2xl border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
           />
         </div>
