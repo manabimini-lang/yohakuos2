@@ -3,7 +3,7 @@
 import { Card } from "@/components/ui/card";
 import { Clock, Timer, BarChart2 } from "lucide-react";
 import type { YuiTimeIntelligence } from "@/app/ui/backend/yui/time_intelligence_service";
-import { getCategoryLabel } from "@/app/ui/backend/yui/time_intelligence_service";
+import { getCategoryLabel } from "@/components/yui/utils/time-labels";
 
 type YuiTimeInsightsCardProps = {
   data: YuiTimeIntelligence | null;
