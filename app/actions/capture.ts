@@ -2,7 +2,7 @@
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { supabaseAdmin } from "@/lib/supabase/admin";
+import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
 import { processAIAnalysis } from "./ai-processing";
 import { startStarterJourneyIfEligible } from "@/lib/ai/starter-journey";
@@ -176,6 +176,8 @@ export async function savePdfFile(formData: FormData): Promise<{
 
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
+
+    const supabaseAdmin = getSupabaseAdmin();
 
     const { error: uploadError } = await supabaseAdmin.storage
       .from("yohaku-content")

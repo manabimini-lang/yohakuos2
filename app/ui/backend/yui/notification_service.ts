@@ -1,4 +1,13 @@
-import { supabaseAdmin } from "@/lib/supabase/admin";
+import { getSupabaseAdmin } from "@/lib/supabase/admin";
+import type { SupabaseClient } from "@supabase/supabase-js";
+
+const supabaseAdmin = new Proxy({} as SupabaseClient, {
+  get(_, prop: keyof SupabaseClient) {
+    const target = getSupabaseAdmin();
+    const value = target[prop];
+    return typeof value === "function" ? value.bind(target) : value;
+  },
+});
 import type { YuiNotificationPreferences } from "./models";
 
 type DbNotificationSettings = {

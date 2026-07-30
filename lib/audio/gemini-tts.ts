@@ -1,4 +1,4 @@
-import { supabaseAdmin } from "@/lib/supabase/admin";
+import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 export async function generateQuietAudio(script: string, userId: string): Promise<string | null> {
   try {
@@ -46,6 +46,8 @@ export async function generateQuietAudio(script: string, userId: string): Promis
     // Upload to Supabase Storage
     const timestamp = Date.now();
     const fileName = `${userId}/audio-reflections/reflection-${timestamp}.mp3`;
+
+    const supabaseAdmin = getSupabaseAdmin();
 
     const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
       .from("yohaku-audio")

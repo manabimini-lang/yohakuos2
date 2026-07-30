@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { updatePassword } from "@/core/auth/server";
 
 export default function ResetPasswordPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);

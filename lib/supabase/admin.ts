@@ -1,9 +1,11 @@
 import "server-only";
-import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { createClient as createSupabaseClient, type SupabaseClient } from "@supabase/supabase-js";
+
+let adminClient: SupabaseClient | null = null;
 
 // Server-only client with service_role key
 // MUST NOT be used in client components
-export function createAdminClient() {
+export function createAdminClient(): SupabaseClient {
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
     console.warn("Missing SUPABASE_SERVICE_ROLE_KEY");
   }
@@ -14,4 +16,9 @@ export function createAdminClient() {
   );
 }
 
-export const supabaseAdmin = createAdminClient();
+export function getSupabaseAdmin(): SupabaseClient {
+  if (!adminClient) {
+    adminClient = createAdminClient();
+  }
+  return adminClient;
+}

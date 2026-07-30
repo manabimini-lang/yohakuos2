@@ -144,6 +144,30 @@ export function YuiHome({ displayName }: YuiHomeProps) {
   const [isSavingGoal, setIsSavingGoal] = useState(false);
   const [isSavingMilestone, setIsSavingMilestone] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [gmailInsights, setGmailInsights] = useState<any[]>([]);
+  const [unifiedActions, setUnifiedActions] = useState<any[]>([]);
+  const [executingActionId, setExecutingActionId] = useState<string | null>(null);
+  const [completedActionIds, setCompletedActionIds] = useState<Set<string>>(new Set());
+
+  const handleExecuteUnifiedAction = async (action: any) => {
+    setExecutingActionId(action.id);
+    try {
+      const res = await fetch("/api/yui/actions/execute", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action }),
+      });
+      if (res.ok) {
+        setCompletedActionIds((prev) => new Set(prev).add(action.id));
+      } else {
+        throw new Error("Failed to execute");
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setExecutingActionId(null);
+    }
+  };
 
   const loadData = async () => {
     setError(null);
@@ -200,6 +224,8 @@ export function YuiHome({ displayName }: YuiHomeProps) {
         fetch("/api/yui/reflections/latest"),
         fetch("/api/yui/memory-candidates"),
         fetch("/api/yui/notifications/status"),
+        fetch("/api/yui/gmail/insights"),
+        fetch("/api/yui/unified-actions"),
       ]);
 
       if (todayRes.ok) {
@@ -351,6 +377,24 @@ export function YuiHome({ displayName }: YuiHomeProps) {
       if (candidatesRes.ok) {
         const payload = await candidatesRes.json();
         setMemoryCandidates(payload.memoryCandidates ?? []);
+      }
+
+      if (deliveryStatusRes && deliveryStatusRes.ok) {
+        // ... (This is handled above, doing gmail insights here)
+      }
+      
+      const gmailRes = arguments[0]?.[25]; // Or just hardcode since it's the 26th element
+      // Let's just fetch it separately to avoid index mismatch
+      const gRes = await fetch("/api/yui/gmail/insights");
+      if (gRes.ok) {
+        const payload = await gRes.json();
+        setGmailInsights(payload.insights ?? []);
+      }
+      
+      const uaRes = await fetch("/api/yui/unified-actions");
+      if (uaRes.ok) {
+        const payload = await uaRes.json();
+        setUnifiedActions(payload.actions ?? []);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "データの取得に失敗しました");
@@ -896,6 +940,75 @@ export function YuiHome({ displayName }: YuiHomeProps) {
                 </div>
               </div>
             </Card>
+
+            <Card className="space-y-4 p-6">
+              <div className="space-y-2">
+                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Unified Action Layer</p>
+                <h2 className="text-xl font-semibold">YUI Priorities</h2>
+              </div>
+              <div className="space-y-4">
+                {unifiedActions && unifiedActions.length > 0 ? (
+                  unifiedActions.map((action) => (
+                    <div key={action.id} className="rounded-2xl border border-border bg-card p-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold uppercase text-primary">
+                          {action.priority === "high" ? "High Priority" : "Medium Priority"}
+                        </span>
+                        <span className="text-xs text-muted-foreground">{action.source}</span>
+                      </div>
+                      <h3 className="mt-2 text-sm font-semibold">{action.title}</h3>
+                      <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{action.description}</p>
+                      <div className="mt-3 flex justify-end">
+                        {completedActionIds.has(action.id) ? (
+                          <span className="text-xs font-semibold text-emerald-600 flex items-center gap-1">
+                            ✓ Completed
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => handleExecuteUnifiedAction(action)}
+                            disabled={executingActionId === action.id}
+                            className="rounded-full bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary transition hover:bg-primary/20 disabled:opacity-50"
+                          >
+                            {executingActionId === action.id ? "実行中..." : "実行"}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground">現在提案すべきアクションはありません。</p>
+                )}
+              </div>
+            </Card>
+
+            <Card className="space-y-4 p-6">
+              <div className="space-y-2">
+                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Gmail Intelligence</p>
+                <h2 className="text-xl font-semibold">今日気になるメール</h2>
+              </div>
+              <div className="space-y-4">
+                {gmailInsights && gmailInsights.length > 0 ? (
+                  gmailInsights.slice(0, 5).map((insight) => (
+                    <div key={insight.id} className="rounded-2xl border border-border bg-card p-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold uppercase text-primary">
+                          {insight.reason === "unread_3_days" && "未返信3日以上"}
+                          {insight.reason === "important" && "重要"}
+                          {insight.reason === "meeting" && "会議依頼"}
+                          {insight.reason === "deadline" && "期限付き依頼"}
+                        </span>
+                        <span className="text-xs text-muted-foreground">{new Date(insight.receivedAt).toLocaleDateString()}</span>
+                      </div>
+                      <h3 className="mt-2 text-sm font-semibold">{insight.subject}</h3>
+                      <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{insight.snippet}</p>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground">特筆すべきメールはありません。</p>
+                )}
+              </div>
+            </Card>
+
 
             <Card className="space-y-5 p-6">
               <div className="space-y-2">

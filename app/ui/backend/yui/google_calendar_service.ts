@@ -1,4 +1,13 @@
-import { supabaseAdmin } from "@/lib/supabase/admin";
+import { getSupabaseAdmin } from "@/lib/supabase/admin";
+import type { SupabaseClient } from "@supabase/supabase-js";
+
+const supabaseAdmin = new Proxy({} as SupabaseClient, {
+  get(_, prop: keyof SupabaseClient) {
+    const target = getSupabaseAdmin();
+    const value = target[prop];
+    return typeof value === "function" ? value.bind(target) : value;
+  },
+});
 import { upsertYuiCalendarEvent } from "./service";
 
 export type GoogleCalendarStatus = {
@@ -14,6 +23,7 @@ export function getGoogleAuthUrl(redirectUri: string): string {
     "email",
     "profile",
     "https://www.googleapis.com/auth/calendar.readonly",
+    "https://www.googleapis.com/auth/gmail.readonly",
   ].join(" ");
 
   const params = new URLSearchParams({
