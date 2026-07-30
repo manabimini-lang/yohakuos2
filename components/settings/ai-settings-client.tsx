@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { ChevronLeft, Key, Cpu, CheckCircle2, AlertCircle, Sparkles, Loader2 } from "lucide-react";
-import { saveAISettings } from "@/app/actions/ai-settings";
+// Server Action import removed; using API route instead
 
 type AiSettingsClientProps = {
   initialSettings: {
@@ -66,20 +66,32 @@ export function AiSettingsClient({ initialSettings, aiAvailable, aiSource }: AiS
     setSaving(true);
     setStatusMsg(null);
     try {
-      await saveAISettings({
-        provider,
-        apiKey,
-        model: FIXED_MODEL,
-        isEnabled,
+      const response = await fetch('/api/ai/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          provider,
+          apiKey: apiKey === "••••••••" ? "" : apiKey,
+          model: FIXED_MODEL,
+          isEnabled,
+        }),
       });
-      setStatusMsg({
-        type: "success",
-        text: isEnabled ? "AI設定を保存し、静かに接続されました。" : "AI設定を保存し、機能を停止しました。",
-      });
+      const res = await response.json();
+      if (response.ok && res?.success) {
+        setStatusMsg({
+          type: "success",
+          text: isEnabled ? "AI設定を保存し、静かに接続されました。" : "AI設定を保存し、機能を停止しました。",
+        });
+      } else {
+        setStatusMsg({
+          type: "error",
+          text: res?.error?.message ?? "設定の保存に失敗しました。",
+        });
+      }
     } catch (error: any) {
       setStatusMsg({
         type: "error",
-        text: error.message || "設定の保存に失敗しました。",
+        text: error.message ?? "設定の保存中にエラーが発生しました。",
       });
     } finally {
       setSaving(false);

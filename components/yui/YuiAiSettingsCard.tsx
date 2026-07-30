@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Key, Cpu, CheckCircle2, AlertCircle, Sparkles, Loader2 } from "lucide-react";
-import { saveAISettings } from "@/app/actions/ai-settings";
+// Server Action import removed; using API route instead
 
 type YuiAiSettingsCardProps = {
   initialSettings?: {
@@ -63,13 +63,18 @@ export function YuiAiSettingsCard({ initialSettings }: YuiAiSettingsCardProps) {
     setSaving(true);
     setStatusMsg(null);
     try {
-      const res = await saveAISettings({
-        provider,
-        apiKey: apiKey === "••••••••" ? "" : apiKey,
-        isEnabled,
+      const response = await fetch('/api/ai/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          provider,
+          apiKey: apiKey === "••••••••" ? "" : apiKey,
+          isEnabled,
+        }),
       });
+      const res = await response.json();
 
-      if (res?.success) {
+      if (response.ok && res?.success) {
         setStatusMsg({
           type: "success",
           text: "AI接続設定を保存しました。",
@@ -77,14 +82,13 @@ export function YuiAiSettingsCard({ initialSettings }: YuiAiSettingsCardProps) {
       } else {
         setStatusMsg({
           type: "error",
-          text: "保存に失敗しました。",
+          text: res?.error?.message ?? "保存に失敗しました。",
         });
       }
-    } catch (error) {
-      const errText = error instanceof Error ? error.message : "保存処理中にエラーが発生しました。";
+    } catch (error: any) {
       setStatusMsg({
         type: "error",
-        text: errText,
+        text: error.message ?? "保存処理中にエラーが発生しました。",
       });
     } finally {
       setSaving(false);

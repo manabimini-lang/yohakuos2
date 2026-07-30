@@ -5,6 +5,8 @@ import { format } from "date-fns";
 import Link from "next/link";
 import { Settings } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { YuiActionCard } from "@/components/yui/YuiActionCard";
+import type { YuiActionSuggestion } from "@/app/ui/backend/yui/action_service";
 import { MemoryList } from "@/components/yui/MemoryList";
 import { YuiChat } from "@/components/yui/YuiChat";
 import { YuiFirstMeetingCard } from "@/components/yui/YuiFirstMeetingCard";
@@ -100,6 +102,7 @@ export function YuiHome({ displayName }: YuiHomeProps) {
   const [threadProgress, setThreadProgress] = useState<YuiThreadProgress[] | null>(null);
   const [timeIntelligence, setTimeIntelligence] = useState<YuiTimeIntelligence | null>(null);
   const [planningSuggestions, setPlanningSuggestions] = useState<YuiPlanningSuggestion[] | null>(null);
+  const [actions, setActions] = useState<YuiActionSuggestion[]>([]);
   const [weeklyReview, setWeeklyReview] = useState<YuiWeeklyReview | null>(null);
   const [contextSummary, setContextSummary] = useState<YuiContextSummary | null>(null);
   const [profile, setProfile] = useState<YuiProfile | null>(null);
@@ -154,6 +157,7 @@ export function YuiHome({ displayName }: YuiHomeProps) {
         progressRes,
         timeIntelligenceRes,
         planningRes,
+        actionsRes,
         weeklyReviewRes,
         contextRes,
         profileRes,
@@ -179,6 +183,7 @@ export function YuiHome({ displayName }: YuiHomeProps) {
         fetch("/api/yui/progress"),
         fetch("/api/yui/time-intelligence"),
         fetch("/api/yui/planning"),
+        fetch("/api/yui/actions"),
         fetch("/api/yui/weekly-review"),
         fetch("/api/yui/context"),
         fetch("/api/yui/profile"),
@@ -240,6 +245,13 @@ export function YuiHome({ displayName }: YuiHomeProps) {
       if (planningRes?.ok) {
         const payload = await planningRes.json();
         setPlanningSuggestions(payload.suggestions ?? []);
+      }
+
+      if (actionsRes?.ok) {
+        const payload = await actionsRes.json();
+        setActions(payload.suggestions ?? []);
+      } else {
+        setActions([]);
       }
 
       if (weeklyReviewRes?.ok) {
