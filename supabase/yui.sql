@@ -292,7 +292,66 @@ CREATE POLICY "decisions_delete_own"
   FOR DELETE
   USING (auth.uid()::text = user_id);
 
--- 7. Events
+-- 7. Daily brief cache
+CREATE TABLE IF NOT EXISTS public.yui_daily_briefs (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id       TEXT NOT NULL,
+  brief         JSONB NOT NULL DEFAULT '{}'::jsonb,
+  priority_json JSONB NOT NULL DEFAULT '[]'::jsonb,
+  context_hash  TEXT NOT NULL,
+  generated_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (user_id, context_hash)
+);
+
+CREATE INDEX IF NOT EXISTS idx_yui_daily_briefs_user_id_generated_at
+  ON public.yui_daily_briefs (user_id, generated_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_yui_daily_briefs_context_hash
+  ON public.yui_daily_briefs (context_hash);
+
+ALTER TABLE public.yui_daily_briefs ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "yui_daily_briefs_select_own" ON public.yui_daily_briefs;
+CREATE POLICY "yui_daily_briefs_select_own"
+  ON public.yui_daily_briefs
+  FOR SELECT
+  USING (auth.uid()::text = user_id);
+
+DROP POLICY IF EXISTS "yui_daily_briefs_insert_own" ON public.yui_daily_briefs;
+CREATE POLICY "yui_daily_briefs_insert_own"
+  ON public.yui_daily_briefs
+  FOR INSERT
+  WITH CHECK (auth.uid()::text = user_id);
+
+DROP POLICY IF EXISTS "yui_daily_briefs_update_own" ON public.yui_daily_briefs;
+CREATE POLICY "yui_daily_briefs_update_own"
+  ON public.yui_daily_briefs
+  FOR UPDATE
+  USING (auth.uid()::text = user_id)
+  WITH CHECK (auth.uid()::text = user_id);
+
+DROP POLICY IF EXISTS "yui_daily_briefs_delete_own" ON public.yui_daily_briefs;
+CREATE POLICY "yui_daily_briefs_delete_own"
+  ON public.yui_daily_briefs
+  FOR DELETE
+  USING (auth.uid()::text = user_id);
+
+CREATE OR REPLACE FUNCTION public.set_yui_daily_briefs_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trigger_yui_daily_briefs_updated_at ON public.yui_daily_briefs;
+CREATE TRIGGER trigger_yui_daily_briefs_updated_at
+  BEFORE UPDATE ON public.yui_daily_briefs
+  FOR EACH ROW
+  EXECUTE FUNCTION public.set_yui_daily_briefs_updated_at();
+
+-- 8. Events
 CREATE TABLE IF NOT EXISTS public.events (
   id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id      TEXT NOT NULL,

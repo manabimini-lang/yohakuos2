@@ -46,6 +46,8 @@ import { YuiCardSkeleton } from "@/components/yui/YuiCardSkeleton";
 import TodaySummary from "@/components/yui/TodaySummary";
 import ActionArea from "@/components/yui/ActionArea";
 import InfoAccordion from "@/components/yui/InfoAccordion";
+import { LiveStatusBadge } from "@/components/yui/LiveStatusBadge";
+import { ActivityFeedCard } from "@/components/yui/ActivityFeedCard";
 
 type YuiHomeProps = {
   displayName?: string | null;
@@ -254,6 +256,10 @@ export function YuiHome({ displayName }: YuiHomeProps) {
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [cacheUpdatedAt, setCacheUpdatedAt] = useState<number | null>(null);
+  const [showHealthMenu, setShowHealthMenu] = useState(false);
+  const [showSettingsMenu, setShowSettingsMenu] = useState(false);
+  const [showMore, setShowMore] = useState(false);
+  const [showFabMenu, setShowFabMenu] = useState(false);
   const [gmailInsights, setGmailInsights] = useState<any[]>([]);
   const [unifiedActions, setUnifiedActions] = useState<any[]>([]);
   const [executingActionId, setExecutingActionId] = useState<string | null>(null);
@@ -1049,6 +1055,64 @@ export function YuiHome({ displayName }: YuiHomeProps) {
   const recentEvents = today?.recentEvents ?? [];
   const calendarEvents = today?.calendarEvents ?? [];
   const suggestedTimeBlocks = today?.suggestedTimeBlocks ?? [];
+
+  const activityItems = [
+    ...recentEvents.slice(0, 4).map((event) => ({
+      time: format(new Date(event.occurred_at), "HH:mm"),
+      title: event.title || event.event_type,
+      detail: event.content || event.event_type,
+    })),
+    ...(calendarEvents.length > 0
+      ? [{ time: "今日", title: "Google Calendar同期", detail: `${calendarEvents.length}件の予定を確認しました。` }]
+      : []),
+    ...(gmailInsights.length > 0
+      ? [{ time: "今日", title: "新着メール", detail: `${gmailInsights.length}件の未読メールがあります。` }]
+      : []),
+    ...(goals.length > 0
+      ? [{ time: "今日", title: "Goal更新", detail: `${goals[0]?.title ?? "目標"} が今の優先事項です。` }]
+      : []),
+  ].slice(0, 6);
+
+  const heroPriorityItems = unifiedActions.slice(0, 2).map((item) => ({
+    id: item.id,
+    title: item.title,
+    detail: item.description ?? item.actionType ?? "今日の一歩",
+  }));
+
+  const recentChangeCards: Array<{ label: string; title: string; detail: string }> = [];
+
+  if (gmailInsights[0]) {
+    recentChangeCards.push({
+      label: "Gmail",
+      title: gmailInsights[0].subject ?? "新着メール",
+      detail: gmailInsights[0].snippet ?? "重要メールを確認しました。",
+    });
+  }
+
+  if (calendarEvents[0]) {
+    recentChangeCards.push({
+      label: "Calendar",
+      title: calendarEvents[0].title ?? "予定",
+      detail: calendarEvents[0].start_at ? `今日 ${format(new Date(calendarEvents[0].start_at), "HH:mm")}` : "今日の予定を確認しました。",
+    });
+  }
+
+  if (goals[0]) {
+    recentChangeCards.push({
+      label: "Goals",
+      title: goals[0].title ?? "目標",
+      detail: goals[0].description ?? "今の軸を維持しています。",
+    });
+  }
+
+  if (reflections[0]) {
+    recentChangeCards.push({
+      label: "Reflections",
+      title: "振り返り",
+      detail: reflections[0].summary || "今週の気づきを記録しました。",
+    });
+  }
+
   const googleStatusLabel =
     googleHealth?.status === "connected"
       ? "Connected"
@@ -1073,6 +1137,30 @@ export function YuiHome({ displayName }: YuiHomeProps) {
               <span className="rounded-full border border-border bg-background px-3 py-1 text-xs text-muted-foreground">
                 更新: {formatRelativeTime(cacheUpdatedAt)}
               </span>
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowHealthMenu((current) => !current);
+                    setShowSettingsMenu(false);
+                  }}
+                  className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-4 py-2 text-sm font-medium transition hover:bg-muted"
+                >
+                  <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
+                  <span>● Live</span>
+                </button>
+                {showHealthMenu ? (
+                  <div className="absolute right-0 top-full z-10 mt-2 w-56 rounded-2xl border border-border bg-background p-2 shadow-lg">
+                    <p className="px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-muted-foreground">System Health</p>
+                    <div className="mt-2 space-y-1 text-sm">
+                      <p className="rounded-xl bg-muted/40 px-2 py-1">Google: {googleHealth?.status === "connected" ? "Connected" : googleHealth?.status === "needs_reauth" ? "Needs Re-auth" : "Offline"}</p>
+                      <p className="rounded-xl bg-muted/40 px-2 py-1">Gmail: {gmailInsights.length > 0 ? "Connected" : "Offline"}</p>
+                      <p className="rounded-xl bg-muted/40 px-2 py-1">AI: {morningBrief ? "Connected" : "Offline"}</p>
+                      <p className="rounded-xl bg-muted/40 px-2 py-1">Supabase: {error ? "Maintenance" : "Connected"}</p>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
               <button
                 type="button"
                 onClick={() => void loadData({ background: false })}
@@ -1081,13 +1169,27 @@ export function YuiHome({ displayName }: YuiHomeProps) {
                 <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
                 <span>更新</span>
               </button>
-              <Link
-                href="/yui/settings"
-                className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-4 py-2 text-sm font-medium transition hover:bg-muted"
-              >
-                <Settings className="h-4 w-4" />
-                <span>設定・接続</span>
-              </Link>
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowSettingsMenu((current) => !current);
+                    setShowHealthMenu(false);
+                  }}
+                  className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-4 py-2 text-sm font-medium transition hover:bg-muted"
+                >
+                  <Settings className="h-4 w-4" />
+                </button>
+                {showSettingsMenu ? (
+                  <div className="absolute right-0 top-full z-10 mt-2 w-44 rounded-2xl border border-border bg-background p-2 shadow-lg">
+                    <Link href="/yui/settings" className="block rounded-xl px-2 py-2 text-sm hover:bg-muted">接続</Link>
+                    <Link href="/settings/ai" className="block rounded-xl px-2 py-2 text-sm hover:bg-muted">AI設定</Link>
+                    <Link href="/settings" className="block rounded-xl px-2 py-2 text-sm hover:bg-muted">通知</Link>
+                    <Link href="/settings" className="block rounded-xl px-2 py-2 text-sm hover:bg-muted">テーマ</Link>
+                    <Link href="/help" className="block rounded-xl px-2 py-2 text-sm hover:bg-muted">ヘルプ</Link>
+                  </div>
+                ) : null}
+              </div>
             </div>
           </div>
           <p className="max-w-2xl text-sm leading-7 text-muted-foreground md:text-base">
@@ -1102,7 +1204,6 @@ export function YuiHome({ displayName }: YuiHomeProps) {
           </div>
         )}
 
-        {/* First Meeting / Onboarding Card */}
         {profile && profile.has_completed_onboarding === false ? (
           <YuiFirstMeetingCard
             onComplete={() => {
@@ -1114,20 +1215,119 @@ export function YuiHome({ displayName }: YuiHomeProps) {
           />
         ) : (
           <>
-            {/* Sprint 40: Today Summary + Action Area (Phase1 / Phase2) */}
-            <div className="grid gap-4 md:grid-cols-3">
-              <div className="md:col-span-2">
-                {/* Today Summary */}
-                <TodaySummary
-                  todaySummary={morningBrief?.summary ?? today?.summary ?? null}
-                  eventsCount={morningBrief?.todayEventsCount ?? (calendarEvents?.length ?? 0)}
-                  unreadEmails={gmailInsights?.length ?? 0}
-                  topPriority={contextSummary?.priority ?? morningBrief?.priority ?? null}
-                  updatedAt={cacheUpdatedAt}
-                  changeSummary={morningBrief?.changeSummary ?? null}
-                />
+            {isInitialLoading ? (
+              <section className="sticky top-4 z-10 rounded-[32px] border border-border bg-white/80 p-5 shadow-[0_24px_60px_-28px_rgba(15,23,42,0.25)] backdrop-blur md:p-8">
+                <div className="grid gap-6 lg:grid-cols-[1.4fr_0.9fr]">
+                  <div className="space-y-5">
+                    <div className="h-4 w-24 animate-pulse rounded-full bg-slate-200" />
+                    <div className="h-12 w-3/4 animate-pulse rounded-2xl bg-slate-200" />
+                    <div className="h-24 animate-pulse rounded-3xl bg-slate-200" />
+                    <div className="flex gap-3">
+                      <div className="h-11 w-40 animate-pulse rounded-full bg-slate-200" />
+                      <div className="h-11 w-32 animate-pulse rounded-full bg-slate-200" />
+                    </div>
+                  </div>
+                  <div className="space-y-4">
+                    <div className="h-28 animate-pulse rounded-3xl bg-slate-200" />
+                    <div className="h-28 animate-pulse rounded-3xl bg-slate-200" />
+                  </div>
+                </div>
+              </section>
+            ) : (
+              <section className="sticky top-4 z-10 min-h-[72vh] rounded-[32px] border border-slate-200/80 bg-white/80 p-5 shadow-[0_28px_80px_-32px_rgba(15,23,42,0.24)] backdrop-blur-md md:p-8 lg:p-10">
+                <div className="mb-5 flex items-center justify-between gap-3">
+                  <LiveStatusBadge
+                    status={isRefreshing ? "updating" : "cached"}
+                    text={isRefreshing ? "Updating" : "Updated just now"}
+                  />
+                  <span className="text-[11px] font-medium uppercase tracking-[0.26em] text-slate-400">Hero</span>
+                </div>
 
-                <div className="mt-4">
+                <div className="flex min-h-[52vh] flex-col justify-center gap-6">
+                  <div className="space-y-4">
+                    <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">
+                      {new Date().getHours() < 12 ? "Good morning" : new Date().getHours() < 18 ? "Good afternoon" : "Good evening"}
+                    </p>
+                    <h2 className="max-w-3xl text-4xl font-semibold tracking-[-0.05em] text-slate-900 md:text-6xl">
+                      {displayName ? `${displayName}さん` : "今日の一歩"}
+                    </h2>
+                  </div>
+
+                  <div className="space-y-4">
+                    <p className="max-w-2xl text-lg leading-8 text-slate-700 md:text-xl md:leading-9">
+                      {contextSummary?.priority ?? morningBrief?.priority ?? "今日の最重要事項を整理しています。"}
+                      {" "}
+                      {morningBrief?.changeSummary ?? "重要な変化はまだありません。今すぐ最初の一歩を進めましょう。"}
+                    </p>
+                    <p className="max-w-2xl text-base leading-7 text-slate-600 md:text-lg md:leading-8">
+                      {contextSummary?.nextAction ?? "午後の集中時間を確保して、いちばん大事な作業に取り組みましょう。"}
+                    </p>
+                  </div>
+
+                  <div className="flex flex-wrap gap-3 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setShowMore(true)}
+                      className="inline-flex items-center justify-center rounded-full bg-slate-900 px-5 py-3 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:bg-slate-700 motion-reduce:transition-none"
+                    >
+                      {heroPriorityItems[0]?.title ? `Reply to ${heroPriorityItems[0].title}` : "Start Focus Session"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowMore(true)}
+                      className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition-all duration-200 hover:bg-slate-50 motion-reduce:transition-none"
+                    >
+                      {goals[0] ? "Review Goal" : "Open Calendar"}
+                    </button>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2 pt-2">
+                    {[
+                      calendarEvents.length > 0 ? `Meeting ×${Math.min(calendarEvents.length, 9)}` : "Meeting ×0",
+                      gmailInsights.length > 0 ? `Unread ×${Math.min(gmailInsights.length, 9)}` : "Unread ×0",
+                      contextSummary ? `Focus ${Math.max(30, contextSummary.priorityScore ?? 90)} min` : "Focus 90 min",
+                      goals[0] ? `Goal ${goals[0].progress ?? 0}%` : "Goal 0%",
+                    ].map((chip) => (
+                      <span
+                        key={chip}
+                        className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-600"
+                      >
+                        {chip}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </section>
+            )}
+
+            <section className="space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-muted-foreground">Activity</p>
+                </div>
+                <span className="text-xs text-slate-500">{Math.min(activityItems.length, 5)} items</span>
+              </div>
+              <ActivityFeedCard items={activityItems.slice(0, 5)} />
+            </section>
+
+            <section className="space-y-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-muted-foreground">More</p>
+                  <h3 className="mt-1 text-2xl font-semibold tracking-tight text-slate-900">詳細は必要時に開く</h3>
+                </div>
+                <button
+                  type="button"
+                  aria-expanded={showMore}
+                  onClick={() => setShowMore((current) => !current)}
+                  className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-medium text-slate-600 transition hover:bg-slate-50"
+                >
+                  {showMore ? "閉じる" : "開く"}
+                </button>
+              </div>
+
+              {showMore ? (
+                <div className="space-y-3 animate-in fade-in-0 slide-in-from-bottom-1">
                   <ActionArea
                     actions={unifiedActions
                       .slice(0, 3)
@@ -1147,121 +1347,93 @@ export function YuiHome({ displayName }: YuiHomeProps) {
                       }
                     }}
                   />
-                </div>
-              </div>
 
-              <div className="space-y-4">
-                {/* Keep morning brief visible as a companion card for now */}
-                {isInitialLoading ? (
-                  <YuiCardSkeleton lines={4} />
-                ) : morningBrief ? (
-                  <Card className="p-4">
-                    <p className="text-xs text-muted-foreground">Morning Brief</p>
-                    <h3 className="mt-2 text-sm font-semibold">{morningBrief.summary}</h3>
-                    <p className="mt-2 text-xs text-muted-foreground">{morningBrief.reason}</p>
+                  <TodaySummary
+                    todaySummary={morningBrief?.summary ?? today?.summary ?? null}
+                    eventsCount={morningBrief?.todayEventsCount ?? (calendarEvents?.length ?? 0)}
+                    unreadEmails={gmailInsights?.length ?? 0}
+                    topPriority={contextSummary?.priority ?? morningBrief?.priority ?? null}
+                    updatedAt={cacheUpdatedAt}
+                    changeSummary={morningBrief?.changeSummary ?? null}
+                  />
+                </div>
+              ) : null}
+            </section>
+
+            {showMore ? (
+              <>
+                <YuiDailyContextCard data={dailyContext} isLoading={!dailyContext} />
+
+                <InfoAccordion title={memoryState.loaded ? `Memory (${memoryState.data?.length ?? 0})` : memoryState.loading ? "Memory (...)" : memoryState.error ? "Memory (Offline)" : "Memory"} onOpen={fetchMemories}>
+                  {memoryState.loading ? (
+                    <YuiCardSkeleton lines={3} />
+                  ) : memoryState.error ? (
+                    <p className="text-sm text-muted-foreground">メモリの取得に失敗しました。オフラインの可能性があります。</p>
+                  ) : memoryState.loaded ? (
+                    <div className="space-y-2">
+                      {(memoryState.data ?? []).slice(0, 5).map((m: any) => (
+                        <div key={m.id} className="rounded-2xl border border-border bg-card p-3">
+                          <p className="text-sm font-medium">{m.title}</p>
+                          <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{m.excerpt ?? m.content}</p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">まだメモリの取得を行っていません。開いて取得してください。</p>
+                  )}
+                </InfoAccordion>
+
+                <InfoAccordion title={insightsState.loaded ? `Insights (${insightsState.data?.length ?? 0})` : insightsState.loading ? "Insights (...)" : insightsState.error ? "Insights (Offline)" : "Insights"} onOpen={fetchInsights}>
+                  {insightsState.loading ? (
+                    <YuiCardSkeleton lines={3} />
+                  ) : insightsState.error ? (
+                    <p className="text-sm text-muted-foreground">インサイトの取得に失敗しました。オフラインの可能性があります。</p>
+                  ) : insightsState.loaded ? (
+                    <YuiThreadInsightsCard threads={insightsState.data ?? []} isLoading={false} />
+                  ) : (
+                    <p className="text-sm text-muted-foreground">まだインサイトを取得していません。開いて取得してください。</p>
+                  )}
+                </InfoAccordion>
+
+                <YuiProgressCard threads={threadProgress} isLoading={threadProgress === null} />
+
+                <YuiTimeInsightsCard data={timeIntelligence} isLoading={timeIntelligence === null} />
+
+                <YuiPlanningCard suggestions={planningSuggestions} isLoading={planningSuggestions === null} />
+
+                <YuiWeeklyReviewCard review={weeklyReview} isLoading={weeklyReview === null} />
+
+                {contextSummary && (
+                  <Card className="relative overflow-hidden border-primary/20 bg-gradient-to-r from-primary/5 via-background to-background p-6 shadow-sm">
+                    <div className="flex flex-col gap-4">
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs font-semibold uppercase tracking-[0.25em] text-primary">YUI Focus</p>
+                        <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">スコア: {contextSummary.priorityScore}</span>
+                      </div>
+
+                      <div className="space-y-4">
+                        <div>
+                          <h2 className="text-xs uppercase tracking-[0.2em] text-muted-foreground">今日の優先事項</h2>
+                          <p className="mt-1 text-xl font-bold tracking-tight text-foreground md:text-2xl">{contextSummary.priority}</p>
+                        </div>
+
+                        <div className="grid gap-4 md:grid-cols-2">
+                          <div className="rounded-2xl border border-border/60 bg-background/80 p-4">
+                            <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">理由</h3>
+                            <p className="mt-2 text-sm leading-6 text-foreground/90">{contextSummary.reason}</p>
+                          </div>
+                          <div className="rounded-2xl border border-primary/30 bg-primary/5 p-4">
+                            <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">次の一歩</h3>
+                            <p className="mt-2 text-sm font-medium leading-6 text-foreground">{contextSummary.nextAction}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </Card>
-                ) : null}
-
-                <Card className="p-4">
-                  <p className="text-xs text-muted-foreground">Quick Links</p>
-                  <div className="mt-3 flex flex-col gap-2">
-                    <Link href="/yui/today" className="text-sm text-primary">Today を見る</Link>
-                    <Link href="/yui/settings" className="text-sm text-primary">接続設定</Link>
-                    <Link href="/settings/ai" className="text-sm text-primary">AI 設定</Link>
-                  </div>
-                </Card>
-              </div>
-            </div>
-
-            {/* End Sprint 40 top area */}
-
-            {/* Remove duplicated original Morning Brief rendering below - keep rest of page intact */}
-            
-
-
-        {/* Daily Context Card (Yesterday -> Today Continuity) */}
-        <YuiDailyContextCard data={dailyContext} isLoading={!dailyContext} />
-
-        {/* Memory Layer Card (Active & Dormant Threads, Memory Timeline) */}
-        <InfoAccordion title={memoryState.loaded ? `Memory (${memoryState.data?.length ?? 0})` : memoryState.loading ? "Memory (...)" : memoryState.error ? "Memory (Offline)" : "Memory"} onOpen={fetchMemories}>
-          {memoryState.loading ? (
-            <YuiCardSkeleton lines={3} />
-          ) : memoryState.error ? (
-            <p className="text-sm text-muted-foreground">メモリの取得に失敗しました。オフラインの可能性があります。</p>
-          ) : memoryState.loaded ? (
-            // simple listing for lazy-loaded memories
-            <div className="space-y-2">
-              {(memoryState.data ?? []).slice(0, 5).map((m: any) => (
-                <div key={m.id} className="rounded-2xl border border-border bg-card p-3">
-                  <p className="text-sm font-medium">{m.title}</p>
-                  <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{m.excerpt ?? m.content}</p>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">まだメモリの取得を行っていません。開いて取得してください。</p>
-          )}
-        </InfoAccordion>
-
-        {/* Thread Intelligence (Context Analysis & Next Steps) */}
-        <InfoAccordion title={insightsState.loaded ? `Insights (${insightsState.data?.length ?? 0})` : insightsState.loading ? "Insights (...)" : insightsState.error ? "Insights (Offline)" : "Insights"} onOpen={fetchInsights}>
-          {insightsState.loading ? (
-            <YuiCardSkeleton lines={3} />
-          ) : insightsState.error ? (
-            <p className="text-sm text-muted-foreground">インサイトの取得に失敗しました。オフラインの可能性があります。</p>
-          ) : insightsState.loaded ? (
-            <YuiThreadInsightsCard threads={insightsState.data ?? []} isLoading={false} />
-          ) : (
-            <p className="text-sm text-muted-foreground">まだインサイトを取得していません。開いて取得してください。</p>
-          )}
-        </InfoAccordion>
-
-        {/* Progress Overview (Thread activity & momentum) */}
-        <YuiProgressCard threads={threadProgress} isLoading={threadProgress === null} />
-
-        {/* Time Insights (Calendar time analysis) */}
-        <YuiTimeInsightsCard data={timeIntelligence} isLoading={timeIntelligence === null} />
-
-        {/* Weekly Planning (Integrated suggestions) */}
-        <YuiPlanningCard suggestions={planningSuggestions} isLoading={planningSuggestions === null} />
-
-        {/* Weekly Review (Summary & next week focus) */}
-        <YuiWeeklyReviewCard review={weeklyReview} isLoading={weeklyReview === null} />
-
-        {/* YUI Focus Section (Context Engine Output) */}
-        {contextSummary && (
-          <Card className="relative overflow-hidden border-primary/20 bg-gradient-to-r from-primary/5 via-background to-background p-6 shadow-sm">
-            <div className="flex flex-col gap-4">
-              <div className="flex items-center justify-between">
-                <p className="text-xs font-semibold uppercase tracking-[0.25em] text-primary">
-                  YUI Focus
-                </p>
-                <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-                  スコア: {contextSummary.priorityScore}
-                </span>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <h2 className="text-xs uppercase tracking-[0.2em] text-muted-foreground">今日の優先事項</h2>
-                  <p className="mt-1 text-xl font-bold tracking-tight text-foreground md:text-2xl">
-                    {contextSummary.priority}
-                  </p>
-                </div>
-
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="rounded-2xl border border-border/60 bg-background/80 p-4">
-                    <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">理由</h3>
-                    <p className="mt-2 text-sm leading-6 text-foreground/90">{contextSummary.reason}</p>
-                  </div>
-                  <div className="rounded-2xl border border-primary/30 bg-primary/5 p-4">
-                    <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">次の一歩</h3>
-                    <p className="mt-2 text-sm font-medium leading-6 text-foreground">{contextSummary.nextAction}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </Card>
+                )}
+              </>
+            ) : null}
+          </>
         )}
 
         <section className="grid gap-6 lg:grid-cols-[1.3fr_0.7fr]">
@@ -2368,8 +2540,25 @@ export function YuiHome({ displayName }: YuiHomeProps) {
 
           </div>
         </section>
-        </>
-        )}
+      </div>
+      <div className="fixed bottom-5 right-5 z-20 flex flex-col items-end gap-2">
+        {showFabMenu ? (
+          <div className="rounded-2xl border border-border bg-background p-2 shadow-xl">
+            <button type="button" className="block w-full rounded-xl px-3 py-2 text-left text-sm hover:bg-muted">予定追加</button>
+            <button type="button" className="block w-full rounded-xl px-3 py-2 text-left text-sm hover:bg-muted">メモ</button>
+            <button type="button" className="block w-full rounded-xl px-3 py-2 text-left text-sm hover:bg-muted">Reflection</button>
+            <button type="button" className="block w-full rounded-xl px-3 py-2 text-left text-sm hover:bg-muted">Goal</button>
+            <button type="button" className="block w-full rounded-xl px-3 py-2 text-left text-sm hover:bg-muted">AI相談</button>
+          </div>
+        ) : null}
+        <button
+          type="button"
+          aria-label="quick actions"
+          onClick={() => setShowFabMenu((current) => !current)}
+          className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-primary text-2xl font-semibold text-primary-foreground shadow-lg transition hover:scale-105"
+        >
+          +
+        </button>
       </div>
     </main>
   );

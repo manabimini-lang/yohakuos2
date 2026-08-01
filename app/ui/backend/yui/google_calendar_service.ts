@@ -9,6 +9,7 @@ const supabaseAdmin = new Proxy({} as SupabaseClient, {
   },
 });
 import { upsertYuiCalendarEvent } from "./service";
+import { refreshMorningBriefCache } from "./brief_service";
 
 export type GoogleCalendarConnectionState = "connected" | "needs_reauth" | "sync_error" | "syncing";
 
@@ -396,6 +397,12 @@ export async function syncGoogleCalendarEvents(userId: string): Promise<{ synced
         updated_at: lastSyncAt,
       })
       .eq("id", connectionId);
+  }
+
+  try {
+    await refreshMorningBriefCache(userId);
+  } catch (error) {
+    console.error("Failed to refresh cached morning brief after calendar sync", error);
   }
 
   return { syncedCount, lastSyncAt };

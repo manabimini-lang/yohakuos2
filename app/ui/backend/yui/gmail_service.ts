@@ -1,6 +1,7 @@
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getValidAccessToken } from "./google_calendar_service";
+import { refreshMorningBriefCache } from "./brief_service";
 
 const supabaseAdmin = new Proxy({} as SupabaseClient, {
   get(_, prop: keyof SupabaseClient) {
@@ -80,6 +81,12 @@ export async function syncGmailMessages(userId: string): Promise<{ fetchedCount:
       labels: msgData.labelIds || [],
     });
     savedCount++;
+  }
+
+  try {
+    await refreshMorningBriefCache(userId);
+  } catch (error) {
+    console.error("Failed to refresh cached morning brief after Gmail sync", error);
   }
 
   return { fetchedCount: messages.length, savedCount };
