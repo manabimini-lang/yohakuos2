@@ -725,6 +725,12 @@ export function YuiHome({ displayName }: YuiHomeProps) {
           const payload = await healthRes.json();
           setGoogleHealth(payload.google ?? null);
         }
+
+        const unifiedActionsRes = await fetch("/api/yui/unified-actions");
+        if (unifiedActionsRes.ok) {
+          const payload = await unifiedActionsRes.json();
+          setUnifiedActions(payload.actions ?? []);
+        }
       } catch (e) {
         // ignore
       }
@@ -744,6 +750,12 @@ export function YuiHome({ displayName }: YuiHomeProps) {
       if (briefRes.ok) {
         const payload = await briefRes.json();
         setMorningBrief(payload);
+      }
+
+      const unifiedActionsRes = await fetch("/api/yui/unified-actions");
+      if (unifiedActionsRes.ok) {
+        const payload = await unifiedActionsRes.json();
+        setUnifiedActions(payload.actions ?? []);
       }
 
       try {
@@ -1107,16 +1119,19 @@ export function YuiHome({ displayName }: YuiHomeProps) {
               <div className="md:col-span-2">
                 {/* Today Summary */}
                 <TodaySummary
-                  todaySummary={today?.summary ?? morningBrief?.summary ?? null}
+                  todaySummary={morningBrief?.summary ?? today?.summary ?? null}
                   eventsCount={morningBrief?.todayEventsCount ?? (calendarEvents?.length ?? 0)}
                   unreadEmails={gmailInsights?.length ?? 0}
-                  topPriority={contextSummary?.priority ?? morningBrief?.summary ?? null}
+                  topPriority={contextSummary?.priority ?? morningBrief?.priority ?? null}
                   updatedAt={cacheUpdatedAt}
+                  changeSummary={morningBrief?.changeSummary ?? null}
                 />
 
                 <div className="mt-4">
                   <ActionArea
-                    actions={actions.map((a) => ({ id: a.id, title: a.title, description: a.description, kind: a.actionType }))}
+                    actions={unifiedActions
+                      .slice(0, 3)
+                      .map((a) => ({ id: a.id, title: a.title, description: a.description, kind: a.actionType }))}
                     onCreateRecommendation={async () => {
                       try {
                         await fetch("/api/yui/recommendations", { method: "POST" });

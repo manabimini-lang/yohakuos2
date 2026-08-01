@@ -15,7 +15,8 @@ export function buildSecretaryPrompt(input: SecretaryPromptInput): {
   const systemPrompt = `${personality}
 
 【文字数・形式ルール】
-- 全体で150文字以内に納めてください。
+- 全体で180文字以内に納めてください。
+- 箇条書きは使わず、会話として自然な一段落で表現してください。
 - 必ず以下のJSON構造のみを出力してください。
 
 JSONレスポンス形式:
@@ -31,10 +32,13 @@ JSONレスポンス形式:
 
 挨拶: ${brief.greeting}
 昨日の振り返り: ${brief.yesterdaySummary || "特筆すべき記録なし"}
-今日の最優先事項: ${brief.summary}
+今日の概要: ${brief.summary}
+優先事項: ${brief.priority}
 理由: ${brief.reason}
 今日の一歩: ${brief.nextAction}
-予定数: ${brief.todayEventsCount}件`;
+予定数: ${brief.todayEventsCount}件
+コンテキスト要約: ${brief.contextSummary || "なし"}
+差分要約: ${brief.changeSummary || "なし"}`;
 
   return { systemPrompt, userPrompt };
 }

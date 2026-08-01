@@ -8,9 +8,17 @@ type Props = {
   unreadEmails?: number;
   topPriority?: string | null;
   updatedAt?: number | null;
+  changeSummary?: string | null;
 };
 
-export default function TodaySummary({ todaySummary, eventsCount = 0, unreadEmails = 0, topPriority, updatedAt }: Props) {
+export default function TodaySummary({
+  todaySummary,
+  eventsCount = 0,
+  unreadEmails = 0,
+  topPriority,
+  updatedAt,
+  changeSummary,
+}: Props) {
   const updatedLabel = (() => {
     if (!updatedAt) return "未取得";
     const diff = Date.now() - updatedAt;
@@ -26,6 +34,7 @@ export default function TodaySummary({ todaySummary, eventsCount = 0, unreadEmai
         <div>
           <p className="text-sm font-semibold text-muted-foreground">Today Summary</p>
           <h3 className="mt-2 text-lg font-bold text-foreground">{todaySummary ?? "今日の要約はありません"}</h3>
+          {changeSummary ? <p className="mt-2 text-sm text-muted-foreground">{changeSummary}</p> : null}
 
           <div className="mt-3 grid gap-2 sm:grid-cols-3">
             <div className="text-sm">
