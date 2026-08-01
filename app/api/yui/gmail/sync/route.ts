@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { requireYuiSession } from "@/app/ui/backend/yui/api";
 import { syncGmailMessages } from "@/app/ui/backend/yui/gmail_service";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(request: Request) {
   try {
     const session = await requireYuiSession();

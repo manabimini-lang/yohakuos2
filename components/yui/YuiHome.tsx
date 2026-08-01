@@ -1125,77 +1125,66 @@ export function YuiHome({ displayName }: YuiHomeProps) {
             : "Disconnected";
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(15,23,42,0.06),_transparent_35%),linear-gradient(180deg,_rgba(255,255,255,0.98),_rgba(248,250,252,1))] pb-20">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-10 md:px-8 md:py-14">
-        <header className="space-y-4">
-          <p className="text-xs uppercase tracking-[0.28em] text-muted-foreground">YOHAKU OS / YUI</p>
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <h1 className="text-3xl font-semibold tracking-tight md:text-5xl">
-              {displayName ? `${displayName} の` : "あなたの"} YUI Home
-            </h1>
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="rounded-full border border-border bg-background px-3 py-1 text-xs text-muted-foreground">
-                更新: {formatRelativeTime(cacheUpdatedAt)}
-              </span>
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowHealthMenu((current) => !current);
-                    setShowSettingsMenu(false);
-                  }}
-                  className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-4 py-2 text-sm font-medium transition hover:bg-muted"
-                >
-                  <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
-                  <span>● Live</span>
-                </button>
-                {showHealthMenu ? (
-                  <div className="absolute right-0 top-full z-10 mt-2 w-56 rounded-2xl border border-border bg-background p-2 shadow-lg">
-                    <p className="px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-muted-foreground">System Health</p>
-                    <div className="mt-2 space-y-1 text-sm">
-                      <p className="rounded-xl bg-muted/40 px-2 py-1">Google: {googleHealth?.status === "connected" ? "Connected" : googleHealth?.status === "needs_reauth" ? "Needs Re-auth" : "Offline"}</p>
-                      <p className="rounded-xl bg-muted/40 px-2 py-1">Gmail: {gmailInsights.length > 0 ? "Connected" : "Offline"}</p>
-                      <p className="rounded-xl bg-muted/40 px-2 py-1">AI: {morningBrief ? "Connected" : "Offline"}</p>
-                      <p className="rounded-xl bg-muted/40 px-2 py-1">Supabase: {error ? "Maintenance" : "Connected"}</p>
-                    </div>
-                  </div>
-                ) : null}
-              </div>
+    <main className="min-h-screen bg-[#f5f5f7] text-slate-900">
+      <div className="relative mx-auto flex w-full max-w-7xl flex-col gap-8 px-6 py-16 sm:px-10 lg:px-16">
+        <header className="flex flex-wrap items-center justify-between gap-3 text-[11px] text-slate-500">
+          <p className="font-medium uppercase tracking-[0.22em] text-slate-500">YOHAKU OS / YUI</p>
+          <div className="flex flex-wrap items-center gap-2">
+            <span>更新: {formatRelativeTime(cacheUpdatedAt)}</span>
+            <div className="relative">
               <button
                 type="button"
-                onClick={() => void loadData({ background: false })}
-                className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-4 py-2 text-sm font-medium transition hover:bg-muted"
+                onClick={() => {
+                  setShowHealthMenu((current) => !current);
+                  setShowSettingsMenu(false);
+                }}
+                className="inline-flex items-center gap-2 rounded-full bg-white/70 px-3 py-1.5 text-slate-600 transition hover:bg-white"
               >
-                <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
-                <span>更新</span>
+                <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                <span>Live</span>
               </button>
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowSettingsMenu((current) => !current);
-                    setShowHealthMenu(false);
-                  }}
-                  className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-4 py-2 text-sm font-medium transition hover:bg-muted"
-                >
-                  <Settings className="h-4 w-4" />
-                </button>
-                {showSettingsMenu ? (
-                  <div className="absolute right-0 top-full z-10 mt-2 w-44 rounded-2xl border border-border bg-background p-2 shadow-lg">
-                    <Link href="/yui/settings" className="block rounded-xl px-2 py-2 text-sm hover:bg-muted">接続</Link>
-                    <Link href="/settings/ai" className="block rounded-xl px-2 py-2 text-sm hover:bg-muted">AI設定</Link>
-                    <Link href="/settings" className="block rounded-xl px-2 py-2 text-sm hover:bg-muted">通知</Link>
-                    <Link href="/settings" className="block rounded-xl px-2 py-2 text-sm hover:bg-muted">テーマ</Link>
-                    <Link href="/help" className="block rounded-xl px-2 py-2 text-sm hover:bg-muted">ヘルプ</Link>
+              {showHealthMenu ? (
+                <div className="absolute right-0 top-full z-10 mt-2 w-56 rounded-2xl border border-slate-200/80 bg-white/90 p-2 shadow-sm backdrop-blur">
+                  <p className="px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-slate-500">System Health</p>
+                  <div className="mt-2 space-y-1 text-sm">
+                    <p className="rounded-xl bg-slate-50 px-2 py-1 text-slate-600">Google: {googleHealth?.status === "connected" ? "Connected" : googleHealth?.status === "needs_reauth" ? "Needs Re-auth" : "Offline"}</p>
+                    <p className="rounded-xl bg-slate-50 px-2 py-1 text-slate-600">Gmail: {gmailInsights.length > 0 ? "Connected" : "Offline"}</p>
+                    <p className="rounded-xl bg-slate-50 px-2 py-1 text-slate-600">AI: {morningBrief ? "Connected" : "Offline"}</p>
+                    <p className="rounded-xl bg-slate-50 px-2 py-1 text-slate-600">Supabase: {error ? "Maintenance" : "Connected"}</p>
                   </div>
-                ) : null}
-              </div>
+                </div>
+              ) : null}
+            </div>
+            <button
+              type="button"
+              onClick={() => void loadData({ background: false })}
+              className="inline-flex items-center gap-2 rounded-full bg-white/70 px-3 py-1.5 text-slate-600 transition hover:bg-white"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
+              <span>更新</span>
+            </button>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowSettingsMenu((current) => !current);
+                  setShowHealthMenu(false);
+                }}
+                className="inline-flex items-center gap-2 rounded-full bg-white/70 px-3 py-1.5 text-slate-600 transition hover:bg-white"
+              >
+                <Settings className="h-3.5 w-3.5" />
+              </button>
+              {showSettingsMenu ? (
+                <div className="absolute right-0 top-full z-10 mt-2 w-44 rounded-2xl border border-slate-200/80 bg-white/90 p-2 shadow-sm backdrop-blur">
+                  <Link href="/yui/settings" className="block rounded-xl px-2 py-2 text-sm text-slate-600 hover:bg-slate-50">接続</Link>
+                  <Link href="/settings/ai" className="block rounded-xl px-2 py-2 text-sm text-slate-600 hover:bg-slate-50">AI設定</Link>
+                  <Link href="/settings" className="block rounded-xl px-2 py-2 text-sm text-slate-600 hover:bg-slate-50">通知</Link>
+                  <Link href="/settings" className="block rounded-xl px-2 py-2 text-sm text-slate-600 hover:bg-slate-50">テーマ</Link>
+                  <Link href="/help" className="block rounded-xl px-2 py-2 text-sm text-slate-600 hover:bg-slate-50">ヘルプ</Link>
+                </div>
+              ) : null}
             </div>
           </div>
-          <p className="max-w-2xl text-sm leading-7 text-muted-foreground md:text-base">
-            秘書YUIが今日どう動くかを提示する伴走空間です。
-            朝礼・優先事項・本日の状況から次の一歩を踏み出せます。
-          </p>
         </header>
 
         {error && (
@@ -1216,45 +1205,41 @@ export function YuiHome({ displayName }: YuiHomeProps) {
         ) : (
           <>
             {isInitialLoading ? (
-              <section className="sticky top-4 z-10 rounded-[32px] border border-border bg-white/80 p-5 shadow-[0_24px_60px_-28px_rgba(15,23,42,0.25)] backdrop-blur md:p-8">
-                <div className="grid gap-6 lg:grid-cols-[1.4fr_0.9fr]">
-                  <div className="space-y-5">
-                    <div className="h-4 w-24 animate-pulse rounded-full bg-slate-200" />
-                    <div className="h-12 w-3/4 animate-pulse rounded-2xl bg-slate-200" />
-                    <div className="h-24 animate-pulse rounded-3xl bg-slate-200" />
-                    <div className="flex gap-3">
-                      <div className="h-11 w-40 animate-pulse rounded-full bg-slate-200" />
-                      <div className="h-11 w-32 animate-pulse rounded-full bg-slate-200" />
-                    </div>
-                  </div>
-                  <div className="space-y-4">
-                    <div className="h-28 animate-pulse rounded-3xl bg-slate-200" />
-                    <div className="h-28 animate-pulse rounded-3xl bg-slate-200" />
+              <section className="w-full py-6 md:py-8">
+                <div className="space-y-5">
+                  <div className="h-4 w-24 animate-pulse rounded-full bg-slate-200" />
+                  <div className="h-12 w-3/4 animate-pulse rounded-2xl bg-slate-200" />
+                  <div className="h-20 animate-pulse rounded-2xl bg-slate-200" />
+                  <div className="flex gap-3">
+                    <div className="h-11 w-40 animate-pulse rounded-full bg-slate-200" />
+                    <div className="h-11 w-32 animate-pulse rounded-full bg-slate-200" />
                   </div>
                 </div>
               </section>
             ) : (
-              <section className="sticky top-4 z-10 min-h-[72vh] rounded-[32px] border border-slate-200/80 bg-white/80 p-5 shadow-[0_28px_80px_-32px_rgba(15,23,42,0.24)] backdrop-blur-md md:p-8 lg:p-10">
-                <div className="mb-5 flex items-center justify-between gap-3">
-                  <LiveStatusBadge
-                    status={isRefreshing ? "updating" : "cached"}
-                    text={isRefreshing ? "Updating" : "Updated just now"}
-                  />
-                  <span className="text-[11px] font-medium uppercase tracking-[0.26em] text-slate-400">Hero</span>
-                </div>
+              <section className="relative overflow-hidden">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.95),rgba(245,245,247,0.92)_40%,rgba(245,245,247,0.72)_70%,rgba(245,245,247,0.55))]" />
+                <div className="absolute inset-x-0 top-0 h-64 bg-gradient-to-b from-white/90 to-transparent" />
 
-                <div className="flex min-h-[52vh] flex-col justify-center gap-6">
+                <div className="relative flex min-h-[70vh] flex-col justify-center gap-6 py-8 md:py-12">
+                  <div className="flex items-center justify-between gap-3">
+                    <LiveStatusBadge
+                      status={isRefreshing ? "updating" : "cached"}
+                      text={isRefreshing ? "Updating" : "Updated just now"}
+                    />
+                  </div>
+
                   <div className="space-y-4">
-                    <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">
+                    <p className="text-sm font-medium uppercase tracking-[0.18em] text-slate-500">
                       {new Date().getHours() < 12 ? "Good morning" : new Date().getHours() < 18 ? "Good afternoon" : "Good evening"}
                     </p>
-                    <h2 className="max-w-3xl text-4xl font-semibold tracking-[-0.05em] text-slate-900 md:text-6xl">
+                    <h2 className="max-w-3xl text-5xl font-light tracking-[-0.04em] text-slate-950 sm:text-6xl lg:text-7xl">
                       {displayName ? `${displayName}さん` : "今日の一歩"}
                     </h2>
                   </div>
 
-                  <div className="space-y-4">
-                    <p className="max-w-2xl text-lg leading-8 text-slate-700 md:text-xl md:leading-9">
+                  <div className="space-y-3">
+                    <p className="max-w-2xl text-lg leading-8 text-slate-700 sm:text-xl">
                       {contextSummary?.priority ?? morningBrief?.priority ?? "今日の最重要事項を整理しています。"}
                       {" "}
                       {morningBrief?.changeSummary ?? "重要な変化はまだありません。今すぐ最初の一歩を進めましょう。"}
@@ -1268,14 +1253,14 @@ export function YuiHome({ displayName }: YuiHomeProps) {
                     <button
                       type="button"
                       onClick={() => setShowMore(true)}
-                      className="inline-flex items-center justify-center rounded-full bg-slate-900 px-5 py-3 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:bg-slate-700 motion-reduce:transition-none"
+                      className="inline-flex items-center justify-center rounded-full bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-700 motion-reduce:transition-none"
                     >
                       {heroPriorityItems[0]?.title ? `Reply to ${heroPriorityItems[0].title}` : "Start Focus Session"}
                     </button>
                     <button
                       type="button"
                       onClick={() => setShowMore(true)}
-                      className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm transition-all duration-200 hover:bg-slate-50 motion-reduce:transition-none"
+                      className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white/80 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-white motion-reduce:transition-none"
                     >
                       {goals[0] ? "Review Goal" : "Open Calendar"}
                     </button>
@@ -1290,7 +1275,7 @@ export function YuiHome({ displayName }: YuiHomeProps) {
                     ].map((chip) => (
                       <span
                         key={chip}
-                        className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-600"
+                        className="rounded-full border border-slate-200/80 bg-slate-50/70 px-3 py-1.5 text-xs font-medium text-slate-600"
                       >
                         {chip}
                       </span>

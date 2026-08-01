@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { requireYuiSession } from "@/app/ui/backend/yui/api";
 import { getUnifiedActions } from "@/app/ui/backend/yui/unified_action_service";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(request: Request) {
   try {
     const session = await requireYuiSession();

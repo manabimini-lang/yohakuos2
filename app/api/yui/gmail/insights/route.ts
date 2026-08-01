@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { requireYuiSession } from "@/app/ui/backend/yui/api";
 import { getGmailInsights } from "@/app/ui/backend/yui/gmail_service";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(request: Request) {
   try {
     const session = await requireYuiSession();

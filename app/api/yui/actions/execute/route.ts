@@ -3,6 +3,8 @@ import { requireYuiSession } from "@/app/ui/backend/yui/api";
 import { executeAction } from "@/app/ui/backend/yui/action_execution_service";
 import type { YuiUnifiedAction } from "@/app/ui/backend/yui/unified_action_service";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(request: Request) {
   try {
     const session = await requireYuiSession();
