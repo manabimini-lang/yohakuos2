@@ -43,6 +43,9 @@ import { YuiTimeInsightsCard } from "@/components/yui/YuiTimeInsightsCard";
 import { YuiPlanningCard } from "@/components/yui/YuiPlanningCard";
 import { YuiWeeklyReviewCard } from "@/components/yui/YuiWeeklyReviewCard";
 import { YuiCardSkeleton } from "@/components/yui/YuiCardSkeleton";
+import TodaySummary from "@/components/yui/TodaySummary";
+import ActionArea from "@/components/yui/ActionArea";
+import InfoAccordion from "@/components/yui/InfoAccordion";
 
 type YuiHomeProps = {
   displayName?: string | null;
@@ -932,82 +935,61 @@ export function YuiHome({ displayName }: YuiHomeProps) {
           />
         ) : (
           <>
-            {/* Morning Brief Section (Secretary Speech Interface) */}
-            {isInitialLoading ? (
-              <YuiCardSkeleton lines={4} />
-            ) : morningBrief ? (
-          <Card className="relative overflow-hidden border-primary/30 bg-gradient-to-br from-primary/10 via-background to-muted/30 p-6 md:p-8 shadow-md">
-            <div className="flex flex-col gap-6">
-              {/* Header / Speech bubble indicator */}
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/40 pb-4">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground shadow-sm">
-                    YUI
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
-                      Morning Brief
-                    </p>
-                    <h2 className="text-lg font-semibold tracking-tight text-foreground">
-                      {morningBrief.greeting}、{profileForm.display_name || "ユーザー"} さん。
-                    </h2>
-                  </div>
-                </div>
+            {/* Sprint 40: Today Summary + Action Area (Phase1 / Phase2) */}
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="md:col-span-2">
+                {/* Today Summary */}
+                <TodaySummary
+                  todaySummary={today?.summary ?? morningBrief?.summary ?? null}
+                  eventsCount={morningBrief?.todayEventsCount ?? (calendarEvents?.length ?? 0)}
+                  unreadEmails={gmailInsights?.length ?? 0}
+                  topPriority={contextSummary?.priority ?? morningBrief?.summary ?? null}
+                  updatedAt={cacheUpdatedAt}
+                />
 
-                <div className="flex flex-wrap items-center gap-2">
-                  {deliveryStatus?.isTodayMorningDelivered ? (
-                    <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-600">
-                      ✓ 本日 {deliveryStatus.morningTime} 配信済み
-                    </span>
-                  ) : (
-                    <span className="rounded-full border border-border bg-background px-3 py-1 text-xs text-muted-foreground">
-                      次回配信 {deliveryStatus?.morningTime || "07:30"}
-                    </span>
-                  )}
-                  <span className="rounded-full border border-border bg-background px-3 py-1 text-xs text-muted-foreground">
-                    今日の予定 {morningBrief.todayEventsCount}件
-                  </span>
-                  <span className="rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-                    YUI提案 {morningBrief.recommendationCount}件
-                  </span>
+                <div className="mt-4">
+                  <ActionArea
+                    actions={actions.map((a) => ({ id: a.id, title: a.title, description: a.description, kind: a.actionType }))}
+                    onCreateRecommendation={async () => {
+                      try {
+                        await fetch("/api/yui/recommendations", { method: "POST" });
+                        await loadData({ background: true });
+                      } catch (e) {
+                        console.error(e);
+                      }
+                    }}
+                  />
                 </div>
-
               </div>
 
-              {/* Conversational Message Content (Continuity Layer) */}
-              <div className="space-y-4 text-base leading-7 text-foreground/90 md:text-lg">
-                {morningBrief.yesterdaySummary && (
-                  <div className="rounded-2xl border border-border/60 bg-muted/40 p-4 text-sm text-muted-foreground leading-relaxed md:text-base">
-                    <span className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground block mb-1">
-                      昨日の振り返り
-                    </span>
-                    {morningBrief.yesterdaySummary}
+              <div className="space-y-4">
+                {/* Keep morning brief visible as a companion card for now */}
+                {isInitialLoading ? (
+                  <YuiCardSkeleton lines={4} />
+                ) : morningBrief ? (
+                  <Card className="p-4">
+                    <p className="text-xs text-muted-foreground">Morning Brief</p>
+                    <h3 className="mt-2 text-sm font-semibold">{morningBrief.summary}</h3>
+                    <p className="mt-2 text-xs text-muted-foreground">{morningBrief.reason}</p>
+                  </Card>
+                ) : null}
+
+                <Card className="p-4">
+                  <p className="text-xs text-muted-foreground">Quick Links</p>
+                  <div className="mt-3 flex flex-col gap-2">
+                    <Link href="/yui/today" className="text-sm text-primary">Today を見る</Link>
+                    <Link href="/yui/settings" className="text-sm text-primary">接続設定</Link>
+                    <Link href="/settings/ai" className="text-sm text-primary">AI 設定</Link>
                   </div>
-                )}
-
-                <div className="space-y-2">
-                  <span className="text-xs font-semibold uppercase tracking-[0.2em] text-primary block">
-                    今日の最優先事項
-                  </span>
-                  <p className="font-semibold text-foreground">
-                    {morningBrief.summary}
-                  </p>
-                </div>
-
-                <p className="text-sm text-muted-foreground leading-7 md:text-base">
-                  {morningBrief.reason}
-                </p>
-
-                <div className="mt-2 rounded-2xl border border-primary/20 bg-background/90 p-4 text-sm font-medium leading-6 text-foreground md:text-base">
-                  <span className="text-xs font-semibold uppercase tracking-[0.2em] text-primary block mb-1">
-                    今日の一歩
-                  </span>
-                  {morningBrief.nextAction}しませんか？
-                </div>
+                </Card>
               </div>
             </div>
-          </Card>
-           ) : null}
+
+            {/* End Sprint 40 top area */}
+
+            {/* Remove duplicated original Morning Brief rendering below - keep rest of page intact */}
+            
+
 
         {/* Daily Context Card (Yesterday -> Today Continuity) */}
         <YuiDailyContextCard data={dailyContext} isLoading={!dailyContext} />
