@@ -60,21 +60,21 @@ export default function LandingPage() {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.95),rgba(245,245,247,0.92)_40%,rgba(245,245,247,0.72)_70%,rgba(245,245,247,0.55))]" />
         <div className="absolute inset-x-0 top-0 h-64 bg-gradient-to-b from-white/90 to-transparent" />
 
-        <div className="relative mx-auto flex min-h-screen max-w-7xl flex-col justify-center px-6 py-16 sm:px-10 lg:px-16">
+        <div className="relative mx-auto flex min-h-[84vh] max-w-7xl flex-col justify-center px-6 py-16 sm:px-10 lg:px-16">
           <div className="max-w-3xl">
-            <p className="inline-flex items-center gap-2 rounded-full border border-slate-200/80 bg-white/70 px-4 py-2 text-xs font-medium tracking-[0.22em] text-slate-500 backdrop-blur">
+            <p className="inline-flex items-center gap-2 rounded-full border border-slate-200/80 bg-white/70 px-4 py-2 text-[11px] font-medium tracking-[0.22em] text-slate-500 backdrop-blur">
               <Feather className="h-3.5 w-3.5" />
-              YOHAKU
+              YOHAKU OS
             </p>
 
             <h1 className="mt-8 max-w-3xl text-5xl font-light tracking-[-0.04em] text-slate-950 sm:text-6xl lg:text-7xl">
               深呼吸して、
-              <span className="block text-slate-500">少しだけ整えましょう。</span>
+              <span className="block text-slate-500">今日は静かに始めましょう。</span>
             </h1>
 
             <p className="mt-8 max-w-2xl text-lg leading-8 text-slate-600 sm:text-xl">
-              YOHAKUは、毎日の記録・AI整理・小さな実践をひとつにまとめ、
-              静かに戻ってこられる場所をつくります。
+              YOHAKUは、記録と整理を自然につなぎ、
+              「今の自分に必要な一歩」を静かに見つける場所です。
             </p>
           </div>
         </div>
