@@ -3,6 +3,7 @@ import { signOut } from "@/lib/auth";
 import { GeminiStatusIndicator } from "@/components/member/gemini-status-indicator";
 
 import Link from "next/link";
+import SettingsMenu from "@/components/member/settings-menu";
 
 type MemberHeaderProps = {
   user: {
@@ -29,48 +30,10 @@ export function MemberHeader({ user }: MemberHeaderProps) {
           YOHAKU
         </span>
 
-        {/* ユーザーエリア */}
+        {/* ユーザーエリア：設定メニュー1つに集約 */}
         <div className="ml-auto flex items-center gap-3">
-          {!isPaidMember && (
-            <Link
-              href="/pricing"
-              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-medium text-slate-600 bg-slate-50 border border-slate-200/80 hover:bg-slate-100 transition-colors shadow-sm cursor-pointer"
-            >
-              <Sparkles className="w-3 h-3 text-muted-foreground stroke-[1.5]" />
-              <span>Premiumへ</span>
-            </Link>
-          )}
-          <GeminiStatusIndicator />
-          <Link href="/profile" className="focus:outline-none">
-            {user.image ? (
-              <img
-                src={user.image}
-                alt={displayName}
-                className="h-7 w-7 rounded-full border border-slate-200 object-cover hover:opacity-80 transition-opacity"
-              />
-            ) : (
-              <div
-                className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 border border-slate-200/60 text-xs font-medium text-slate-550 hover:bg-slate-200 transition-colors"
-                aria-hidden="true"
-              >
-                {initial}
-              </div>
-            )}
-          </Link>
-
-          <form
-            action={async () => {
-              "use server";
-              await signOut({ redirectTo: "/login" });
-            }}
-          >
-            <button
-              type="submit"
-              className="rounded-lg px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-slate-50 hover:text-slate-600"
-            >
-              ログアウト
-            </button>
-          </form>
+          {/* プレミアムバッジ等はメニューへ移行。ここでは単一の設定アイコンにする */}
+          <SettingsMenu />
         </div>
       </div>
     </header>
