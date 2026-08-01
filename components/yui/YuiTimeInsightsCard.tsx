@@ -1,6 +1,7 @@
 "use client";
 
 import { Card } from "@/components/ui/card";
+import { YuiCardSkeleton } from "@/components/yui/YuiCardSkeleton";
 import { Clock, Timer, BarChart2 } from "lucide-react";
 import type { YuiTimeIntelligence } from "@/app/ui/backend/yui/time_intelligence_service";
 import { getCategoryLabel } from "@/components/yui/utils/time-labels";
@@ -26,11 +27,7 @@ function formatHour(hour: number | null): string {
 
 export function YuiTimeInsightsCard({ data, isLoading }: YuiTimeInsightsCardProps) {
   if (isLoading) {
-    return (
-      <Card className="p-6 text-sm text-muted-foreground border-primary/10 bg-background/80 animate-pulse">
-        時間分析を読み込んでいます...
-      </Card>
-    );
+    return <YuiCardSkeleton lines={3} />;
   }
 
   if (!data || (data.topCategories.length === 0 && data.totalScheduledHours === 0)) {

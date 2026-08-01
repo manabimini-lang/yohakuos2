@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { auth } from "@/lib/auth";
+import { requireSession } from "@/core/auth/server";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { YuiConnectionsSettings } from "@/components/yui/YuiConnectionsSettings";
@@ -16,14 +16,14 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function YuiSettingsPage() {
-  const session = await auth();
+  const session = await requireSession("/login?redirect=/yui/settings");
 
-  if (!session?.user?.id) {
+  if (!session) {
     redirect("/login?redirect=/yui/settings");
   }
 
   const aiSettings = await prisma.userAISettings.findUnique({
-    where: { userId: session.user.id },
+    where: { userId: session.id },
   });
 
   const initialAiSettings = aiSettings

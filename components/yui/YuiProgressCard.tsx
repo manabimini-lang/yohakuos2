@@ -1,6 +1,7 @@
 "use client";
 
 import { Card } from "@/components/ui/card";
+import { YuiCardSkeleton } from "@/components/yui/YuiCardSkeleton";
 import { BarChart3, Zap, Clock, CheckCircle2, Sparkles } from "lucide-react";
 import type { YuiThreadProgress } from "@/app/ui/backend/yui/progress_service";
 
@@ -62,11 +63,7 @@ function formatDate(isoStr: string | null): string {
 
 export function YuiProgressCard({ threads, isLoading }: YuiProgressCardProps) {
   if (isLoading) {
-    return (
-      <Card className="p-6 text-sm text-muted-foreground border-primary/10 bg-background/80 animate-pulse">
-        進捗情報を読み込んでいます...
-      </Card>
-    );
+    return <YuiCardSkeleton lines={3} />;
   }
 
   if (!threads || threads.length === 0) {

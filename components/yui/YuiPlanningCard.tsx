@@ -1,6 +1,7 @@
 "use client";
 
 import { Card } from "@/components/ui/card";
+import { YuiCardSkeleton } from "@/components/yui/YuiCardSkeleton";
 import { Compass, ArrowRight } from "lucide-react";
 import type { YuiPlanningSuggestion } from "@/app/ui/backend/yui/planning_service";
 
@@ -17,11 +18,7 @@ function getPriorityColor(score: number): { badge: string; accent: string } {
 
 export function YuiPlanningCard({ suggestions, isLoading }: YuiPlanningCardProps) {
   if (isLoading) {
-    return (
-      <Card className="p-6 text-sm text-muted-foreground border-primary/10 bg-background/80 animate-pulse">
-        プランニング情報を読み込んでいます...
-      </Card>
-    );
+    return <YuiCardSkeleton lines={3} />;
   }
 
   if (!suggestions || suggestions.length === 0) {

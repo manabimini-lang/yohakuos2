@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Calendar, Sparkles, Bell, CheckCircle2, XCircle, AlertCircle, RefreshCw } from "lucide-react";
 
-type HealthStatus = "connected" | "disconnected" | "error" | "loading";
+type HealthStatus = "connected" | "disconnected" | "error" | "loading" | "needs_reauth" | "syncing";
 
 type SystemHealth = {
   googleCalendar: { status: HealthStatus; detail: string };
@@ -23,28 +23,31 @@ export function YuiHealthDashboard() {
   const checkHealth = async () => {
     setRefreshing(true);
     try {
-      const [connRes, notifRes] = await Promise.all([
-        fetch("/api/yui/connections").catch(() => null),
+      const [healthRes, notifRes] = await Promise.all([
+        fetch("/api/yui/health").catch(() => null),
         fetch("/api/yui/notification-settings").catch(() => null),
       ]);
 
       // 1. Google Calendar Check
       let googleStatus: HealthStatus = "disconnected";
       let googleDetail = "未連携";
-      if (connRes?.ok) {
-        const data = await connRes.json();
-        const googleConn = (data.connections ?? []).find(
-          (c: any) => c.provider === "google_calendar"
-        );
-        if (googleConn?.status === "connected") {
+      if (healthRes?.ok) {
+        const data = await healthRes.json();
+        const googleHealth = data.google;
+        if (googleHealth?.status === "connected") {
           googleStatus = "connected";
-          const meta = googleConn.metadata || {};
-          googleDetail = meta.googleAccount ? `連携済み (${meta.googleAccount})` : "連携済み";
-        } else if (googleConn?.status === "pending") {
-          googleStatus = "disconnected";
-          googleDetail = "接続認証待ち";
+          googleDetail = googleHealth.lastSyncAt ? `Connected / 同期 ${new Date(googleHealth.lastSyncAt).toLocaleString("ja-JP")}` : "Connected";
+        } else if (googleHealth?.status === "refreshing") {
+          googleStatus = "syncing";
+          googleDetail = "Google Syncing...";
+        } else if (googleHealth?.status === "needs_reauth") {
+          googleStatus = "needs_reauth";
+          googleDetail = googleHealth.lastError || "再接続してください";
+        } else if (googleHealth?.status === "sync_error") {
+          googleStatus = "error";
+          googleDetail = googleHealth.lastError || "同期エラー";
         }
-      } else if (connRes && !connRes.ok) {
+      } else if (healthRes && !healthRes.ok) {
         googleStatus = "error";
         googleDetail = "取得エラー (401/500)";
       }
@@ -131,7 +134,21 @@ export function YuiHealthDashboard() {
         return (
           <span className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2.5 py-0.5 text-xs font-semibold text-destructive border border-destructive/20">
             <AlertCircle className="h-3.5 w-3.5" />
-            Error
+            Google Sync Error
+          </span>
+        );
+      case "needs_reauth":
+        return (
+          <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2.5 py-0.5 text-xs font-semibold text-amber-700 border border-amber-500/20">
+            <AlertCircle className="h-3.5 w-3.5" />
+            Google Needs Re-auth
+          </span>
+        );
+      case "syncing":
+        return (
+          <span className="inline-flex items-center gap-1 rounded-full bg-sky-500/10 px-2.5 py-0.5 text-xs font-semibold text-sky-700 border border-sky-500/20">
+            <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+            Google Syncing...
           </span>
         );
       case "disconnected":

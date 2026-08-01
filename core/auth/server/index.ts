@@ -7,7 +7,8 @@
 // ===================================================
 
 import { redirect } from "next/navigation";
-import { getSupabaseClient, getSupabaseAdmin } from "@/infra/supabase";
+import { createClient as createSupabaseServerClient } from "@/lib/supabase/server";
+import { getSupabaseAdmin } from "@/infra/supabase/server";
 import type { AuthSession, AuthResult } from "../types";
 import { authConfig } from "../config";
 
@@ -22,7 +23,7 @@ import { authConfig } from "../config";
  * Returns null if not authenticated.
  */
 export async function getCurrentSession(): Promise<AuthSession | null> {
-  const supabase = getSupabaseClient();
+  const supabase = await createSupabaseServerClient();
 
   const {
     data: { session },
@@ -48,7 +49,7 @@ export async function getCurrentSession(): Promise<AuthSession | null> {
  */
 async function getProfile(authUserId: string) {
   try {
-    const supabase = getSupabaseClient();
+    const supabase = await createSupabaseServerClient();
     const { data } = await supabase
       .from("profiles")
       .select("*")
@@ -107,7 +108,7 @@ export async function signInWithEmail(
   email: string,
   password: string,
 ): Promise<AuthResult> {
-  const supabase = getSupabaseClient();
+  const supabase = await createSupabaseServerClient();
 
   const { error } = await supabase.auth.signInWithPassword({
     email,
@@ -136,7 +137,7 @@ export async function signUpWithEmail(
   password: string,
   displayName?: string,
 ): Promise<AuthResult> {
-  const supabase = getSupabaseClient();
+  const supabase = await createSupabaseServerClient();
 
   const { data, error } = await supabase.auth.signUp({
     email,
@@ -170,7 +171,7 @@ export async function signUpWithEmail(
  * Signs in with Google OAuth.
  */
 export async function signInWithGoogle(): Promise<AuthResult> {
-  const supabase = getSupabaseClient();
+  const supabase = await createSupabaseServerClient();
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
@@ -196,7 +197,7 @@ export async function signInWithGoogle(): Promise<AuthResult> {
  * Signs in with GitHub OAuth.
  */
 export async function signInWithGithub(): Promise<AuthResult> {
-  const supabase = getSupabaseClient();
+  const supabase = await createSupabaseServerClient();
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "github",
@@ -222,7 +223,7 @@ export async function signInWithGithub(): Promise<AuthResult> {
  * Sends a magic link email.
  */
 export async function sendMagicLink(email: string): Promise<AuthResult> {
-  const supabase = getSupabaseClient();
+  const supabase = await createSupabaseServerClient();
 
   const { error } = await supabase.auth.signInWithOtp({
     email,
@@ -251,7 +252,7 @@ export async function sendMagicLink(email: string): Promise<AuthResult> {
  */
 export async function requestPasswordReset(email: string): Promise<AuthResult> {
   try {
-    const supabase = getSupabaseClient();
+    const supabase = await createSupabaseServerClient();
     const redirectTo = `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/reset-password`;
 
     await supabase.auth.resetPasswordForEmail(email, {
@@ -271,7 +272,7 @@ export async function requestPasswordReset(email: string): Promise<AuthResult> {
  * Requires an active session (set by Supabase when the reset link is clicked).
  */
 export async function updatePassword(newPassword: string): Promise<AuthResult> {
-  const supabase = getSupabaseClient();
+  const supabase = await createSupabaseServerClient();
 
   const { error } = await supabase.auth.updateUser({
     password: newPassword,
@@ -291,7 +292,7 @@ export async function updatePassword(newPassword: string): Promise<AuthResult> {
  * Signs out the current user.
  */
 export async function signOut(): Promise<void> {
-  const supabase = getSupabaseClient();
+  const supabase = await createSupabaseServerClient();
   await supabase.auth.signOut();
 }
 
@@ -330,7 +331,7 @@ export async function updateProfile(data: {
 }): Promise<AuthResult> {
   const session = await requireAuth();
 
-  const supabase = getSupabaseClient();
+  const supabase = await createSupabaseServerClient();
   const { error } = await (supabase
     .from("profiles") as any)
     .update({

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { signIn } from "next-auth/react";
+import { clientSignInWithGoogle } from "@/core/auth/client";
 import { Loader2 } from "lucide-react";
 
 interface GoogleSignInButtonProps {
@@ -15,7 +15,7 @@ export function GoogleSignInButton({ label }: GoogleSignInButtonProps) {
     setLoading(true);
     console.log("[GOOGLE_SSO_START]", { callbackUrl: "/yui" });
     try {
-      await signIn("google", { callbackUrl: "/yui" });
+      await clientSignInWithGoogle();
     } catch (err) {
       console.error("[GOOGLE_SSO_ERROR] Google sign in failed:", err);
       window.location.href = `/login?error=google-error`;

@@ -178,6 +178,12 @@ export async function getYuiConnections() {
   return listYuiConnections(session.user.id);
 }
 
+export async function getYuiConnectionHealth() {
+  const session = await requireYuiSession();
+  const { getConnectionHealth } = await import("./connection_health_service");
+  return getConnectionHealth(session.user.id);
+}
+
 export async function postYuiConnection(input: YuiConnectionInput) {
   const session = await requireYuiSession();
   return createYuiConnection(session.user, input);

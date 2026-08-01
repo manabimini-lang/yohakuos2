@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { createClient as createSupabaseServerClient } from "@/lib/supabase/server";
 import { getSupabaseAdmin } from "@/infra/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -9,8 +10,8 @@ export async function GET(request: Request) {
   const next = searchParams.get("next") ?? "/";
 
   if (code) {
-    const supabaseAdmin = getSupabaseAdmin();
-    const { data, error } = await supabaseAdmin.auth.exchangeCodeForSession(code);
+    const supabase = await createSupabaseServerClient();
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error && data.user) {
       await ensureProfile(data.user.id, data.user.email ?? "");

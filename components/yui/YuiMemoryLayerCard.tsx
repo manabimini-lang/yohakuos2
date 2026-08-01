@@ -1,6 +1,7 @@
 "use client";
 
 import { Card } from "@/components/ui/card";
+import { YuiCardSkeleton } from "@/components/yui/YuiCardSkeleton";
 import { Brain, Activity, Clock, Calendar } from "lucide-react";
 import type { YuiMemoryLayer } from "@/app/ui/backend/yui/memory_layer_service";
 
@@ -11,11 +12,7 @@ type YuiMemoryLayerCardProps = {
 
 export function YuiMemoryLayerCard({ data, isLoading }: YuiMemoryLayerCardProps) {
   if (isLoading) {
-    return (
-      <Card className="p-6 text-sm text-muted-foreground border-primary/10 bg-background/80 animate-pulse">
-        記憶レイヤー情報を読み込んでいます...
-      </Card>
-    );
+    return <YuiCardSkeleton lines={3} />;
   }
 
   if (!data) {

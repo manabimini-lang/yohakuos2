@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
-import type { YuiConnection } from "@/app/ui/backend/yui/models";
 
 type ConnectionProvider = {
   provider: string;
@@ -62,10 +61,20 @@ const CONNECTION_PROVIDERS: ConnectionProvider[] = [
   },
 ];
 
-type ConnectionsByProvider = Record<string, YuiConnection>;
+type ConnectionHealthPayload = {
+  google: {
+    status: "connected" | "refreshing" | "needs_reauth" | "sync_error" | "disconnected";
+    calendarConnected: boolean;
+    gmailConnected: boolean;
+    scopes: string[];
+    tokenValid: boolean;
+    lastSyncAt: string | null;
+    lastError: string | null;
+  };
+};
 
 export function YuiConnectionsSettings() {
-  const [connections, setConnections] = useState<ConnectionsByProvider>({});
+  const [health, setHealth] = useState<ConnectionHealthPayload | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loadingProvider, setLoadingProvider] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -73,21 +82,14 @@ export function YuiConnectionsSettings() {
   const loadConnections = async () => {
     setError(null);
     try {
-      const response = await fetch("/api/yui/connections");
+      const response = await fetch("/api/yui/health");
       if (!response.ok) {
         const payload = await response.json().catch(() => null);
         throw new Error(payload?.error ?? "接続設定の取得に失敗しました");
       }
 
       const payload = await response.json();
-      const nextConnections = (payload.connections ?? []).reduce(
-        (acc: ConnectionsByProvider, connection: YuiConnection) => {
-          acc[connection.provider] = connection;
-          return acc;
-        },
-        {},
-      );
-      setConnections(nextConnections);
+      setHealth(payload);
     } catch (err) {
       setError(err instanceof Error ? err.message : "接続設定の取得に失敗しました");
     }
@@ -125,39 +127,23 @@ export function YuiConnectionsSettings() {
     setError(null);
 
     try {
-      const existing = connections[provider.provider] ?? null;
+      const response = await fetch("/api/yui/connections", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          provider: provider.provider,
+          status: "pending",
+          permissions: provider.permissions,
+          metadata: {
+            display_name: provider.label,
+            note: "OAuth未接続の基盤レコード",
+          },
+        }),
+      });
 
-      if (!existing) {
-        const response = await fetch("/api/yui/connections", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            provider: provider.provider,
-            status: "pending",
-            permissions: provider.permissions,
-            metadata: {
-              display_name: provider.label,
-              note: "OAuth未接続の基盤レコード",
-            },
-          }),
-        });
-
-        if (!response.ok) {
-          const payload = await response.json().catch(() => null);
-          throw new Error(payload?.error ?? "接続候補の作成に失敗しました");
-        }
-      } else {
-        const nextStatus = existing.status === "connected" ? "disconnected" : "connected";
-        const response = await fetch(`/api/yui/connections/${existing.id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status: nextStatus }),
-        });
-
-        if (!response.ok) {
-          const payload = await response.json().catch(() => null);
-          throw new Error(payload?.error ?? "接続状態の更新に失敗しました");
-        }
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null);
+        throw new Error(payload?.error ?? "接続候補の作成に失敗しました");
       }
 
       await loadConnections();
@@ -178,49 +164,61 @@ export function YuiConnectionsSettings() {
 
       <div className="grid gap-4 md:grid-cols-2">
         {CONNECTION_PROVIDERS.map((provider) => {
-          const connection = connections[provider.provider] ?? null;
-          const status = connection?.status ?? "disconnected";
-          const isPending = status === "pending";
-          const isConnected = status === "connected";
           const isGoogleCalendar = provider.provider === "google_calendar";
-
-          const meta = (connection?.metadata as Record<string, unknown>) || {};
-          const googleAccount = typeof meta.googleAccount === "string" ? meta.googleAccount : "";
-          const lastSyncAt = typeof meta.lastSyncAt === "string" ? meta.lastSyncAt : "";
+          const googleStatus = health?.google?.status ?? "disconnected";
+          const isConnected = googleStatus === "connected";
+          const isPending = googleStatus === "refreshing";
+          const lastSyncAt = health?.google?.lastSyncAt ? new Date(health.google.lastSyncAt).toLocaleString("ja-JP") : "未同期";
+          const healthMessage = health?.google?.lastError ?? "";
+          const healthBadgeLabel = googleStatus === "connected"
+            ? "✓ Connected"
+            : googleStatus === "refreshing"
+              ? "Google Syncing..."
+              : googleStatus === "needs_reauth"
+                ? "⚠ 再連携してください"
+                : googleStatus === "sync_error"
+                  ? "⚠ Google Sync Error"
+                  : "未接続";
+          const healthBadgeClass = googleStatus === "connected"
+            ? "bg-emerald-100 text-emerald-800"
+            : googleStatus === "refreshing"
+              ? "bg-sky-100 text-sky-800"
+              : googleStatus === "needs_reauth"
+                ? "bg-amber-100 text-amber-800"
+                : googleStatus === "sync_error"
+                  ? "bg-rose-100 text-rose-800"
+                  : "border border-border bg-muted/20 text-muted-foreground";
 
           return (
             <Card key={provider.provider} className="space-y-4 p-5">
               <div className="space-y-2">
                 <div className="flex items-center justify-between gap-3">
                   <h3 className="text-base font-semibold">{provider.label}</h3>
-                  <span
-                    className={`rounded-full px-3 py-1 text-xs font-medium ${
-                      isConnected
-                        ? "bg-emerald-100 text-emerald-800"
-                        : isPending
-                          ? "bg-amber-100 text-amber-800"
-                          : "border border-border bg-muted/20 text-muted-foreground"
-                    }`}
-                  >
-                    {isConnected ? "接続済み" : isPending ? "接続待ち" : "未接続"}
+                  <span className={`rounded-full px-3 py-1 text-xs font-medium ${healthBadgeClass}`}>
+                   {healthBadgeLabel}
                   </span>
                 </div>
                 <p className="text-sm leading-6 text-muted-foreground">{provider.description}</p>
               </div>
 
-              {isGoogleCalendar && isConnected && (
+              {isGoogleCalendar && (
                 <div className="rounded-2xl border border-border bg-background p-4 space-y-2 text-xs">
-                  {googleAccount && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">アカウント:</span>
-                      <span className="font-semibold text-foreground">{googleAccount}</span>
+                  {healthMessage && (
+                    <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-amber-900">
+                      {healthMessage}
                     </div>
                   )}
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">最終同期日時:</span>
-                    <span>
-                      {lastSyncAt ? new Date(lastSyncAt).toLocaleString("ja-JP") : "未同期"}
-                    </span>
+                    <span className="text-muted-foreground">最終同期:</span>
+                    <span>{lastSyncAt}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Calendar:</span>
+                    <span>{health?.google?.calendarConnected ? "✓" : "—"}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Gmail:</span>
+                    <span>{health?.google?.gmailConnected ? "✓" : "—"}</span>
                   </div>
                 </div>
               )}
@@ -235,7 +233,7 @@ export function YuiConnectionsSettings() {
                   {loadingProvider === provider.provider
                     ? "更新中..."
                     : isGoogleCalendar
-                      ? isConnected
+                      ? isConnected || googleStatus === "needs_reauth" || googleStatus === "sync_error"
                         ? "Googleアカウントを再連携"
                         : "Google Calendarと連携"
                       : isConnected

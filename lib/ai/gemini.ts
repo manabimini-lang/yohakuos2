@@ -2,7 +2,7 @@ import { GoogleGenerativeAI, GenerativeModel } from '@google/generative-ai';
 import { prisma } from '@/lib/prisma';
 import { decryptKey } from '@/lib/encryption';
 
-const GEMINI_MODEL = 'gemini-1.5-flash';
+const FALLBACK_GEMINI_MODEL = 'gemini-2.5-flash';
 
 export type AIRequestOptions = string | {
     userId?: string;
@@ -12,6 +12,11 @@ export type AIRequestOptions = string | {
 };
 
 const STARTER_GEMINI_API_KEY = process.env.STARTER_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
+
+function resolveGeminiModelName(modelName?: string | null): string {
+    const normalized = modelName?.trim();
+    return normalized || FALLBACK_GEMINI_MODEL;
+}
 
 async function incrementTokenUsage(userId: string, tokenCount: number) {
     try {
@@ -36,7 +41,7 @@ function getFallbackApiCredentials(): { apiKey: string; modelName: string } {
 
     return {
         apiKey: STARTER_GEMINI_API_KEY,
-        modelName: GEMINI_MODEL,
+        modelName: FALLBACK_GEMINI_MODEL,
     };
 }
 
@@ -50,7 +55,7 @@ export async function getApiCredentials(
     if (options && (options.apiKey || options.modelName)) {
         return {
             apiKey: options.apiKey || STARTER_GEMINI_API_KEY || '',
-            modelName: GEMINI_MODEL,
+            modelName: resolveGeminiModelName(options.modelName),
         };
     }
 
@@ -115,13 +120,14 @@ export async function getUserOwnedApiCredentials(
 
             if (settings.encryptedApiKey) {
                 const decrypted = decryptKey(settings.encryptedApiKey);
+                const modelName = resolveGeminiModelName(settings.model);
                 console.log("FOUND USER GEMINI KEY FROM SETTINGS", {
                     userId,
-                    model: GEMINI_MODEL,
+                    model: modelName,
                 });
                 return {
                     apiKey: decrypted,
-                    modelName: GEMINI_MODEL,
+                    modelName,
                 };
             }
         }
@@ -154,8 +160,7 @@ async function getApiCredentialsFromUserId(userId?: string, allowEnvFallback = f
  * AIクライアントを取得する。
  */
 async function getClient(options?: AIRequestOptions): Promise<{ client: GenerativeModel; modelName: string }> {
-    const { apiKey } = await getApiCredentials(options);
-    const modelName = GEMINI_MODEL;
+    const { apiKey, modelName } = await getApiCredentials(options);
     console.log("CREATE GEMINI CLIENT", {
         modelName,
         hasApiKey: !!apiKey,
@@ -264,9 +269,9 @@ export async function validateApiKey(options?: AIRequestOptions): Promise<{
     error?: string;
 }> {
     try {
-        const { apiKey } = await getApiCredentials(options);
+        const { apiKey, modelName } = await getApiCredentials(options);
         const testClient = new GoogleGenerativeAI(apiKey);
-        const testModel = testClient.getGenerativeModel({ model: GEMINI_MODEL });
+        const testModel = testClient.getGenerativeModel({ model: modelName });
 
         // 軽量なテスト呼び出し
         await testModel.generateContent({

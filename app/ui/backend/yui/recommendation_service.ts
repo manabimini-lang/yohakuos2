@@ -9,6 +9,7 @@ const supabaseAdmin = new Proxy({} as SupabaseClient, {
   },
 });
 import { createYuiEvent, createYuiSuggestedTimeBlock, ensureYuiCalendarActionFromTimeBlock, listYuiCalendarEvents, listYuiDecisionsSince, listYuiGoals, listYuiMemoriesSince, listYuiSuggestedTimeBlocks, listYuiConversationsSince, listYuiEvents, getYuiProfile } from "./service";
+import { generateText, getUserOwnedApiCredentials } from "@/lib/ai/gemini";
 import type {
   CreateYuiRecommendationInput,
   YuiCalendarEvent,
@@ -344,6 +345,102 @@ function buildRecommendationTitle(topic: string) {
   return `${topic}の時間を作る`;
 }
 
+function parseAiRecommendationPayload(text: string) {
+  const blockMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+  const candidate = blockMatch ? blockMatch[1] : text;
+  const jsonText = candidate.trim();
+  if (!jsonText) return null;
+
+  try {
+    const payload = JSON.parse(jsonText) as {
+      title?: string;
+      reason?: string;
+      content?: string;
+      score?: number;
+    };
+
+    if (!payload.title || !payload.reason || !payload.content) {
+      return null;
+    }
+
+    return {
+      title: normalizeRecommendationText(payload.title),
+      reason: normalizeRecommendationText(payload.reason),
+      content: normalizeRecommendationText(payload.content),
+      score: Number.isFinite(payload.score) ? Math.max(0, Math.min(100, Math.trunc(payload.score ?? 0))) : 0,
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function tryGenerateRecommendationWithAi(
+  user: SessionUser,
+  focusText: string,
+  context: RecommendationContext,
+): Promise<{
+  title: string;
+  reason: string;
+  content: string;
+  score: number;
+} | null> {
+  const credentials = await getUserOwnedApiCredentials(user.id);
+  if (!credentials) {
+    return null;
+  }
+
+  console.log("[YUI Recommendation] AI provider attempt", {
+    userId: user.id,
+    provider: "gemini",
+    model: credentials.modelName,
+  });
+
+  const prompt = [
+    "あなたはYUIの提案生成器です。",
+    "以下のユーザー文脈から、1件のおすすめ時間ブロック提案をJSONのみで返してください。",
+    "必要なキーは title, reason, content, score です。",
+    "不要な説明や箇条書きは入れないでください。",
+    `ユーザーの相談内容: ${focusText || "なし"}`,
+    `現在のGoal: ${context.currentGoal?.title ?? "なし"}`,
+    `関連Memory: ${(context.memories?.slice(0, 3).map((memory) => memory.title).join(" / ") || "なし")}`,
+    `最近のDecision: ${(context.decisions?.slice(0, 3).map((decision) => decision.question).join(" / ") || "なし")}`,
+    `予定: ${(context.calendarEvents?.slice(0, 3).map((event) => `${event.title}:${event.start_at}`).join(" / ") || "なし")}`,
+  ].join("\n");
+
+  try {
+    const aiResponse = await generateText(prompt, "You produce concise JSON only.", {
+      userId: user.id,
+    });
+
+    const payload = parseAiRecommendationPayload(aiResponse.text);
+    if (!payload) {
+      console.warn("[YUI Recommendation] AI returned unparsable JSON, falling back to rule engine", {
+        userId: user.id,
+        provider: "gemini",
+        model: credentials.modelName,
+      });
+      return null;
+    }
+
+    console.log("[YUI Recommendation] AI provider success", {
+      userId: user.id,
+      provider: "gemini",
+      model: credentials.modelName,
+      score: payload.score,
+    });
+
+    return payload;
+  } catch (error) {
+    console.error("[YUI Recommendation] AI provider failure, falling back to rule engine", {
+      userId: user.id,
+      provider: "gemini",
+      model: credentials.modelName,
+      error: error instanceof Error ? error.message : error,
+    });
+    return null;
+  }
+}
+
 function recommendationEventTypeForStatus(status: string) {
   if (status === "accepted") return "recommendation_accepted";
   if (status === "rejected") return "recommendation_rejected";
@@ -535,7 +632,7 @@ export async function generateYuiRecommendation(
   const gap = findBestGap(context.calendarEvents) ?? buildFallbackGap();
   const relatedDecisionIds = extractRelatedDecisions(context);
   const relatedMemoryIds = extractRelatedMemories(context);
-  const score = computeScore({
+  const ruleScore = computeScore({
     currentGoal: context.currentGoal,
     gap,
     relatedDecisions: relatedDecisionIds,
@@ -543,20 +640,27 @@ export async function generateYuiRecommendation(
     conversations: context.conversations,
     currentGoalProgress: context.currentGoal?.progress ?? 0,
   });
-  const title = buildRecommendationTitle(topic);
-  const reason = buildReason({
+  const ruleTitle = buildRecommendationTitle(topic);
+  const ruleReason = buildReason({
     currentGoal: context.currentGoal,
     gap,
     relatedDecisions: relatedDecisionIds,
     relatedMemories: relatedMemoryIds,
     contextText: focusText,
   });
-  const content = buildContent({
+  const ruleContent = buildContent({
     topic,
     gap,
     currentGoal: context.currentGoal,
     contextText: focusText,
   });
+
+  const aiResult = await tryGenerateRecommendationWithAi(user, focusText, context);
+  const title = aiResult?.title ?? ruleTitle;
+  const reason = aiResult?.reason ?? ruleReason;
+  const content = aiResult?.content ?? ruleContent;
+  const score = aiResult?.score ?? ruleScore;
+
   const duplicate = (await listYuiRecommendations(user.id, { status: "pending", limit: 20 })).find(
     (recommendation) =>
       recommendation.type === "time_block"

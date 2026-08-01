@@ -46,9 +46,6 @@ validateAuthEnvironment();
 export const authConfig: NextAuthConfig = {
   secret: getAuthSecret(),
   trustHost: true,
-  pages: {
-    signIn: "/login",
-  },
   session: {
     strategy: "jwt",
   },

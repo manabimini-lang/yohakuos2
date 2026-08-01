@@ -1,6 +1,7 @@
 "use client";
 
 import { Card } from "@/components/ui/card";
+import { YuiCardSkeleton } from "@/components/yui/YuiCardSkeleton";
 import { Lightbulb, TrendingUp, ArrowRight, Target } from "lucide-react";
 import type { YuiThreadInsight } from "@/app/ui/backend/yui/thread_intelligence_service";
 
@@ -47,11 +48,7 @@ function formatRelativeDate(isoStr: string | null): string {
 
 export function YuiThreadInsightsCard({ threads, isLoading }: YuiThreadInsightsCardProps) {
   if (isLoading) {
-    return (
-      <Card className="p-6 text-sm text-muted-foreground border-primary/10 bg-background/80 animate-pulse">
-        スレッドインサイトを読み込んでいます...
-      </Card>
-    );
+    return <YuiCardSkeleton lines={3} />;
   }
 
   if (!threads || threads.length === 0) {

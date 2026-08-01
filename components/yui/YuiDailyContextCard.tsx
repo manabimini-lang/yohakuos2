@@ -1,6 +1,7 @@
 "use client";
 
 import { Card } from "@/components/ui/card";
+import { YuiCardSkeleton } from "@/components/yui/YuiCardSkeleton";
 import { History, Tag, ArrowRight } from "lucide-react";
 import type { YuiDailyContext } from "@/app/ui/backend/yui/daily_context_service";
 
@@ -11,11 +12,7 @@ type YuiDailyContextCardProps = {
 
 export function YuiDailyContextCard({ data, isLoading }: YuiDailyContextCardProps) {
   if (isLoading) {
-    return (
-      <Card className="p-6 text-sm text-muted-foreground border-primary/10 bg-background/80 animate-pulse">
-        昨日からの継続文脈を読み込んでいます...
-      </Card>
-    );
+    return <YuiCardSkeleton lines={3} />;
   }
 
   if (!data) {

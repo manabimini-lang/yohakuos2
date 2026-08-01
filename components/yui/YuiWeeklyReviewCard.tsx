@@ -1,6 +1,7 @@
 "use client";
 
 import { Card } from "@/components/ui/card";
+import { YuiCardSkeleton } from "@/components/yui/YuiCardSkeleton";
 import { BookOpen, CheckCircle2, Activity, Clock, Target, ArrowRight } from "lucide-react";
 import type { YuiWeeklyReview } from "@/app/ui/backend/yui/weekly_review_service";
 
@@ -11,11 +12,7 @@ type YuiWeeklyReviewCardProps = {
 
 export function YuiWeeklyReviewCard({ review, isLoading }: YuiWeeklyReviewCardProps) {
   if (isLoading) {
-    return (
-      <Card className="p-6 text-sm text-muted-foreground border-primary/10 bg-background/80 animate-pulse">
-        週次レビューを読み込んでいます...
-      </Card>
-    );
+    return <YuiCardSkeleton lines={3} />;
   }
 
   if (!review) {

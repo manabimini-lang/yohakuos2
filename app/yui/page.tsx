@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { auth } from "@/lib/auth";
+import { requireSession } from "@/core/auth/server";
 import { redirect } from "next/navigation";
 import { YuiHome } from "@/components/yui/YuiHome";
 
@@ -11,11 +11,11 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function YuiPage() {
-  const session = await auth();
+  const session = await requireSession("/login?redirect=/yui");
 
-  if (!session?.user?.id) {
+  if (!session?.id) {
     redirect("/login?redirect=/yui");
   }
 
-  return <YuiHome displayName={session.user.name ?? null} />;
+  return <YuiHome displayName={session.profile?.displayName ?? null} />;
 }
