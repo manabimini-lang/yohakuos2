@@ -21,10 +21,10 @@ type GoogleConnectionMetadata = Record<string, unknown> & {
 
 export type ConnectionHealthStatus =
   | "connected"
-  | "refreshing"
+  | "syncing"
+  | "maintenance"
   | "needs_reauth"
-  | "sync_error"
-  | "disconnected";
+  | "error";
 
 export type ConnectionHealth = {
   google: {
@@ -47,7 +47,8 @@ function normalizeScopes(scopeText: string | undefined): string[] {
 
 function buildHealthResponse(input: Partial<ConnectionHealth["google"]>): ConnectionHealth["google"] {
   return {
-    status: input.status ?? "disconnected",
+    // default to needs_reauth when we don't have a confirmed connection
+    status: input.status ?? "needs_reauth",
     calendarConnected: input.calendarConnected ?? false,
     gmailConnected: input.gmailConnected ?? false,
     scopes: input.scopes ?? [],
@@ -68,7 +69,7 @@ export async function getConnectionHealth(userId: string): Promise<ConnectionHea
   if (!connection) {
     return {
       google: buildHealthResponse({
-        status: "disconnected",
+        status: "needs_reauth",
         calendarConnected: false,
         gmailConnected: false,
         tokenValid: false,
@@ -114,11 +115,13 @@ export async function getConnectionHealth(userId: string): Promise<ConnectionHea
     };
   }
 
-  let status: ConnectionHealthStatus = "refreshing";
+  // default to syncing when we are about to refresh
+  let status: ConnectionHealthStatus = "syncing";
   let tokenValid = false;
   let lastError: string | null = null;
 
-  if (!accessToken || Date.now() >= tokenExpiresAt - 60_000) {
+  try {
+    if (!accessToken || Date.now() >= tokenExpiresAt - 60_000) {
     const clientId = process.env.GOOGLE_CLIENT_ID || "";
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET || "";
 
@@ -134,48 +137,68 @@ export async function getConnectionHealth(userId: string): Promise<ConnectionHea
     });
 
     if (!refreshResponse.ok) {
+      // Map HTTP status codes and response to health statuses
+      const statusCode = refreshResponse.status;
       const errText = await refreshResponse.text();
-      lastError = errText.includes("invalid_grant") || errText.includes("unauthorized")
-        ? "Google refresh token is invalid. Please reconnect."
-        : `Google token refresh failed: ${errText}`;
-      status = errText.includes("invalid_grant") || errText.includes("unauthorized")
-        ? "needs_reauth"
-        : "sync_error";
+
+      // 401 -> needs_reauth
+      if (statusCode === 401 || errText.includes("invalid_grant") || errText.includes("unauthorized")) {
+        lastError = "Google refresh token is invalid. Please reconnect.";
+        status = "needs_reauth";
+      } else if (statusCode >= 500) {
+        // Server errors or network issues -> maintenance
+        lastError = `Google token refresh service unavailable: ${errText}`;
+        status = "maintenance";
+      } else {
+        lastError = `Google token refresh failed: ${errText}`;
+        status = "error";
+      }
     } else {
       const refreshData = await refreshResponse.json();
       const refreshedAccessToken = typeof refreshData.access_token === "string" ? refreshData.access_token : "";
       const expiresIn = (refreshData.expires_in as number) || 3600;
-      if (!refreshedAccessToken) {
-        status = "needs_reauth";
-        lastError = "No valid Google access token available";
-      } else {
-        const updatedMetadata = {
-          ...(metadata as Record<string, unknown>),
-          accessToken: refreshedAccessToken,
-          tokenExpiresAt: new Date(Date.now() + expiresIn * 1000).toISOString(),
-          lastError: null,
-        } as GoogleConnectionMetadata;
+        if (!refreshedAccessToken) {
+          status = "needs_reauth";
+          lastError = "No valid Google access token available";
+        } else {
+          const updatedMetadata = {
+            ...(metadata as Record<string, unknown>),
+            accessToken: refreshedAccessToken,
+            tokenExpiresAt: new Date(Date.now() + expiresIn * 1000).toISOString(),
+            lastError: null,
+          } as GoogleConnectionMetadata;
 
-        await supabaseAdmin
-          .from("connections")
-          .update({
-            metadata: updatedMetadata,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", connection.id);
+          // attempt to persist refreshed token; if supabase is unavailable, treat as maintenance
+          try {
+            await supabaseAdmin
+              .from("connections")
+              .update({
+                metadata: updatedMetadata,
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", connection.id);
 
-        status = "connected";
-        tokenValid = true;
+            status = "connected";
+            tokenValid = true;
+          } catch (e) {
+            lastError = `Supabase update failed: ${e instanceof Error ? e.message : String(e)}`;
+            status = "maintenance";
+          }
+        }
       }
+    } else {
+      status = "connected";
+      tokenValid = true;
     }
-  } else {
-    status = "connected";
-    tokenValid = true;
-  }
 
-  if (status === "connected" && !tokenValid && !accessToken) {
-    status = "needs_reauth";
-    lastError = lastError ?? "No valid Google access token available";
+    if (status === "connected" && !tokenValid && !accessToken) {
+      status = "needs_reauth";
+      lastError = lastError ?? "No valid Google access token available";
+    }
+  } catch (e) {
+    // network or unexpected error -> maintenance
+    status = "maintenance";
+    lastError = e instanceof Error ? e.message : String(e);
   }
 
   const calendarConnected = scopes.includes("https://www.googleapis.com/auth/calendar.readonly");

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Calendar, Sparkles, Bell, CheckCircle2, XCircle, AlertCircle, RefreshCw } from "lucide-react";
 
-type HealthStatus = "connected" | "disconnected" | "error" | "loading" | "needs_reauth" | "syncing";
+type HealthStatus = "connected" | "disconnected" | "error" | "loading" | "needs_reauth" | "syncing" | "maintenance";
 
 type SystemHealth = {
   googleCalendar: { status: HealthStatus; detail: string };
@@ -19,68 +19,122 @@ export function YuiHealthDashboard() {
     notifications: { status: "loading", detail: "確認中..." },
   });
   const [refreshing, setRefreshing] = useState(false);
+  const [offline, setOffline] = useState<{ google?: boolean; ai?: boolean; notif?: boolean }>({});
+  const CACHE_KEY = "yui:health:cache";
+
+  const loadCache = (): { data: any; ts: number } | null => {
+    try {
+      const raw = localStorage.getItem(CACHE_KEY);
+      if (!raw) return null;
+      return JSON.parse(raw);
+    } catch (e) {
+      return null;
+    }
+  };
+
+  const saveCache = (data: any) => {
+    try {
+      const payload = { data, ts: Date.now() };
+      localStorage.setItem(CACHE_KEY, JSON.stringify(payload));
+    } catch (e) {
+      // ignore
+    }
+  };
+
+  const minutesAgo = (ts: number | null) => {
+    if (!ts) return null;
+    const diff = Math.max(0, Date.now() - ts);
+    return Math.round(diff / 60000);
+  };
 
   const checkHealth = async () => {
     setRefreshing(true);
+    setOffline({});
     try {
       const [healthRes, notifRes] = await Promise.all([
         fetch("/api/yui/health").catch(() => null),
         fetch("/api/yui/notification-settings").catch(() => null),
       ]);
 
-      // 1. Google Calendar Check
+      // default values
       let googleStatus: HealthStatus = "disconnected";
       let googleDetail = "未連携";
-      if (healthRes?.ok) {
+      let googleOffline = false;
+
+      if (healthRes && healthRes.ok) {
         const data = await healthRes.json();
+        saveCache(data);
         const googleHealth = data.google;
         if (googleHealth?.status === "connected") {
           googleStatus = "connected";
           googleDetail = googleHealth.lastSyncAt ? `Connected / 同期 ${new Date(googleHealth.lastSyncAt).toLocaleString("ja-JP")}` : "Connected";
-        } else if (googleHealth?.status === "refreshing") {
+        } else if (googleHealth?.status === "syncing") {
           googleStatus = "syncing";
           googleDetail = "Google Syncing...";
         } else if (googleHealth?.status === "needs_reauth") {
           googleStatus = "needs_reauth";
           googleDetail = googleHealth.lastError || "再接続してください";
-        } else if (googleHealth?.status === "sync_error") {
+        } else if (googleHealth?.status === "maintenance") {
+          googleStatus = "maintenance";
+          googleDetail = googleHealth.lastError || "サービス停止中";
+        } else if (googleHealth?.status === "error") {
           googleStatus = "error";
           googleDetail = googleHealth.lastError || "同期エラー";
         }
-      } else if (healthRes && !healthRes.ok) {
-        googleStatus = "error";
-        googleDetail = "取得エラー (401/500)";
+      } else {
+        // health API failed — try cache
+        const cache = typeof window !== "undefined" ? loadCache() : null;
+        if (cache?.data?.google) {
+          const cached = cache.data.google;
+          googleStatus = cached.status === "connected" ? "connected" : "maintenance";
+          const mins = minutesAgo(cache.ts);
+          googleDetail = `${cached.lastSyncAt ? `同期 ${new Date(cached.lastSyncAt).toLocaleString("ja-JP")} / ` : ""}最終更新: ${mins ?? "?"}分前`;
+          googleOffline = true;
+        } else {
+          // no cache available — show maintenance
+          googleStatus = "maintenance";
+          googleDetail = "サービス利用不可";
+          googleOffline = true;
+        }
       }
 
-      // 2. Notifications Check
+      // Notifications
       let notifStatus: HealthStatus = "disconnected";
       let notifDetail = "無効";
-      if (notifRes?.ok) {
+      let notifOffline = false;
+      if (notifRes && notifRes.ok) {
         const notifData = await notifRes.json();
-        if (notifData.enabled) {
-          notifStatus = "connected";
-          notifDetail = `有効 (朝 ${notifData.morningTime || "07:30"} / 夜 ${notifData.eveningTime || "21:00"})`;
+        notifStatus = notifData.enabled ? "connected" : "disconnected";
+        notifDetail = notifData.enabled
+          ? `有効 (朝 ${notifData.morningTime || "07:30"} / 夜 ${notifData.eveningTime || "21:00"})`
+          : "通知設定はオフです";
+      } else {
+        const cache = typeof window !== "undefined" ? loadCache() : null;
+        if (cache?.data?.notifications) {
+          const mins = minutesAgo(cache.ts);
+          notifStatus = cache.data.notifications.enabled ? "connected" : "disconnected";
+          notifDetail = `最終更新: ${mins ?? "?"}分前`;
+          notifOffline = true;
         } else {
-          notifDetail = "通知設定はオフです";
+          notifStatus = "maintenance";
+          notifDetail = "通知サービス利用不可";
+          notifOffline = true;
         }
-      } else if (notifRes && !notifRes.ok) {
-        notifStatus = "error";
-        notifDetail = "取得エラー (401/500)";
       }
 
-      // 3. AI Integration Check
+      // AI Integration
       let aiStatus: HealthStatus = "disconnected";
       let aiDetail = "未設定";
       let aiMode = "Rule Engineのみ";
+      let aiOffline = false;
 
-      // Test AI endpoint connection to determine active mode
       const testAiRes = await fetch("/api/ai/test-connection", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ provider: "gemini" }),
       }).catch(() => null);
 
-      if (testAiRes?.ok) {
+      if (testAiRes && testAiRes.ok) {
         const testData = await testAiRes.json();
         if (testData.connected) {
           aiStatus = "connected";
@@ -100,10 +154,21 @@ export function YuiHealthDashboard() {
           aiDetail = testData.error || "接続テスト失敗";
         }
       } else {
-        aiStatus = "disconnected";
-        aiMode = "Rule Engineのみ";
-        aiDetail = "AI未設定のため基本エンジンで動作";
+        const cache = typeof window !== "undefined" ? loadCache() : null;
+        if (cache?.data?.aiIntegration) {
+          aiStatus = cache.data.aiIntegration.status === "connected" ? "connected" : "disconnected";
+          aiMode = cache.data.aiIntegration.mode || aiMode;
+          aiDetail = `最終更新: ${minutesAgo(cache.ts) ?? "?"}分前`;
+          aiOffline = true;
+        } else {
+          aiStatus = "disconnected";
+          aiMode = "Rule Engineのみ";
+          aiDetail = "AI未設定のため基本エンジンで動作";
+          aiOffline = true;
+        }
       }
+
+      setOffline({ google: googleOffline, ai: aiOffline, notif: notifOffline });
 
       setHealth({
         googleCalendar: { status: googleStatus, detail: googleDetail },
@@ -116,6 +181,7 @@ export function YuiHealthDashboard() {
       setRefreshing(false);
     }
   };
+
 
   useEffect(() => {
     void checkHealth();
@@ -198,11 +264,18 @@ export function YuiHealthDashboard() {
               <Calendar className="h-3.5 w-3.5 text-primary" />
               Google Calendar
             </span>
-            {renderBadge(health.googleCalendar.status)}
+            <div className="flex items-center gap-2">
+              {renderBadge(health.googleCalendar.status)}
+            </div>
           </div>
           <p className="text-xs font-medium text-foreground truncate">
             {health.googleCalendar.detail}
           </p>
+          {offline.google && (
+            <div className="mt-2 flex items-center gap-2">
+              <span className="text-[11px] rounded-full bg-neutral-100 px-2 py-0.5 text-neutral-700">Offline</span>
+            </div>
+          )}
         </div>
 
         {/* AI Integration */}
@@ -220,6 +293,11 @@ export function YuiHealthDashboard() {
           <p className="text-[11px] text-muted-foreground truncate">
             {health.aiIntegration.detail}
           </p>
+          {offline.ai && (
+            <div className="mt-2 flex items-center gap-2">
+              <span className="text-[11px] rounded-full bg-neutral-100 px-2 py-0.5 text-neutral-700">Offline</span>
+            </div>
+          )}
         </div>
 
         {/* Notifications */}
@@ -234,6 +312,11 @@ export function YuiHealthDashboard() {
           <p className="text-xs font-medium text-foreground truncate">
             {health.notifications.detail}
           </p>
+          {offline.notif && (
+            <div className="mt-2 flex items-center gap-2">
+              <span className="text-[11px] rounded-full bg-neutral-100 px-2 py-0.5 text-neutral-700">Offline</span>
+            </div>
+          )}
         </div>
       </div>
     </Card>
