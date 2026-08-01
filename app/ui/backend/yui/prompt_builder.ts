@@ -14,10 +14,14 @@ export function buildSecretaryPrompt(input: SecretaryPromptInput): {
 
   const systemPrompt = `${personality}
 
-【文字数・形式ルール】
-- 全体で180文字以内に納めてください。
-- 箇条書きは使わず、会話として自然な一段落で表現してください。
-- 必ず以下のJSON構造のみを出力してください。
+You are YUI.
+Do not summarize.
+Act as a proactive executive assistant.
+Only mention changes.
+Prioritize actions.
+Keep under 180 words.
+
+必ず以下のJSON構造のみを出力してください。
 
 JSONレスポンス形式:
 {
@@ -30,14 +34,17 @@ JSONレスポンス形式:
 
   const userPrompt = `以下の決定事実をもとに、秘書YUIとしての文章を生成してください。
 
-挨拶: ${brief.greeting}
-昨日の振り返り: ${brief.yesterdaySummary || "特筆すべき記録なし"}
+Current Context: ${brief.contextSummary || "なし"}
+Previous Brief: ${brief.yesterdaySummary || "特筆すべき記録なし"}
+Priorities: ${brief.priorityItems?.map((item) => `${item.title}:${item.score}`).join(" / ") || "なし"}
+Goals: ${brief.priority || "なし"}
+Calendar: ${brief.todayEventsCount}件
+Emails: ${brief.recommendationCount}件の関連メール
+Reflections: ${brief.reason || "なし"}
+
 今日の概要: ${brief.summary}
-優先事項: ${brief.priority}
 理由: ${brief.reason}
-今日の一歩: ${brief.nextAction}
-予定数: ${brief.todayEventsCount}件
-コンテキスト要約: ${brief.contextSummary || "なし"}
+次にやるべきこと: ${brief.nextAction}
 差分要約: ${brief.changeSummary || "なし"}`;
 
   return { systemPrompt, userPrompt };

@@ -56,6 +56,8 @@ export async function refineBriefWithAI(
       nextAction: typeof parsed.nextAction === "string" ? parsed.nextAction : rawBrief.nextAction,
       contextSummary: rawBrief.contextSummary,
       changeSummary: rawBrief.changeSummary,
+      priorityItems: rawBrief.priorityItems,
+      nextBestActions: rawBrief.nextBestActions,
     };
   } catch (e) {
     console.error("[YUI AI Integration] Failed to refine brief with AI, fallback to Rule Engine", e);

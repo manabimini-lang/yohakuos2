@@ -1131,7 +1131,13 @@ export function YuiHome({ displayName }: YuiHomeProps) {
                   <ActionArea
                     actions={unifiedActions
                       .slice(0, 3)
-                      .map((a) => ({ id: a.id, title: a.title, description: a.description, kind: a.actionType }))}
+                      .map((a) => ({
+                        id: a.id,
+                        title: a.title,
+                        description: a.description,
+                        kind: a.actionType,
+                        reason: a.description,
+                      }))}
                     onCreateRecommendation={async () => {
                       try {
                         await fetch("/api/yui/recommendations", { method: "POST" });
