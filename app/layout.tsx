@@ -21,7 +21,10 @@ export const metadata: Metadata = {
   description: "止まっても、戻ってこれる場所。",
   manifest: "/manifest.json",
   icons: {
-    icon: "/icon-192x192.png",
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icon-192x192.png", type: "image/png", sizes: "192x192" },
+    ],
     apple: "/apple-touch-icon.png",
   },
   openGraph: {
