@@ -171,25 +171,9 @@ export async function signUpWithEmail(
  * Signs in with Google OAuth.
  */
 export async function signInWithGoogle(): Promise<AuthResult> {
-  const supabase = await createSupabaseServerClient();
-
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: "google",
-    options: {
-      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/api/auth/callback`,
-    },
-  });
-
-  if (error || !data.url) {
-    return {
-      success: false,
-      error: error?.message ?? "Failed to initiate Google sign-in",
-    };
-  }
-
   return {
     success: true,
-    redirectTo: data.url,
+    redirectTo: `/api/auth/signin/google?callbackUrl=${encodeURIComponent(authConfig.redirectAfterLogin)}`,
   };
 }
 

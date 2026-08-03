@@ -8,6 +8,8 @@
 
 "use client";
 
+import { signIn } from "next-auth/react";
+
 import { getSupabaseClient } from "@/infra/supabase/client";
 import type { AuthResult } from "../types";
 import { authConfig } from "../config";
@@ -67,13 +69,9 @@ export async function clientSignUpWithEmail(
  * Signs in with Google OAuth from the client.
  */
 export async function clientSignInWithGoogle(): Promise<void> {
-  const supabase = getSupabaseClient();
-
-  await supabase.auth.signInWithOAuth({
-    provider: "google",
-    options: {
-      redirectTo: `${window.location.origin}/api/auth/callback`,
-    },
+  await signIn("google", {
+    callbackUrl: authConfig.redirectAfterLogin,
+    redirect: true,
   });
 }
 
