@@ -7,7 +7,14 @@ export const dynamic = "force-dynamic";
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
+  const state = searchParams.get("state");
   const next = searchParams.get("next") ?? "/";
+
+  if (state && code && !searchParams.has("next")) {
+    const nextAuthCallbackUrl = new URL(`/api/auth/callback/google`, origin);
+    nextAuthCallbackUrl.search = searchParams.toString();
+    return NextResponse.redirect(nextAuthCallbackUrl);
+  }
 
   if (code) {
     const supabase = await createSupabaseServerClient();
