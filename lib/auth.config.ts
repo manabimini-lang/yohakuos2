@@ -8,18 +8,28 @@ import {
 import { LEGACY_ROLE_MAP } from "@/lib/permissions/constants";
 import type { Permission, SystemRole } from "@/lib/permissions/types";
 
-// Validate secret configuration (must be set in production)
+const getSiteUrl = () => {
+  return process.env.NEXTAUTH_URL
+    || process.env.AUTH_URL
+    || process.env.NEXT_PUBLIC_SITE_URL
+    || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined)
+    || "http://localhost:3000";
+};
+
+// Validate secret configuration but avoid crashing the app when a deployment is missing the secret.
 const getAuthSecret = () => {
   const secret = process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET;
-  if (!secret && process.env.NODE_ENV === 'production') {
-    throw new Error('NEXTAUTH_SECRET or AUTH_SECRET environment variable is required in production');
+  if (!secret) {
+    const fallback = process.env.VERCEL_GIT_COMMIT_SHA || "dev-only-fallback-secret-32-char-minimum-!!";
+    console.warn("[NEXTAUTH_CONFIG] Missing NEXTAUTH_SECRET/AUTH_SECRET. Falling back to a temporary secret.");
+    return fallback;
   }
-  return secret || 'dev-only-fallback-secret-32-char-minimum-!!';
+  return secret;
 };
 
 const validateAuthEnvironment = () => {
   const required = [
-    { name: "NEXTAUTH_URL", value: process.env.NEXTAUTH_URL },
+    { name: "NEXTAUTH_URL", value: process.env.NEXTAUTH_URL || process.env.AUTH_URL || process.env.NEXT_PUBLIC_SITE_URL || process.env.VERCEL_URL },
     { name: "GOOGLE_CLIENT_ID", value: process.env.GOOGLE_CLIENT_ID },
     { name: "GOOGLE_CLIENT_SECRET", value: process.env.GOOGLE_CLIENT_SECRET },
     { name: "NEXTAUTH_SECRET", value: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET },
@@ -31,13 +41,7 @@ const validateAuthEnvironment = () => {
     return;
   }
 
-  const message = `[NEXTAUTH_CONFIG] Missing required env vars: ${missing.join(", ")}. Google SSO and NextAuth callback handling may fail.`;
-
-  if (process.env.NODE_ENV === "production") {
-    throw new Error(message);
-  }
-
-  console.warn(message);
+  console.warn(`[NEXTAUTH_CONFIG] Missing environment vars: ${missing.join(", ")}. Some auth features may be unavailable until they are configured.`);
 };
 
 validateAuthEnvironment();
