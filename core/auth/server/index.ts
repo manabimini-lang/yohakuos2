@@ -7,8 +7,13 @@
 // ===================================================
 
 import { redirect } from "next/navigation";
+import bcrypt from "bcryptjs";
+import { UserRole } from "@prisma/client";
+
 import { createClient as createSupabaseServerClient } from "@/lib/supabase/server";
 import { getSupabaseAdmin } from "@/infra/supabase/server";
+import { prisma } from "@/lib/prisma";
+import { signIn } from "@/lib/auth";
 import type { AuthSession, AuthResult } from "../types";
 import { authConfig } from "../config";
 
@@ -108,17 +113,27 @@ export async function signInWithEmail(
   email: string,
   password: string,
 ): Promise<AuthResult> {
-  const supabase = await createSupabaseServerClient();
+  const normalizedEmail = email.trim().toLowerCase();
 
-  const { error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
+  try {
+    const result = await signIn("credentials", {
+      email: normalizedEmail,
+      password,
+      redirect: false,
+      callbackUrl: authConfig.redirectAfterLogin,
+    });
 
-  if (error) {
+    if (result?.error) {
+      return {
+        success: false,
+        error: result.error,
+      };
+    }
+  } catch (error) {
+    console.error("[auth] Failed to sign in with credentials:", error);
     return {
       success: false,
-      error: error.message,
+      error: "Failed to sign in. Please try again.",
     };
   }
 
@@ -137,33 +152,48 @@ export async function signUpWithEmail(
   password: string,
   displayName?: string,
 ): Promise<AuthResult> {
-  const supabase = await createSupabaseServerClient();
+  const normalizedEmail = email.trim().toLowerCase();
 
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: {
-        display_name: displayName ?? null,
-      },
-    },
-  });
-
-  if (error) {
+  if (!normalizedEmail || password.length < 8) {
     return {
       success: false,
-      error: error.message,
+      error: "Password must be at least 8 characters long.",
     };
   }
 
-  // Create profile record if sign-up succeeded and user was created
-  if (data.user) {
-    await createProfile(data.user.id, email, displayName);
+  const existing = await prisma.user.findUnique({
+    where: { email: normalizedEmail },
+    select: { id: true },
+  });
+
+  if (existing) {
+    return {
+      success: false,
+      error: "This email is already registered.",
+    };
+  }
+
+  try {
+    const hashedPassword = await bcrypt.hash(password, 10);
+    await prisma.user.create({
+      data: {
+        email: normalizedEmail,
+        name: displayName?.trim() || normalizedEmail.split("@")[0],
+        password: hashedPassword,
+        role: UserRole.FREE_MEMBER,
+      },
+    });
+  } catch (error) {
+    console.error("[auth] Failed to create local user:", error);
+    return {
+      success: false,
+      error: "Failed to create account. Please try again.",
+    };
   }
 
   return {
     success: true,
-    redirectTo: authConfig.redirectAfterSignUp,
+    redirectTo: "/login?message=signup-success",
   };
 }
 

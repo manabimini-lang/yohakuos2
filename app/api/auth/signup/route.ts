@@ -34,14 +34,12 @@ export async function POST(request: Request) {
       );
     }
 
-    // If signup succeeded, redirect
     if (result.redirectTo) {
       return NextResponse.redirect(new URL(result.redirectTo, request.url));
     }
 
-    // If no redirect (e.g., email confirmation needed), show success
     return NextResponse.redirect(
-      new URL("/signup?message=check-email", request.url),
+      new URL("/signup?message=signup-success", request.url),
     );
   } catch (error) {
     console.error("[auth/signup] Error:", error);

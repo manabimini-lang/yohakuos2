@@ -18,8 +18,8 @@ export default function SignUpPage({
 
   const isGoogleEnabled = !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
 
-  const successMessage = searchParams.message === "check-email"
-    ? "確認メールを送信しました。メールをご確認ください。"
+  const successMessage = searchParams.message === "signup-success"
+    ? "アカウントを作成しました。ログインしてください。"
     : null;
 
   return (
