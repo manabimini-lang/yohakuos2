@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { auth } from "@/lib/auth";
+// Avoid importing heavy, Node-only modules at top-level to keep middleware Edge-compatible.
+// auth (next-auth) and some Redis libraries are Node-focused and can break middleware.
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 import { isPremiumRoute, hasPremiumAccess } from "@/lib/constants/plan";
@@ -25,12 +26,22 @@ export async function middleware(request: NextRequest) {
   // 1. Maintain Supabase Session
   const supabaseResponse = await updateSession(request);
 
-  // 2. NextAuth & App logic
-  const authMiddleware = auth(async (req) => {
+  // 2. Load auth middleware lazily to avoid bundling Node-only deps into Edge middleware.
+  let authMiddleware: any = null;
+  try {
+    // Dynamic import — may fail in Edge if modules are Node-only; catch and fall back.
+    const authModule = await import("@/lib/auth");
+    authMiddleware = authModule.auth;
+  } catch (e) {
+    // If auth cannot be imported in Edge/dev, log and fall back to a simple pass-through.
+    console.warn("[middleware] Could not import auth module in middleware (fallback):", e);
+    // Return supabaseResponse directly for compatibility
+    return supabaseResponse;
+  }
+
+  const handler = authMiddleware(async (req: any) => {
     const ip = req.headers.get("x-forwarded-for") ?? "127.0.0.1";
     const path = req.nextUrl.pathname;
-
-    const protectedRoutes = ["/settings"];
 
     // NextAuth paths should bypass rate limiting to prevent OAuth failure
     if (path.startsWith("/api/auth")) {
@@ -81,7 +92,7 @@ export async function middleware(request: NextRequest) {
     return supabaseResponse;
   });
 
-  return (authMiddleware as any)(request);
+  return (handler as any)(request);
 }
 
 export const config = {

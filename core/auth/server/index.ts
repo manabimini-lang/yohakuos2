@@ -161,10 +161,36 @@ export async function signUpWithEmail(
     };
   }
 
-  const existing = await prisma.user.findUnique({
-    where: { email: normalizedEmail },
-    select: { id: true },
-  });
+  // Check existing user, with DB error fallback to dev store in development.
+  let existing: { id: string } | null = null;
+  try {
+    existing = await prisma.user.findUnique({
+      where: { email: normalizedEmail },
+      select: { id: true },
+    });
+  } catch (dbCheckError) {
+    console.error("[auth] DB check failed during sign-up (falling back in dev):", dbCheckError);
+    if (process.env.NODE_ENV === "development") {
+      try {
+        const { findUserByEmail } = await import("@/core/auth/server/dev-store");
+        const devUser = await findUserByEmail(normalizedEmail);
+        if (devUser) {
+          return {
+            success: false,
+            error: "This email is already registered.",
+          };
+        }
+      } catch (e) {
+        console.error("[auth] Dev store lookup failed:", e);
+        // proceed to attempt create via dev store below
+      }
+    } else {
+      return {
+        success: false,
+        error: "Failed to create account. Please try again.",
+      };
+    }
+  }
 
   if (existing) {
     return {
