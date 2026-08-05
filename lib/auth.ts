@@ -93,7 +93,40 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           return user;
         } catch (dbError) {
           console.error("Database connection failed during authorize:", dbError);
-          // On DB errors, do NOT allow any fallback — authentication must fail safe.
+          // Fallback to local dev store in development mode
+          if (process.env.NODE_ENV === "development") {
+            try {
+              const { findUserByEmail, comparePassword } = await import(
+                "@/core/auth/server/dev-store"
+              );
+              const normalizedEmail = ((credentials?.email as string) || "").trim().toLowerCase();
+              const devUser = await findUserByEmail(normalizedEmail);
+              if (!devUser) return null;
+
+              // lockedUntil check (string stored) — ignore if expired
+              if (devUser.lockedUntil && new Date(devUser.lockedUntil) > new Date()) {
+                console.warn(`Suspended dev user attempt to login: ${devUser.email}`);
+                return null;
+              }
+
+              const isValid = await comparePassword(normalizedEmail, credentials.password as string);
+              if (!isValid) return null;
+
+              // Return shape similar to Prisma user
+              return {
+                id: devUser.id,
+                email: devUser.email,
+                name: devUser.name,
+                password: devUser.password,
+                lockedUntil: devUser.lockedUntil ? new Date(devUser.lockedUntil) : null,
+              } as any;
+            } catch (e) {
+              console.error("Dev store fallback failed:", e);
+              return null;
+            }
+          }
+
+          // On DB errors in non-dev, authentication must fail safe.
           return null;
         }
       },

@@ -185,10 +185,24 @@ export async function signUpWithEmail(
     });
   } catch (error) {
     console.error("[auth] Failed to create local user:", error);
-    return {
-      success: false,
-      error: "Failed to create account. Please try again.",
-    };
+    // Fallback to local dev store in development mode
+    if (process.env.NODE_ENV === "development") {
+      try {
+        const { createUser } = await import("@/core/auth/server/dev-store");
+        await createUser(normalizedEmail, password, displayName);
+      } catch (e) {
+        console.error("[auth] Dev store create user failed:", e);
+        return {
+          success: false,
+          error: "Failed to create account. Please try again.",
+        };
+      }
+    } else {
+      return {
+        success: false,
+        error: "Failed to create account. Please try again.",
+      };
+    }
   }
 
   return {

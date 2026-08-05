@@ -1,15 +1,24 @@
 import Link from "next/link";
 import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
+import { redirect } from "next/navigation";
+import { auth } from "@/lib/auth";
+import { LoginForm } from "@/components/auth/login-form";
 
 export const dynamic = "force-dynamic";
 
-export default function LoginPage({
+export default async function LoginPage({
   searchParams,
 }: {
   searchParams: { error?: string; redirect?: string };
 }) {
+  // Redirect if already logged in
+  const session = await auth();
+  if (session?.user) {
+    redirect("/yui");
+  }
+
   const errorMessage =
-    searchParams.error === "invalid-credentials"
+    searchParams.error === "CredentialsSignin"
       ? "メールアドレスまたはパスワードが間違っています。"
       : searchParams.error === "missing-fields"
       ? "メールアドレスとパスワードを入力してください。"
@@ -39,69 +48,7 @@ export default function LoginPage({
           </div>
         )}
 
-        <form
-          action="/api/auth/login"
-          method="POST"
-          className="space-y-4 mb-6"
-        >
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              メールアドレス
-            </label>
-            <input
-              type="email"
-              name="email"
-              required
-              className="yohaku-input"
-              placeholder="you@example.com"
-            />
-          </div>
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="block text-sm font-medium text-slate-700">
-                パスワード
-              </label>
-              <Link href="/forgot-password" className="text-xs text-muted-foreground hover:text-slate-700 underline underline-offset-2">
-                パスワードを忘れましたか？
-              </Link>
-            </div>
-            <input
-              type="password"
-              name="password"
-              required
-              className="yohaku-input"
-              placeholder="••••••••"
-            />
-          </div>
-
-          <button
-            type="submit"
-            className="yohaku-btn w-full"
-          >
-            ログイン
-          </button>
-        </form>
-
-        {isGoogleEnabled ? (
-          <>
-            <div className="mb-6">
-              <GoogleSignInButton label="Googleで続ける" />
-            </div>
-
-            <div className="relative mb-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-slate-200"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="bg-white px-2 text-muted-foreground">または</span>
-              </div>
-            </div>
-          </>
-        ) : (
-          <div className="mb-6 rounded-xl border border-amber-100 bg-amber-50 p-4 text-sm text-amber-700 text-center">
-            Googleログインはこの環境ではまだ利用できません。メールアドレスとパスワードで続けてください。
-          </div>
-        )}
+        <LoginForm isGoogleEnabled={isGoogleEnabled} />
 
         <div className="space-y-3">
           <Link
