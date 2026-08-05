@@ -7,6 +7,7 @@ import {
 } from "@/lib/permissions/helpers";
 import { LEGACY_ROLE_MAP } from "@/lib/permissions/constants";
 import type { Permission, SystemRole } from "@/lib/permissions/types";
+import { authLog, maskEmail, startTimer } from "@/lib/auth-diagnostics";
 
 const getSiteUrl = () => {
   return process.env.NEXTAUTH_URL
@@ -21,7 +22,11 @@ const getAuthSecret = () => {
   const secret = process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET;
   if (!secret) {
     const fallback = process.env.VERCEL_GIT_COMMIT_SHA || "dev-only-fallback-secret-32-char-minimum-!!";
-    console.warn("[NEXTAUTH_CONFIG] Missing NEXTAUTH_SECRET/AUTH_SECRET. Falling back to a temporary secret.");
+    authLog("warn", {
+      stage: "config",
+      result: "missing_secret",
+      reason: "NEXTAUTH_SECRET/AUTH_SECRET not set, using fallback",
+    });
     return fallback;
   }
   return secret;
@@ -41,7 +46,11 @@ const validateAuthEnvironment = () => {
     return;
   }
 
-  console.warn(`[NEXTAUTH_CONFIG] Missing environment vars: ${missing.join(", ")}. Some auth features may be unavailable until they are configured.`);
+  authLog("warn", {
+    stage: "config",
+    result: "missing_env_vars",
+    missing: missing.join(", "),
+  });
 };
 
 validateAuthEnvironment();
@@ -56,13 +65,22 @@ export const authConfig: NextAuthConfig = {
   callbacks: {
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
-      const isOnAdmin = nextUrl.pathname.startsWith("/admin");
-      const isOnMember = nextUrl.pathname.startsWith("/member");
-      const isOnPremium = nextUrl.pathname.startsWith("/premium");
-      const isOnModeration = nextUrl.pathname.startsWith("/admin/moderation");
+      const pathname = nextUrl.pathname;
+      const isOnAdmin = pathname.startsWith("/admin");
+      const isOnMember = pathname.startsWith("/member");
+      const isOnPremium = pathname.startsWith("/premium");
+      const isOnModeration = pathname.startsWith("/admin/moderation");
 
       if (isOnAdmin) {
-        if (!isLoggedIn) return false;
+        if (!isLoggedIn) {
+          authLog("info", {
+            stage: "authorized_callback",
+            path: pathname,
+            result: "rejected",
+            reason: "not_logged_in",
+          });
+          return false;
+        }
         const extracted = extractPermissionsFromSession(auth as any);
         if (!extracted) return false;
         if (isOnModeration) {
@@ -72,7 +90,7 @@ export const authConfig: NextAuthConfig = {
       }
 
       // Premium route protection (handled client-side for friendly UX)
-      if (nextUrl.pathname.startsWith("/member/ai")) {
+      if (pathname.startsWith("/member/ai")) {
         return isLoggedIn;
       }
 
@@ -83,7 +101,10 @@ export const authConfig: NextAuthConfig = {
 
       return true;
     },
+
     async jwt({ token, user, trigger, session }) {
+      const elapsed = startTimer();
+
       if (user) {
         token.id = user.id;
         const email = user.email || "";
@@ -97,7 +118,18 @@ export const authConfig: NextAuthConfig = {
         const permissions = resolvePermissions(systemRoles);
         token.roles = systemRoles;
         token.permissions = permissions;
+
+        authLog("info", {
+          stage: "jwt_callback",
+          trigger: "initial",
+          userId: user.id,
+          email: maskEmail(email),
+          role: token.role as string,
+          plan: token.plan as string,
+          elapsed: elapsed(),
+        });
       }
+
       if (trigger === "update" && session) {
         token.role = session.role;
         token.plan = session.plan;
@@ -107,12 +139,24 @@ export const authConfig: NextAuthConfig = {
           const permissions = resolvePermissions(sysRoles);
           token.permissions = permissions;
         }
+        authLog("info", {
+          stage: "jwt_callback",
+          trigger: "update",
+          userId: token.id,
+          role: token.role as string,
+          plan: token.plan as string,
+          elapsed: elapsed(),
+        });
       }
+
       token.role = token.role || ROLE.FREE_MEMBER;
       token.plan = token.plan || PLAN.FREE;
       return token;
     },
+
     async session({ session, token }) {
+      const elapsed = startTimer();
+
       if (session.user && token) {
         session.user.id = token.id as string;
         session.user.role = token.role as any;
@@ -120,6 +164,15 @@ export const authConfig: NextAuthConfig = {
         (session.user as any).roles = token.roles as SystemRole[];
         (session.user as any).permissions = token.permissions as Permission[];
       }
+
+      authLog("info", {
+        stage: "session_callback",
+        userId: token?.id ?? "(none)",
+        hasUser: !!session.user,
+        role: token?.role as string,
+        elapsed: elapsed(),
+      });
+
       return session;
     },
   },

@@ -1,12 +1,31 @@
 import { NextResponse, type NextRequest } from "next/server";
 // Avoid importing heavy, Node-only modules at top-level to keep middleware Edge-compatible.
-// auth (next-auth) and some Redis libraries are Node-focused and can break middleware.
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 import { isPremiumRoute, hasPremiumAccess } from "@/lib/constants/plan";
 import { updateSession } from "@/lib/supabase/middleware";
 
-// Env variables check to prevent server-side crash when not configured
+// ---------------------------------------------------------------------------
+// Inline diagnostics for Edge runtime (cannot import auth-diagnostics in Edge)
+// ---------------------------------------------------------------------------
+
+function mwLog(stage: string, data: Record<string, unknown> = {}): void {
+  const parts = [`[auth] stage=middleware.${stage}`];
+  for (const [key, value] of Object.entries(data)) {
+    if (value === undefined || value === null) continue;
+    if (key === "elapsed") {
+      parts.push(`${key}=${value}ms`);
+    } else {
+      parts.push(`${key}=${value}`);
+    }
+  }
+  console.info(parts.join(" "));
+}
+
+// ---------------------------------------------------------------------------
+// Rate Limiting
+// ---------------------------------------------------------------------------
+
 const hasRedisConfig = !!(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN);
 
 let ratelimit: Ratelimit | null = null;
@@ -18,64 +37,97 @@ if (hasRedisConfig) {
       analytics: true,
     });
   } catch (e) {
-    console.warn("Failed to initialize Upstash Redis Ratelimit:", e);
+    console.warn("[auth] stage=middleware.init result=ratelimit_init_failed");
   }
 }
 
-export async function middleware(request: NextRequest) {
-  // 1. Maintain Supabase Session
-  const supabaseResponse = await updateSession(request);
+// ---------------------------------------------------------------------------
+// Cookie Merge Utility
+// ---------------------------------------------------------------------------
 
-  // 2. Load auth middleware lazily to avoid bundling Node-only deps into Edge middleware.
-  let authMiddleware: any = null;
-  try {
-    // Dynamic import — may fail in Edge if modules are Node-only; catch and fall back.
-    const authModule = await import("@/lib/auth");
-    authMiddleware = authModule.auth;
-  } catch (e) {
-    // If auth cannot be imported in Edge/dev, log and fall back to a simple pass-through.
-    console.warn("[middleware] Could not import auth module in middleware (fallback):", e);
-    // Return supabaseResponse directly for compatibility
-    return supabaseResponse;
+function mergeSetCookieHeaders(target: NextResponse, source: NextResponse): void {
+  const sourceCookies = source.headers.getSetCookie();
+  for (const cookie of sourceCookies) {
+    target.headers.append("Set-Cookie", cookie);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Middleware
+// ---------------------------------------------------------------------------
+
+export async function middleware(request: NextRequest) {
+  const start = Date.now();
+  const path = request.nextUrl.pathname;
+  const method = request.method;
+
+  const isAuthApiPath = path.startsWith("/api/auth");
+
+  // 1. Supabase Session
+  let supabaseResponse: NextResponse | null = null;
+  if (!isAuthApiPath) {
+    supabaseResponse = await updateSession(request);
+    mwLog("supabase_session", { path, result: "refreshed" });
+  } else {
+    mwLog("request_received", { path, method, action: "skip_supabase" });
   }
 
-  const handler = authMiddleware(async (req: any) => {
-    const ip = req.headers.get("x-forwarded-for") ?? "127.0.0.1";
-    const path = req.nextUrl.pathname;
+  // 2. Load auth middleware
+  let authMiddleware: any = null;
+  try {
+    const authModule = await import("@/lib/auth");
+    authMiddleware = authModule.auth;
+    mwLog("auth_import", { result: "success" });
+  } catch (e) {
+    mwLog("auth_import", {
+      result: "failed",
+      error: e instanceof Error ? e.message : String(e),
+      elapsed: Date.now() - start,
+    });
+    return supabaseResponse ?? NextResponse.next();
+  }
 
-    // NextAuth paths should bypass rate limiting to prevent OAuth failure
-    if (path.startsWith("/api/auth")) {
+  // 3. Auth handler
+  const handler = authMiddleware(async (req: any) => {
+    const currentPath = req.nextUrl.pathname;
+
+    // NextAuth paths bypass custom logic
+    if (currentPath.startsWith("/api/auth")) {
+      mwLog("auth_path_passthrough", { path: currentPath, elapsed: Date.now() - start });
       return NextResponse.next();
     }
 
     // Rate Limiting
     if (
       ratelimit &&
-      (path.startsWith("/api/checkout") ||
-        path === "/login" ||
-        path === "/register" ||
-        path === "/forgot-password" ||
-        path === "/reset-password")
+      (currentPath.startsWith("/api/checkout") ||
+        currentPath === "/login" ||
+        currentPath === "/register" ||
+        currentPath === "/forgot-password" ||
+        currentPath === "/reset-password")
     ) {
+      const ip = req.headers.get("x-forwarded-for") ?? "127.0.0.1";
       try {
         const { success } = await ratelimit.limit(`ratelimit_${ip}`);
         if (!success) {
+          mwLog("rate_limit", { path: currentPath, result: "blocked" });
           return new NextResponse("Too Many Requests", { status: 429 });
         }
       } catch (e) {
-        console.warn("Rate limit bypass due to Redis request error", e);
+        mwLog("rate_limit", { path: currentPath, result: "error_bypass" });
       }
     }
 
-    if (path === "/dialogue") {
+    if (currentPath === "/dialogue") {
       return NextResponse.redirect(new URL("/companion", req.nextUrl.origin));
     }
 
-    // Centralized Premium route protection
-    if (isPremiumRoute(path)) {
+    // Premium route protection
+    if (isPremiumRoute(currentPath)) {
       const isLoggedIn = !!req.auth?.user;
       if (!isLoggedIn) {
-        const loginUrl = new URL(`/login?callbackUrl=${encodeURIComponent(path)}`, req.nextUrl.origin);
+        mwLog("premium_guard", { path: currentPath, result: "redirect_login" });
+        const loginUrl = new URL(`/login?callbackUrl=${encodeURIComponent(currentPath)}`, req.nextUrl.origin);
         return NextResponse.redirect(loginUrl);
       }
 
@@ -84,15 +136,30 @@ export async function middleware(request: NextRequest) {
       const isPremium = hasPremiumAccess(plan, role);
 
       if (!isPremium) {
+        mwLog("premium_guard", { path: currentPath, result: "redirect_pricing" });
         const pricingUrl = new URL("/pricing", req.nextUrl.origin);
         return NextResponse.redirect(pricingUrl);
       }
     }
 
-    return supabaseResponse;
+    // Default pass-through with Supabase cookies merged
+    const response = NextResponse.next();
+    if (supabaseResponse) {
+      mergeSetCookieHeaders(response, supabaseResponse);
+      mwLog("cookie_merge", { path: currentPath, result: "merged" });
+    }
+    return response;
   });
 
-  return (handler as any)(request);
+  const finalResponse: NextResponse = await (handler as any)(request);
+
+  // Merge Supabase cookies into the final response
+  if (supabaseResponse && finalResponse !== supabaseResponse) {
+    mergeSetCookieHeaders(finalResponse, supabaseResponse);
+  }
+
+  mwLog("complete", { path, elapsed: Date.now() - start });
+  return finalResponse;
 }
 
 export const config = {

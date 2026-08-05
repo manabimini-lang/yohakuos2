@@ -1,22 +1,71 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useState, useCallback } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { Turnstile } from "@marsidev/react-turnstile";
 import { GoogleSignInButton } from "./google-sign-in-button";
 
-export function LoginForm({ isGoogleEnabled }: { isGoogleEnabled: boolean }) {
+// ---------------------------------------------------------------------------
+// Inline helpers (client-side, no server imports)
+// ---------------------------------------------------------------------------
+
+function generateAuthRequestId(): string {
+  const now = new Date();
+  const date = [
+    now.getFullYear(),
+    String(now.getMonth() + 1).padStart(2, "0"),
+    String(now.getDate()).padStart(2, "0"),
+  ].join("");
+  const hex = Math.random().toString(16).slice(2, 8).toUpperCase();
+  return `AUTH-${date}-${hex}`;
+}
+
+function maskEmail(email: string): string {
+  const [local, domain] = email.split("@");
+  if (!domain) return "***";
+  return `${local.slice(0, 2)}***@${domain}`;
+}
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+
+interface LoginFormProps {
+  isGoogleEnabled: boolean;
+  turnstileSiteKey?: string;
+}
+
+export function LoginForm({ isGoogleEnabled, turnstileSiteKey }: LoginFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect") || "/yui";
+
+  const isTurnstileRequired = !!turnstileSiteKey;
+
+  const handleTurnstileSuccess = useCallback((token: string) => {
+    setTurnstileToken(token);
+  }, []);
+
+  const handleTurnstileError = useCallback(() => {
+    setTurnstileToken(null);
+  }, []);
+
+  const handleTurnstileExpire = useCallback(() => {
+    setTurnstileToken(null);
+  }, []);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
+
+    const requestId = generateAuthRequestId();
+    const start = Date.now();
 
     try {
       const formData = new FormData(e.currentTarget);
@@ -29,20 +78,49 @@ export function LoginForm({ isGoogleEnabled }: { isGoogleEnabled: boolean }) {
         return;
       }
 
+      if (isTurnstileRequired && !turnstileToken) {
+        setError("セキュリティ認証を完了してください。");
+        setIsLoading(false);
+        return;
+      }
+
+      console.info(
+        `[auth] stage=login_form requestId=${requestId} email=${maskEmail(email)} hasTurnstile=${!!turnstileToken} turnstileConfigured=${!!turnstileSiteKey}`
+      );
+
       const result = await signIn("credentials", {
         email,
         password,
+        turnstileToken: turnstileToken ?? "",
+        authRequestId: requestId,
         redirect: false,
       });
+
+      const elapsed = Date.now() - start;
+
+      console.info(
+        `[auth] stage=login_form_result requestId=${requestId} ok=${result?.ok} error=${result?.error ?? "none"} status=${result?.status} elapsed=${elapsed}ms`
+      );
 
       if (result?.error) {
         setError("メールアドレスまたはパスワードが間違っています。");
       } else if (result?.ok) {
+        console.info(
+          `[auth] stage=login_redirect requestId=${requestId} redirectTo=${redirectTo}`
+        );
         router.push(redirectTo);
         router.refresh();
+      } else {
+        console.warn(
+          `[auth] stage=login_form_result requestId=${requestId} result=unexpected`
+        );
+        setError("ログインに失敗しました。もう一度お試しください。");
       }
     } catch (err) {
-      console.error("[login] Error:", err);
+      const elapsed = Date.now() - start;
+      console.error(
+        `[auth] stage=login_form_error requestId=${requestId} error=${err instanceof Error ? err.message : String(err)} elapsed=${elapsed}ms`
+      );
       setError("ログインに失敗しました。もう一度お試しください。");
     } finally {
       setIsLoading(false);
@@ -84,6 +162,17 @@ export function LoginForm({ isGoogleEnabled }: { isGoogleEnabled: boolean }) {
           />
         </div>
 
+        {turnstileSiteKey && (
+          <div className="flex justify-center">
+            <Turnstile
+              siteKey={turnstileSiteKey}
+              onSuccess={handleTurnstileSuccess}
+              onError={handleTurnstileError}
+              onExpire={handleTurnstileExpire}
+            />
+          </div>
+        )}
+
         {error && (
           <div className="mb-3 rounded-md border border-rose-200 bg-rose-50 p-3 text-sm text-rose-600">
             {error}
@@ -92,7 +181,7 @@ export function LoginForm({ isGoogleEnabled }: { isGoogleEnabled: boolean }) {
 
         <button
           type="submit"
-          disabled={isLoading}
+          disabled={isLoading || (isTurnstileRequired && !turnstileToken)}
           className="yohaku-btn w-full disabled:opacity-50"
         >
           {isLoading ? "ログイン中..." : "ログイン"}

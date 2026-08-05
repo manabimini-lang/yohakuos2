@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { LoginForm } from "@/components/auth/login-form";
@@ -31,6 +30,7 @@ export default async function LoginPage({
       : null;
 
   const isGoogleEnabled = !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
+  const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "";
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50">
@@ -48,7 +48,7 @@ export default async function LoginPage({
           </div>
         )}
 
-        <LoginForm isGoogleEnabled={isGoogleEnabled} />
+        <LoginForm isGoogleEnabled={isGoogleEnabled} turnstileSiteKey={turnstileSiteKey} />
 
         <div className="space-y-3">
           <Link
