@@ -61,8 +61,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             }
           }
         } else if (secret && siteKey && !turnstileToken) {
-          console.warn("Turnstile token missing but siteKey is configured. Login blocked.");
-          return null; // Turnstile required but missing
+          console.warn("Turnstile token missing but siteKey is configured.");
+          if (process.env.NODE_ENV === "development") {
+            console.warn("Bypassing Turnstile requirement in development mode.");
+          } else {
+            return null; // Turnstile required but missing
+          }
         }
 
         try {
