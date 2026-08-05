@@ -82,20 +82,26 @@ export default function LoginPage({
           </button>
         </form>
 
-        {isGoogleEnabled && (
-          <div className="mb-6">
-            <GoogleSignInButton label="Googleで続ける" />
+        {isGoogleEnabled ? (
+          <>
+            <div className="mb-6">
+              <GoogleSignInButton label="Googleで続ける" />
+            </div>
+
+            <div className="relative mb-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-slate-200"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="bg-white px-2 text-muted-foreground">または</span>
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="mb-6 rounded-xl border border-amber-100 bg-amber-50 p-4 text-sm text-amber-700 text-center">
+            Googleログインはこの環境ではまだ利用できません。メールアドレスとパスワードで続けてください。
           </div>
         )}
-
-        <div className="relative mb-6">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-slate-200"></div>
-          </div>
-          <div className="relative flex justify-center text-sm">
-            <span className="bg-white px-2 text-muted-foreground">または</span>
-          </div>
-        </div>
 
         <div className="space-y-3">
           <Link
