@@ -66,8 +66,12 @@ export async function middleware(request: NextRequest) {
   // 1. Supabase Session
   let supabaseResponse: NextResponse | null = null;
   if (!isAuthApiPath) {
-    supabaseResponse = await updateSession(request);
-    mwLog("supabase_session", { path, result: "refreshed" });
+    try {
+      supabaseResponse = await updateSession(request);
+      mwLog("supabase_session", { path, result: "refreshed" });
+    } catch (e) {
+      mwLog("supabase_session", { path, result: "error_bypass", error: e instanceof Error ? e.message : String(e) });
+    }
   } else {
     mwLog("request_received", { path, method, action: "skip_supabase" });
   }

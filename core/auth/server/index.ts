@@ -13,7 +13,7 @@ import { UserRole } from "@prisma/client";
 import { createClient as createSupabaseServerClient } from "@/lib/supabase/server";
 import { getSupabaseAdmin } from "@/infra/supabase/server";
 import { prisma } from "@/lib/prisma";
-import { signIn } from "@/lib/auth";
+import { auth, signIn } from "@/lib/auth";
 import type { AuthSession, AuthResult } from "../types";
 import { authConfig } from "../config";
 
@@ -28,25 +28,49 @@ import { authConfig } from "../config";
  * Returns null if not authenticated.
  */
 export async function getCurrentSession(): Promise<AuthSession | null> {
-  const supabase = await createSupabaseServerClient();
+  // 1. NextAuth Session Check (Primary authentication)
+  try {
+    const nextAuthSession = await auth();
+    if (nextAuthSession?.user?.id) {
+      const user = nextAuthSession.user;
+      const profile = await getProfile(user.id);
 
-  const {
-    data: { session },
-    error,
-  } = await supabase.auth.getSession();
-
-  if (error || !session?.user) {
-    return null;
+      return {
+        id: user.id,
+        email: user.email ?? "",
+        profile: profile || {
+          displayName: user.name || user.email?.split("@")[0] || null,
+          avatarUrl: user.image || null,
+        },
+      };
+    }
+  } catch (e) {
+    console.error("[auth] Failed to check NextAuth session:", e);
   }
 
-  const user = session.user;
-  const profile = await getProfile(user.id);
+  // 2. Supabase Auth Session Check (Fallback)
+  try {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { session },
+      error,
+    } = await supabase.auth.getSession();
 
-  return {
-    id: user.id,
-    email: user.email ?? "",
-    profile,
-  };
+    if (!error && session?.user) {
+      const user = session.user;
+      const profile = await getProfile(user.id);
+
+      return {
+        id: user.id,
+        email: user.email ?? "",
+        profile,
+      };
+    }
+  } catch (e) {
+    console.error("[auth] Failed to check Supabase session:", e);
+  }
+
+  return null;
 }
 
 /**
@@ -161,7 +185,7 @@ export async function signUpWithEmail(
     };
   }
 
-  // Check existing user, with DB error fallback to dev store in development.
+  // Check existing user, with DB error fallback to dev store.
   let existing: { id: string } | null = null;
   try {
     existing = await prisma.user.findUnique({
@@ -169,26 +193,18 @@ export async function signUpWithEmail(
       select: { id: true },
     });
   } catch (dbCheckError) {
-    console.error("[auth] DB check failed during sign-up (falling back in dev):", dbCheckError);
-    if (process.env.NODE_ENV === "development") {
-      try {
-        const { findUserByEmail } = await import("@/core/auth/server/dev-store");
-        const devUser = await findUserByEmail(normalizedEmail);
-        if (devUser) {
-          return {
-            success: false,
-            error: "This email is already registered.",
-          };
-        }
-      } catch (e) {
-        console.error("[auth] Dev store lookup failed:", e);
-        // proceed to attempt create via dev store below
+    console.error("[auth] DB check failed during sign-up (falling back to dev store):", dbCheckError);
+    try {
+      const { findUserByEmail } = await import("@/core/auth/server/dev-store");
+      const devUser = await findUserByEmail(normalizedEmail);
+      if (devUser) {
+        return {
+          success: false,
+          error: "This email is already registered.",
+        };
       }
-    } else {
-      return {
-        success: false,
-        error: "Failed to create account. Please try again.",
-      };
+    } catch (e) {
+      console.error("[auth] Dev store lookup failed:", e);
     }
   }
 
@@ -210,20 +226,12 @@ export async function signUpWithEmail(
       },
     });
   } catch (error) {
-    console.error("[auth] Failed to create local user:", error);
-    // Fallback to local dev store in development mode
-    if (process.env.NODE_ENV === "development") {
-      try {
-        const { createUser } = await import("@/core/auth/server/dev-store");
-        await createUser(normalizedEmail, password, displayName);
-      } catch (e) {
-        console.error("[auth] Dev store create user failed:", e);
-        return {
-          success: false,
-          error: "Failed to create account. Please try again.",
-        };
-      }
-    } else {
+    console.error("[auth] Failed to create Prisma user (falling back to dev store):", error);
+    try {
+      const { createUser } = await import("@/core/auth/server/dev-store");
+      await createUser(normalizedEmail, password, displayName);
+    } catch (e) {
+      console.error("[auth] Dev store create user failed:", e);
       return {
         success: false,
         error: "Failed to create account. Please try again.",
@@ -240,10 +248,11 @@ export async function signUpWithEmail(
 /**
  * Signs in with Google OAuth.
  */
-export async function signInWithGoogle(): Promise<AuthResult> {
+export async function signInWithGoogle(callbackUrl?: string): Promise<AuthResult> {
+  const target = callbackUrl || authConfig.redirectAfterLogin;
   return {
     success: true,
-    redirectTo: `/api/auth/signin/google?callbackUrl=${encodeURIComponent(authConfig.redirectAfterLogin)}`,
+    redirectTo: `/api/auth/signin/google?callbackUrl=${encodeURIComponent(target)}`,
   };
 }
 

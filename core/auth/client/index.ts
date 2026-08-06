@@ -8,6 +8,7 @@
 
 "use client";
 
+import { signIn as nextAuthSignIn } from "next-auth/react";
 import { getSupabaseClient } from "@/infra/supabase/client";
 import type { AuthResult } from "../types";
 import { authConfig } from "../config";
@@ -66,14 +67,17 @@ export async function clientSignUpWithEmail(
 /**
  * Signs in with Google OAuth from the client.
  */
-export async function clientSignInWithGoogle(): Promise<AuthResult> {
-  const callbackUrl = authConfig.redirectAfterLogin;
-  const redirectTo = `/api/auth/signin/google?callbackUrl=${encodeURIComponent(callbackUrl)}`;
-
-  return {
-    success: true,
-    redirectTo,
-  };
+export async function clientSignInWithGoogle(callbackUrl?: string): Promise<AuthResult> {
+  try {
+    const targetUrl = callbackUrl || authConfig.redirectAfterLogin;
+    await nextAuthSignIn("google", { callbackUrl: targetUrl });
+    return { success: true };
+  } catch (err) {
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Google sign in failed",
+    };
+  }
 }
 
 /**

@@ -1,26 +1,26 @@
 "use client";
 
 import { useState } from "react";
-import { clientSignInWithGoogle } from "@/core/auth/client";
+import { signIn } from "next-auth/react";
+import { useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 
 interface GoogleSignInButtonProps {
   label: string;
+  callbackUrl?: string;
 }
 
-export function GoogleSignInButton({ label }: GoogleSignInButtonProps) {
+export function GoogleSignInButton({ label, callbackUrl: customCallbackUrl }: GoogleSignInButtonProps) {
   const [loading, setLoading] = useState(false);
+  const searchParams = useSearchParams();
 
   const handleSignIn = async () => {
     setLoading(true);
     try {
-      const result = await clientSignInWithGoogle();
-      if (result.success && result.redirectTo) {
-        window.location.assign(result.redirectTo);
-        return;
-      }
+      const rawUrl = customCallbackUrl || searchParams.get("callbackUrl") || searchParams.get("redirect") || "/yui";
+      const targetUrl = rawUrl.startsWith("/") && !rawUrl.startsWith("//") ? rawUrl : "/yui";
 
-      throw new Error(result.error ?? "Google sign in failed");
+      await signIn("google", { callbackUrl: targetUrl });
     } catch (err) {
       console.error("[GOOGLE_SSO_ERROR] Google sign in failed:", err);
       window.location.href = `/login?error=google-error`;
@@ -29,6 +29,7 @@ export function GoogleSignInButton({ label }: GoogleSignInButtonProps) {
 
   return (
     <button
+      type="button"
       onClick={handleSignIn}
       disabled={loading}
       className="yohaku-btn-ghost w-full flex items-center justify-center gap-3 py-3"
@@ -44,3 +45,4 @@ export function GoogleSignInButton({ label }: GoogleSignInButtonProps) {
     </button>
   );
 }
+

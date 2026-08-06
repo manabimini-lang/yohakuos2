@@ -43,7 +43,8 @@ export function LoginForm({ isGoogleEnabled, turnstileSiteKey }: LoginFormProps)
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get("redirect") || "/yui";
+  const rawRedirectTo = searchParams.get("callbackUrl") || searchParams.get("redirect") || "/yui";
+  const redirectTo = rawRedirectTo.startsWith("/") && !rawRedirectTo.startsWith("//") ? rawRedirectTo : "/yui";
 
   const isTurnstileRequired = !!turnstileSiteKey;
 
@@ -191,7 +192,7 @@ export function LoginForm({ isGoogleEnabled, turnstileSiteKey }: LoginFormProps)
       {isGoogleEnabled && (
         <>
           <div className="mb-6">
-            <GoogleSignInButton label="Googleで続ける" />
+            <GoogleSignInButton label="Googleで続ける" callbackUrl={redirectTo} />
           </div>
 
           <div className="relative mb-6">

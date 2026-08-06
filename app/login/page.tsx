@@ -8,12 +8,14 @@ export const dynamic = "force-dynamic";
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: { error?: string; redirect?: string };
+  searchParams: { error?: string; redirect?: string; callbackUrl?: string };
 }) {
   // Redirect if already logged in
   const session = await auth();
   if (session?.user) {
-    redirect("/yui");
+    const rawTarget = searchParams.callbackUrl || searchParams.redirect || "/yui";
+    const target = rawTarget.startsWith("/") && !rawTarget.startsWith("//") ? rawTarget : "/yui";
+    redirect(target);
   }
 
   const errorMessage =
@@ -23,7 +25,7 @@ export default async function LoginPage({
       ? "メールアドレスとパスワードを入力してください。"
       : searchParams.error === "server-error"
       ? "サーバーエラーが発生しました。時間をおいてお試しください。"
-      : (searchParams.error === "OAuthSignin" || searchParams.error === "OAuthCallback" || searchParams.error === "google-error")
+      : (searchParams.error === "OAuthSignin" || searchParams.error === "OAuthCallback" || searchParams.error === "OAuthCreateAccount" || searchParams.error === "OAuthAccountNotLinked" || searchParams.error === "google-error")
       ? "Googleとの接続を完了できませんでした。少し時間を空けて、もう一度お試しください。"
       : searchParams.error
       ? "ログインに失敗しました。"
