@@ -106,7 +106,9 @@ export async function computeYuiContext(userId: string): Promise<YuiContextSumma
     );
 
     const goalCalendarEvents = calendarEvents.filter(
-      (ce) => ce.title.includes(goal.title) || ce.description.includes(goal.title),
+      (ce) =>
+        (ce.title && ce.title.includes(goal.title)) ||
+        (ce.description && ce.description.includes(goal.title)),
     );
 
     // If goal has recent decision but low recent activity -> priority score increases
