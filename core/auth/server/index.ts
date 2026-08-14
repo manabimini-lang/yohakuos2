@@ -27,6 +27,10 @@ import { authConfig } from "../config";
  *
  * Returns null if not authenticated.
  */
+const isDynamicError = (e: any) =>
+  e instanceof Error &&
+  (e.name === "DynamicServerError" || (e as any).digest === "DYNAMIC_SERVER_USAGE");
+
 export async function getCurrentSession(): Promise<AuthSession | null> {
   // 1. NextAuth Session Check (Primary authentication)
   try {
@@ -45,6 +49,7 @@ export async function getCurrentSession(): Promise<AuthSession | null> {
       };
     }
   } catch (e) {
+    if (isDynamicError(e)) throw e;
     console.error("[auth] Failed to check NextAuth session:", e);
   }
 
@@ -67,6 +72,7 @@ export async function getCurrentSession(): Promise<AuthSession | null> {
       };
     }
   } catch (e) {
+    if (isDynamicError(e)) throw e;
     console.error("[auth] Failed to check Supabase session:", e);
   }
 
