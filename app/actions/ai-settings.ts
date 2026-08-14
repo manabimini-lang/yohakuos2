@@ -106,10 +106,11 @@ export async function saveAISettings(data: AiSettingsInput) {
 
     revalidatePath("/member/settings");
     return { success: true };
-  } catch (error) {
-    console.log("[AI_SAVE_DB_ERROR_RAW]", error)
-    console.error(error)
-    console.log("[AI_SAVE_ERROR]", error);
-    throw error;
+  } catch (error: any) {
+    console.error("[AI_SAVE_ERROR]", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "設定の保存に失敗しました。しばらくしてからもう一度お試しください。",
+    };
   }
 }
