@@ -281,68 +281,68 @@ export function YuiHome({ displayName }: YuiHomeProps) {
 
   const [goalsState, setGoalsState] = useState<{ loaded: boolean; loading: boolean; error: string | null; data: any[] | null }>({ loaded: false, loading: false, error: null, data: null });
 
-  const fetchCalendar = async () => {
-    if (calendarState.loaded || calendarState.loading) return;
-    setCalendarState({ loaded: false, loading: true, error: null, data: null });
+  const fetchCalendar = async (force = false) => {
+    if (!force && (calendarState.loaded || calendarState.loading)) return;
+    setCalendarState((prev) => ({ ...prev, loaded: false, loading: true, error: null }));
     try {
       const res = await fetch("/api/yui/calendar-events");
       if (!res.ok) throw new Error(`status:${res.status}`);
       const payload = await res.json();
       setCalendarState({ loaded: true, loading: false, error: null, data: payload.calendarEvents ?? [] });
     } catch (e: any) {
-      setCalendarState({ loaded: false, loading: false, error: e?.message ?? "取得失敗", data: null });
+      setCalendarState((prev) => ({ ...prev, loaded: false, loading: false, error: e?.message ?? "取得失敗" }));
     }
   };
 
-  const fetchGmail = async () => {
-    if (gmailState.loaded || gmailState.loading) return;
-    setGmailState({ loaded: false, loading: true, error: null, data: null });
+  const fetchGmail = async (force = false) => {
+    if (!force && (gmailState.loaded || gmailState.loading)) return;
+    setGmailState((prev) => ({ ...prev, loaded: false, loading: true, error: null }));
     try {
       const res = await fetch("/api/yui/gmail/insights");
       if (!res.ok) throw new Error(`status:${res.status}`);
       const payload = await res.json();
       setGmailState({ loaded: true, loading: false, error: null, data: payload.insights ?? [] });
     } catch (e: any) {
-      setGmailState({ loaded: false, loading: false, error: e?.message ?? "取得失敗", data: null });
+      setGmailState((prev) => ({ ...prev, loaded: false, loading: false, error: e?.message ?? "取得失敗" }));
     }
   };
 
-  const fetchMemories = async () => {
-    if (memoryState.loaded || memoryState.loading) return;
-    setMemoryState({ loaded: false, loading: true, error: null, data: null });
+  const fetchMemories = async (force = false) => {
+    if (!force && (memoryState.loaded || memoryState.loading)) return;
+    setMemoryState((prev) => ({ ...prev, loaded: false, loading: true, error: null }));
     try {
       const res = await fetch("/api/yui/memories");
       if (!res.ok) throw new Error(`status:${res.status}`);
       const payload = await res.json();
       setMemoryState({ loaded: true, loading: false, error: null, data: payload.memories ?? [] });
     } catch (e: any) {
-      setMemoryState({ loaded: false, loading: false, error: e?.message ?? "取得失敗", data: null });
+      setMemoryState((prev) => ({ ...prev, loaded: false, loading: false, error: e?.message ?? "取得失敗" }));
     }
   };
 
-  const fetchInsights = async () => {
-    if (insightsState.loaded || insightsState.loading) return;
-    setInsightsState({ loaded: false, loading: true, error: null, data: null });
+  const fetchInsights = async (force = false) => {
+    if (!force && (insightsState.loaded || insightsState.loading)) return;
+    setInsightsState((prev) => ({ ...prev, loaded: false, loading: true, error: null }));
     try {
       const res = await fetch("/api/yui/thread-insights");
       if (!res.ok) throw new Error(`status:${res.status}`);
       const payload = await res.json();
       setInsightsState({ loaded: true, loading: false, error: null, data: payload.threads ?? [] });
     } catch (e: any) {
-      setInsightsState({ loaded: false, loading: false, error: e?.message ?? "取得失敗", data: null });
+      setInsightsState((prev) => ({ ...prev, loaded: false, loading: false, error: e?.message ?? "取得失敗" }));
     }
   };
 
-  const fetchGoals = async () => {
-    if (goalsState.loaded || goalsState.loading) return;
-    setGoalsState({ loaded: false, loading: true, error: null, data: null });
+  const fetchGoals = async (force = false) => {
+    if (!force && (goalsState.loaded || goalsState.loading)) return;
+    setGoalsState((prev) => ({ ...prev, loaded: false, loading: true, error: null }));
     try {
       const res = await fetch("/api/yui/goals");
       if (!res.ok) throw new Error(`status:${res.status}`);
       const payload = await res.json();
       setGoalsState({ loaded: true, loading: false, error: null, data: payload.goals ?? [] });
     } catch (e: any) {
-      setGoalsState({ loaded: false, loading: false, error: e?.message ?? "取得失敗", data: null });
+      setGoalsState((prev) => ({ ...prev, loaded: false, loading: false, error: e?.message ?? "取得失敗" }));
     }
   };
 
@@ -439,30 +439,8 @@ export function YuiHome({ displayName }: YuiHomeProps) {
           fetch("/api/yui/today"),
           fetch("/api/yui/morning-brief"),
           fetch("/api/yui/daily-context"),
-          fetch("/api/yui/memory-layer"),
-          fetch("/api/yui/thread-insights"),
-          fetch("/api/yui/progress"),
-          fetch("/api/yui/time-intelligence"),
-          fetch("/api/yui/planning"),
-          fetch("/api/yui/actions"),
-          fetch("/api/yui/weekly-review"),
-          fetch("/api/yui/context"),
-          fetch("/api/yui/profile"),
-          fetch("/api/yui/memories"),
-          fetch("/api/yui/conversations"),
-          fetch("/api/yui/decisions"),
-          fetch("/api/yui/goals"),
-          fetch("/api/yui/milestones"),
-          fetch("/api/yui/health"),
-          fetch("/api/yui/reflections"),
-          fetch("/api/yui/recommendations"),
-          fetch("/api/yui/time-blocks?limit=100"),
-          fetch("/api/yui/calendar-actions"),
-          fetch("/api/yui/reflections/latest"),
-          fetch("/api/yui/memory-candidates"),
-          fetch("/api/yui/notifications/status"),
-          fetch("/api/yui/gmail/insights"),
           fetch("/api/yui/unified-actions"),
+          fetch("/api/yui/health"),
         ].map(async (request) => {
           try {
             return await request;
@@ -476,59 +454,38 @@ export function YuiHome({ displayName }: YuiHomeProps) {
         todayRes,
         briefRes,
         dailyContextRes,
-        memoryLayerRes,
-        threadInsightsRes,
-        progressRes,
-        timeIntelligenceRes,
-        planningRes,
-        actionsRes,
-        weeklyReviewRes,
-        contextRes,
-        profileRes,
-        memoriesRes,
-        conversationsRes,
-        decisionsRes,
-        goalsRes,
-        milestonesRes,
-        healthRes,
-        reflectionsRes,
-        recommendationsRes,
-        timeBlocksRes,
-        calendarActionsRes,
-        reflectionRes,
-        candidatesRes,
-        deliveryStatusRes,
-        gmailInsightsRes,
         unifiedActionsRes,
+        healthRes,
       ] = responses;
 
+      const currentCache = readYuiHomeCache()?.snapshot;
       const nextSnapshot: YuiHomeSnapshot = {
-        today: null,
-        morningBrief: null,
-        dailyContext: null,
-        memoryLayer: null,
-        threadInsights: null,
-        threadProgress: null,
-        timeIntelligence: null,
-        planningSuggestions: null,
-        actions: [],
-        weeklyReview: null,
-        contextSummary: null,
-        profile: null,
-        memories: [],
-        memoryCandidates: [],
-        conversations: [],
-        decisions: [],
-        goals: [],
-        milestones: [],
-        reflections: [],
-        recommendations: [],
-        timeBlocks: [],
-        calendarActions: [],
-        latestReflection: null,
-        deliveryStatus: null,
-        gmailInsights: [],
-        unifiedActions: [],
+        today: currentCache?.today ?? null,
+        morningBrief: currentCache?.morningBrief ?? null,
+        dailyContext: currentCache?.dailyContext ?? null,
+        memoryLayer: currentCache?.memoryLayer ?? null,
+        threadInsights: currentCache?.threadInsights ?? null,
+        threadProgress: currentCache?.threadProgress ?? null,
+        timeIntelligence: currentCache?.timeIntelligence ?? null,
+        planningSuggestions: currentCache?.planningSuggestions ?? null,
+        actions: currentCache?.actions ?? [],
+        weeklyReview: currentCache?.weeklyReview ?? null,
+        contextSummary: currentCache?.contextSummary ?? null,
+        profile: currentCache?.profile ?? null,
+        memories: currentCache?.memories ?? [],
+        memoryCandidates: currentCache?.memoryCandidates ?? [],
+        conversations: currentCache?.conversations ?? [],
+        decisions: currentCache?.decisions ?? [],
+        goals: currentCache?.goals ?? [],
+        milestones: currentCache?.milestones ?? [],
+        reflections: currentCache?.reflections ?? [],
+        recommendations: currentCache?.recommendations ?? [],
+        timeBlocks: currentCache?.timeBlocks ?? [],
+        calendarActions: currentCache?.calendarActions ?? [],
+        latestReflection: currentCache?.latestReflection ?? null,
+        deliveryStatus: currentCache?.deliveryStatus ?? null,
+        gmailInsights: currentCache?.gmailInsights ?? [],
+        unifiedActions: currentCache?.unifiedActions ?? [],
       };
 
       if (todayRes?.ok) {
@@ -550,101 +507,11 @@ export function YuiHome({ displayName }: YuiHomeProps) {
         nextSnapshot.dailyContext = payload;
       }
 
-      if (memoryLayerRes?.ok) {
-        const payload = await memoryLayerRes.json();
-        nextSnapshot.memoryLayer = payload;
-      }
-
-      if (threadInsightsRes?.ok) {
-        const payload = await threadInsightsRes.json();
-        nextSnapshot.threadInsights = payload.threads ?? [];
-      }
-
-      if (progressRes?.ok) {
-        const payload = await progressRes.json();
-        nextSnapshot.threadProgress = payload.threads ?? [];
-      }
-
-      if (timeIntelligenceRes?.ok) {
-        const payload = await timeIntelligenceRes.json();
-        nextSnapshot.timeIntelligence = payload;
-      }
-
-      if (planningRes?.ok) {
-        const payload = await planningRes.json();
-        nextSnapshot.planningSuggestions = payload.suggestions ?? [];
-      }
-
-      if (actionsRes?.ok) {
-        const payload = await actionsRes.json();
-        nextSnapshot.actions = payload.suggestions ?? [];
+      if (unifiedActionsRes?.ok) {
+        const payload = await unifiedActionsRes.json();
+        nextSnapshot.unifiedActions = payload.actions ?? [];
       } else {
-        nextSnapshot.actions = [];
-        setSectionErrors((current) => ({ ...current, priorities: "優先事項の取得に失敗しました" }));
-      }
-
-      if (weeklyReviewRes?.ok) {
-        const payload = await weeklyReviewRes.json();
-        nextSnapshot.weeklyReview = payload.review ?? null;
-      }
-
-      if (contextRes?.ok) {
-        const payload = await contextRes.json();
-        nextSnapshot.contextSummary = payload;
-      }
-
-      if (profileRes?.ok) {
-        const payload = await profileRes.json();
-        const profileData = payload.profile ?? null;
-        nextSnapshot.profile = profileData;
-        if (profileData) {
-          setProfileForm({
-            display_name: profileData.display_name ?? "",
-            assistant_name: profileData.assistant_name ?? profileData.display_name ?? "YUI",
-            tone: profileData.tone ?? "",
-            life_theme: profileData.life_theme ?? "",
-            focus_area: profileData.focus_area ?? "",
-            notification_strength: String(profileData.notification_settings?.notification_strength ?? "normal"),
-            summary_frequency: String(profileData.notification_settings?.summary_frequency ?? "daily"),
-            timezone: String(profileData.preferences?.timezone ?? "Asia/Tokyo"),
-          });
-        }
-      } else if (displayName) {
-        setProfileForm((current) => ({
-          ...current,
-          display_name: displayName,
-          assistant_name: current.assistant_name || displayName,
-        }));
-      }
-
-      if (memoriesRes?.ok) {
-        const payload = await memoriesRes.json();
-        nextSnapshot.memories = payload.memories ?? [];
-      }
-
-      if (conversationsRes?.ok) {
-        const payload = await conversationsRes.json();
-        nextSnapshot.conversations = payload.conversations ?? [];
-      }
-
-      if (decisionsRes?.ok) {
-        const payload = await decisionsRes.json();
-        nextSnapshot.decisions = payload.decisions ?? [];
-      }
-
-      if (goalsRes?.ok) {
-        const payload = await goalsRes.json();
-        const goalsData = payload.goals ?? [];
-        nextSnapshot.goals = goalsData;
-        setMilestoneForm((current) => ({
-          ...current,
-          goal_id: current.goal_id || goalsData[0]?.id || "",
-        }));
-      }
-
-      if (milestonesRes?.ok) {
-        const payload = await milestonesRes.json();
-        nextSnapshot.milestones = payload.milestones ?? [];
+        setSectionErrors((current) => ({ ...current, unifiedActions: "Unified Actionsの取得に失敗しました" }));
       }
 
       if (healthRes?.ok) {
@@ -652,55 +519,6 @@ export function YuiHome({ displayName }: YuiHomeProps) {
         setGoogleHealth(payload.google ?? null);
       } else {
         setGoogleHealth(null);
-      }
-
-      if (reflectionsRes?.ok) {
-        const payload = await reflectionsRes.json();
-        nextSnapshot.reflections = payload.reflections ?? [];
-      }
-
-      if (recommendationsRes?.ok) {
-        const payload = await recommendationsRes.json();
-        nextSnapshot.recommendations = payload.recommendations ?? [];
-      }
-
-      if (timeBlocksRes?.ok) {
-        const payload = await timeBlocksRes.json();
-        nextSnapshot.timeBlocks = payload.timeBlocks ?? [];
-      }
-
-      if (calendarActionsRes?.ok) {
-        const payload = await calendarActionsRes.json();
-        nextSnapshot.calendarActions = payload.calendarActions ?? [];
-      }
-
-      if (reflectionRes?.ok) {
-        const payload = await reflectionRes.json();
-        nextSnapshot.latestReflection = payload.reflection ?? null;
-      }
-
-      if (candidatesRes?.ok) {
-        const payload = await candidatesRes.json();
-        nextSnapshot.memoryCandidates = payload.memoryCandidates ?? [];
-      }
-
-      if (deliveryStatusRes?.ok) {
-        const payload = await deliveryStatusRes.json();
-        nextSnapshot.deliveryStatus = payload;
-      }
-
-      if (gmailInsightsRes?.ok) {
-        const payload = await gmailInsightsRes.json();
-        nextSnapshot.gmailInsights = payload.insights ?? [];
-      } else {
-        setSectionErrors((current) => ({ ...current, gmail: "Gmailの取得に失敗しました" }));
-      }
-
-      if (unifiedActionsRes?.ok) {
-        const payload = await unifiedActionsRes.json();
-        nextSnapshot.unifiedActions = payload.actions ?? [];
-      } else {
-        setSectionErrors((current) => ({ ...current, unifiedActions: "Unified Actionsの取得に失敗しました" }));
       }
 
       applySnapshot(nextSnapshot);
@@ -1622,51 +1440,16 @@ export function YuiHome({ displayName }: YuiHomeProps) {
                 {gmailState.loading ? (
                   <YuiCardSkeleton lines={3} />
                 ) : gmailState.error ? (
-                  <p className="text-sm text-muted-foreground">Gmailの取得に失敗しました。接続を確認してください。</p>
-                ) : gmailState.loaded && gmailState.data && gmailState.data.length > 0 ? (
-                  gmailState.data.slice(0, 5).map((insight: any) => (
-                    <div key={insight.id} className="rounded-2xl border border-border bg-card p-4">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-semibold uppercase text-primary">
-                          {insight.reason === "unread_3_days" && "未返信3日以上"}
-                          {insight.reason === "important" && "重要"}
-                          {insight.reason === "meeting" && "会議依頼"}
-                          {insight.reason === "deadline" && "期限付き依頼"}
-                        </span>
-                        <span className="text-xs text-muted-foreground">{new Date(insight.receivedAt).toLocaleDateString()}</span>
-                      </div>
-                      <h3 className="mt-2 text-sm font-semibold">{insight.subject}</h3>
-                      <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{insight.snippet}</p>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-sm text-muted-foreground">特筆すべきメールはありません。</p>
-                )}
-              </div>
-            </InfoAccordion>
-
-
-            <InfoAccordion
-              title={
-                gmailState.loaded
-                  ? `Gmail (${gmailState.data?.length ?? 0})`
-                  : gmailState.loading
-                    ? "Gmail (...)"
-                    : gmailState.error
-                      ? "Gmail (Offline)"
-                      : "Gmail"
-              }
-              onOpen={fetchGmail}
-            >
-              <div className="space-y-2">
-                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Gmail Intelligence</p>
-                <h2 className="text-xl font-semibold">今日気になるメール</h2>
-              </div>
-              <div className="space-y-4">
-                {gmailState.loading ? (
-                  <YuiCardSkeleton lines={3} />
-                ) : gmailState.error ? (
-                  <p className="text-sm text-muted-foreground">Gmailの取得に失敗しました。接続を確認してください。</p>
+                  <div className="space-y-2">
+                    <p className="text-sm text-muted-foreground">Gmailの取得に失敗しました。接続を確認してください。</p>
+                    <button
+                      type="button"
+                      onClick={() => void fetchGmail(true)}
+                      className="text-xs font-semibold text-primary underline hover:text-primary/80 transition"
+                    >
+                      もう一度試す
+                    </button>
+                  </div>
                 ) : gmailState.loaded && gmailState.data && gmailState.data.length > 0 ? (
                   gmailState.data.slice(0, 5).map((insight: any) => (
                     <div key={insight.id} className="rounded-2xl border border-border bg-card p-4">
@@ -1704,7 +1487,16 @@ export function YuiHome({ displayName }: YuiHomeProps) {
               {memoryState.loading ? (
                 <YuiCardSkeleton lines={3} />
               ) : memoryState.error ? (
-                <p className="text-sm text-muted-foreground">メモリの取得に失敗しました。オフラインの可能性があります。</p>
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">メモリの取得に失敗しました。オフラインの可能性があります。</p>
+                  <button
+                    type="button"
+                    onClick={() => void fetchMemories(true)}
+                    className="text-xs font-semibold text-primary underline hover:text-primary/80 transition"
+                  >
+                    もう一度試す
+                  </button>
+                </div>
               ) : memoryState.loaded && memoryState.data && memoryState.data.length > 0 ? (
                 <div className="space-y-2">
                   {memoryState.data.slice(0, 5).map((memory: any) => (
@@ -1734,7 +1526,16 @@ export function YuiHome({ displayName }: YuiHomeProps) {
               {insightsState.loading ? (
                 <YuiCardSkeleton lines={3} />
               ) : insightsState.error ? (
-                <p className="text-sm text-muted-foreground">インサイトの取得に失敗しました。オフラインの可能性があります。</p>
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">インサイトの取得に失敗しました。オフラインの可能性があります。</p>
+                  <button
+                    type="button"
+                    onClick={() => void fetchInsights(true)}
+                    className="text-xs font-semibold text-primary underline hover:text-primary/80 transition"
+                  >
+                    もう一度試す
+                  </button>
+                </div>
               ) : insightsState.loaded && insightsState.data && insightsState.data.length > 0 ? (
                 <div className="space-y-2">
                   {insightsState.data.slice(0, 5).map((insight: any) => (
@@ -1765,7 +1566,16 @@ export function YuiHome({ displayName }: YuiHomeProps) {
                 {goalsState.loading ? (
                   <YuiCardSkeleton lines={3} />
                 ) : goalsState.error ? (
-                  <p className="text-sm text-muted-foreground">Goals の取得に失敗しました。</p>
+                  <div className="space-y-2">
+                    <p className="text-sm text-muted-foreground">Goals の取得に失敗しました。</p>
+                    <button
+                      type="button"
+                      onClick={() => void fetchGoals(true)}
+                      className="text-xs font-semibold text-primary underline hover:text-primary/80 transition"
+                    >
+                      もう一度試す
+                    </button>
+                  </div>
                 ) : goalsState.loaded && goalsState.data && goalsState.data.length > 0 ? (
                   <div className="space-y-2">
                     {goalsState.data.slice(0, 5).map((goal: any) => (

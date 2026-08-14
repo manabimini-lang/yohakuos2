@@ -102,6 +102,7 @@ export async function getConnectionHealth(userId: string): Promise<ConnectionHea
   }
 
   if (!refreshToken) {
+    console.warn("[Connection Health Diagnostics] Google refresh token is missing for user", userId);
     return {
       google: buildHealthResponse({
         status: "needs_reauth",
@@ -110,7 +111,7 @@ export async function getConnectionHealth(userId: string): Promise<ConnectionHea
         scopes,
         tokenValid: false,
         lastSyncAt,
-        lastError: "Google refresh token is missing. Please reconnect.",
+        lastError: "Googleとの接続が切れている可能性があります。再接続してください。",
       }),
     };
   }
@@ -122,44 +123,42 @@ export async function getConnectionHealth(userId: string): Promise<ConnectionHea
 
   try {
     if (!accessToken || Date.now() >= tokenExpiresAt - 60_000) {
-    const clientId = process.env.GOOGLE_CLIENT_ID || "";
-    const clientSecret = process.env.GOOGLE_CLIENT_SECRET || "";
+      const clientId = process.env.GOOGLE_CLIENT_ID || "";
+      const clientSecret = process.env.GOOGLE_CLIENT_SECRET || "";
 
-    const refreshResponse = await fetch("https://oauth2.googleapis.com/token", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({
-        client_id: clientId,
-        client_secret: clientSecret,
-        refresh_token: refreshToken,
-        grant_type: "refresh_token",
-      }),
-    });
+      const refreshResponse = await fetch("https://oauth2.googleapis.com/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          client_id: clientId,
+          client_secret: clientSecret,
+          refresh_token: refreshToken,
+          grant_type: "refresh_token",
+        }),
+      });
 
-    if (!refreshResponse.ok) {
-      // Map HTTP status codes and response to health statuses
-      const statusCode = refreshResponse.status;
-      const errText = await refreshResponse.text();
+      if (!refreshResponse.ok) {
+        const statusCode = refreshResponse.status;
+        const errText = await refreshResponse.text();
+        console.error("[Connection Health Diagnostics] Token refresh failed:", { statusCode, errText });
 
-      // 401 -> needs_reauth
-      if (statusCode === 401 || errText.includes("invalid_grant") || errText.includes("unauthorized")) {
-        lastError = "Google refresh token is invalid. Please reconnect.";
-        status = "needs_reauth";
-      } else if (statusCode >= 500) {
-        // Server errors or network issues -> maintenance
-        lastError = `Google token refresh service unavailable: ${errText}`;
-        status = "maintenance";
+        if (statusCode === 401 || errText.includes("invalid_grant") || errText.includes("unauthorized")) {
+          lastError = "Googleとの接続を更新できませんでした。もう一度接続してください。";
+          status = "needs_reauth";
+        } else if (statusCode >= 500) {
+          lastError = "Googleサービスが一時的に利用できません。しばらく時間をおいてお試しください。";
+          status = "maintenance";
+        } else {
+          lastError = "Googleサービスとの同期に失敗しました。再接続をお試しください。";
+          status = "error";
+        }
       } else {
-        lastError = `Google token refresh failed: ${errText}`;
-        status = "error";
-      }
-    } else {
-      const refreshData = await refreshResponse.json();
-      const refreshedAccessToken = typeof refreshData.access_token === "string" ? refreshData.access_token : "";
-      const expiresIn = (refreshData.expires_in as number) || 3600;
+        const refreshData = await refreshResponse.json();
+        const refreshedAccessToken = typeof refreshData.access_token === "string" ? refreshData.access_token : "";
+        const expiresIn = (refreshData.expires_in as number) || 3600;
         if (!refreshedAccessToken) {
           status = "needs_reauth";
-          lastError = "No valid Google access token available";
+          lastError = "Googleとの接続を更新できませんでした。もう一度接続してください。";
         } else {
           const updatedMetadata = {
             ...(metadata as Record<string, unknown>),
@@ -168,7 +167,6 @@ export async function getConnectionHealth(userId: string): Promise<ConnectionHea
             lastError: null,
           } as GoogleConnectionMetadata;
 
-          // attempt to persist refreshed token; if supabase is unavailable, treat as maintenance
           try {
             await supabaseAdmin
               .from("connections")
@@ -181,7 +179,8 @@ export async function getConnectionHealth(userId: string): Promise<ConnectionHea
             status = "connected";
             tokenValid = true;
           } catch (e) {
-            lastError = `Supabase update failed: ${e instanceof Error ? e.message : String(e)}`;
+            console.error("[Connection Health Diagnostics] Supabase update failed:", e);
+            lastError = "データの更新に失敗しました。しばらくしてからもう一度お試しください。";
             status = "maintenance";
           }
         }
@@ -193,12 +192,12 @@ export async function getConnectionHealth(userId: string): Promise<ConnectionHea
 
     if (status === "connected" && !tokenValid && !accessToken) {
       status = "needs_reauth";
-      lastError = lastError ?? "No valid Google access token available";
+      lastError = lastError ?? "Googleとの接続を更新できませんでした。もう一度接続してください。";
     }
   } catch (e) {
-    // network or unexpected error -> maintenance
+    console.error("[Connection Health Diagnostics] Exception during health check:", e);
     status = "maintenance";
-    lastError = e instanceof Error ? e.message : String(e);
+    lastError = "サービスの接続状態を確認できませんでした。";
   }
 
   const calendarConnected = scopes.includes("https://www.googleapis.com/auth/calendar.readonly");
@@ -206,7 +205,7 @@ export async function getConnectionHealth(userId: string): Promise<ConnectionHea
 
   if (status === "connected" && (!calendarConnected || !gmailConnected)) {
     status = "needs_reauth";
-    lastError = lastError ?? "Google Calendar/Gmail scope is missing. Please reconnect.";
+    lastError = lastError ?? "Google Calendar/Gmailの連携権限が不足しています。再接続してください。";
   }
 
   return {
