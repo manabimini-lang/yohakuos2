@@ -1,0 +1,9 @@
+// Fresh-environment migration entry point.
+// Run `npx prisma migrate deploy` from this directory.
+// The application client continues to be generated from ../schema.prisma.
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
