@@ -20,7 +20,7 @@ export function normalizeNotificationCopy(message: string, type: "morning" | "ev
 
   if (type === "morning") {
     normalized = normalized.replace(/^(?:おはようございます|こんにちは|こんばんは)[。！!、,\s]*/, "");
-    normalized = normalized.replace(/([「『\"])[\s]*(?:こんにちは|こんばんは)[。！!、,\s]*/g, "$1");
+    normalized = normalized.replace(/([「『\"])[\s]*(?:おはようございます|こんにちは|こんばんは)[。！!、,\s]*/g, "$1");
     normalized = `おはようございます。\n\n${normalized}`;
   }
 

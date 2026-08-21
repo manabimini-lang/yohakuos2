@@ -21,6 +21,13 @@ test("morning notification removes a nested evening greeting from the brief", ()
   );
 });
 
+test("morning notification avoids a duplicate nested morning greeting", () => {
+  assert.equal(
+    normalizeNotificationCopy("おはようございます。\n\n今日は「おはようございます。今日は予定があります。」を優先しましょう。", "morning"),
+    "おはようございます。\n\n今日は「今日は予定があります。」を優先しましょう。",
+  );
+});
+
 test("brief greeting uses Japan time instead of the server timezone", () => {
   assert.equal(getYuiGreeting(new Date("2026-08-21T01:00:00.000Z")), "おはようございます");
 });
