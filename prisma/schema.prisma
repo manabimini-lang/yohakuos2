@@ -225,6 +225,23 @@ model User {
   calendarEvents     CalendarEvent[]
   gmailMessages      GmailMessage[]
 
+  yuiProfile              YuiProfile?
+  yuiMemories             YuiMemory[]
+  yuiConversations        YuiConversation[]
+  yuiReflections          YuiReflection[]
+  yuiMemoryCandidates     YuiMemoryCandidate[]
+  yuiDecisions            YuiDecision[]
+  yuiDailyBriefs          YuiDailyBrief[]
+  yuiEvents               YuiEvent[]
+  yuiGoals                YuiGoal[]
+  yuiSuggestedTimeBlocks  YuiSuggestedTimeBlock[]
+  yuiCalendarActions      YuiCalendarAction[]
+  yuiRecommendations      YuiRecommendation[]
+  yuiMilestones           YuiMilestone[]
+  yuiNotificationSetting  YuiNotificationSetting?
+  yuiNotificationLogs     YuiNotificationLog[]
+  yuiMemoryProfiles       YuiMemoryProfile[]
+
   @@map("users")
 }
 
@@ -1680,4 +1697,295 @@ model GmailMessage {
   @@index([receivedAt])
   @@index([threadId])
   @@map("gmail_messages")
+}
+
+// YUI private-beta tables are owned by the NextAuth/Prisma User CUID.
+// Access is server-only through the Supabase service role and always scoped by userId.
+model YuiProfile {
+  id                     String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId                 String   @unique @map("user_id")
+  displayName            String?  @map("display_name")
+  assistantName          String?  @map("assistant_name")
+  tone                   String?
+  lifeTheme              String?  @map("life_theme")
+  focusArea              String?  @map("focus_area")
+  hasCompletedOnboarding Boolean  @default(false) @map("has_completed_onboarding")
+  preferences            Json     @default("{}") @db.JsonB
+  notificationSettings   Json     @default("{}") @map("notification_settings") @db.JsonB
+  createdAt              DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt              DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("yui_profiles")
+}
+
+model YuiMemory {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String   @map("user_id")
+  title      String
+  summary    String
+  body       String
+  importance Int      @default(0)
+  tags       String[] @default([])
+  sourceType String   @default("manual") @map("source_type")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("memories")
+}
+
+model YuiConversation {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @map("user_id")
+  role      String
+  content   String
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user             User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  memoryCandidates YuiMemoryCandidate[]
+
+  @@index([userId, createdAt])
+  @@map("conversations")
+}
+
+model YuiReflection {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String   @map("user_id")
+  summary     String
+  insights    String[] @default([])
+  nextActions String[] @default([]) @map("next_actions")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("yui_reflections")
+}
+
+model YuiMemoryCandidate {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId         String   @map("user_id")
+  conversationId String   @map("conversation_id") @db.Uuid
+  title          String
+  summary        String
+  reason         String
+  importance     Int      @default(0)
+  status         String   @default("pending")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversation YuiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status, createdAt])
+  @@index([conversationId])
+  @@map("memory_candidates")
+}
+
+model YuiDecision {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String   @map("user_id")
+  question   String
+  context    String
+  decision   String
+  rationale  String
+  confidence Int      @default(50)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("decisions")
+}
+
+model YuiDailyBrief {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId       String   @map("user_id")
+  brief        Json     @default("{}") @db.JsonB
+  priorityJson Json     @default("[]") @map("priority_json") @db.JsonB
+  contextHash  String   @map("context_hash")
+  generatedAt  DateTime @default(now()) @map("generated_at") @db.Timestamptz(6)
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, contextHash])
+  @@index([userId, generatedAt])
+  @@index([contextHash])
+  @@map("yui_daily_briefs")
+}
+
+model YuiEvent {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String   @map("user_id")
+  eventType  String   @map("event_type")
+  source     String
+  title      String
+  content    String   @default("")
+  metadata   Json     @default("{}") @db.JsonB
+  occurredAt DateTime @default(now()) @map("occurred_at") @db.Timestamptz(6)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, occurredAt])
+  @@index([userId, createdAt])
+  @@index([eventType])
+  @@map("events")
+}
+
+model YuiGoal {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String   @map("user_id")
+  title       String
+  description String
+  status      String   @default("active")
+  progress    Int      @default(0)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user                User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  suggestedTimeBlocks YuiSuggestedTimeBlock[]
+  recommendations     YuiRecommendation[]
+  milestones          YuiMilestone[]
+
+  @@index([userId, createdAt])
+  @@index([userId, status])
+  @@map("goals")
+}
+
+model YuiSuggestedTimeBlock {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @map("user_id")
+  goalId    String?  @map("goal_id") @db.Uuid
+  title     String
+  reason    String
+  startAt   DateTime @map("start_at") @db.Timestamptz(6)
+  endAt     DateTime @map("end_at") @db.Timestamptz(6)
+  source    String   @default("yui_analysis")
+  status    String   @default("pending")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user           User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  goal           YuiGoal?           @relation(fields: [goalId], references: [id], onDelete: SetNull)
+  calendarAction YuiCalendarAction?
+
+  @@index([userId, startAt])
+  @@index([goalId])
+  @@index([userId, status])
+  @@map("suggested_time_blocks")
+}
+
+model YuiCalendarAction {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId          String    @map("user_id")
+  timeBlockId     String    @unique @map("time_block_id") @db.Uuid
+  provider        String    @default("manual")
+  title           String
+  startAt         DateTime  @map("start_at") @db.Timestamptz(6)
+  endAt           DateTime  @map("end_at") @db.Timestamptz(6)
+  status          String    @default("pending")
+  externalEventId String?   @map("external_event_id")
+  scheduledAt     DateTime? @map("scheduled_at") @db.Timestamptz(6)
+  reason          String?
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user      User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  timeBlock YuiSuggestedTimeBlock @relation(fields: [timeBlockId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([userId, createdAt])
+  @@map("calendar_actions")
+}
+
+model YuiRecommendation {
+  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId             String   @map("user_id")
+  type               String
+  title              String
+  content            String   @default("")
+  reason             String
+  score              Int      @default(0)
+  relatedGoalId      String?  @map("related_goal_id") @db.Uuid
+  relatedDecisionIds Json     @default("[]") @map("related_decision_ids") @db.JsonB
+  relatedMemoryIds   Json     @default("[]") @map("related_memory_ids") @db.JsonB
+  status             String   @default("pending")
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  relatedGoal YuiGoal? @relation(fields: [relatedGoalId], references: [id], onDelete: SetNull)
+
+  @@index([userId, status, createdAt])
+  @@index([userId, type, createdAt])
+  @@index([relatedGoalId])
+  @@map("yui_recommendations")
+}
+
+model YuiMilestone {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @map("user_id")
+  goalId    String   @map("goal_id") @db.Uuid
+  title     String
+  status    String   @default("pending")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  goal YuiGoal @relation(fields: [goalId], references: [id], onDelete: Cascade)
+
+  @@index([userId, goalId, createdAt])
+  @@index([goalId])
+  @@map("milestones")
+}
+
+model YuiNotificationSetting {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId         String   @unique @map("user_id")
+  enabled        Boolean  @default(true)
+  morningEnabled Boolean  @default(true) @map("morning_enabled")
+  morningTime    String   @default("07:00") @map("morning_time")
+  eveningEnabled Boolean  @default(false) @map("evening_enabled")
+  eveningTime    String   @default("20:00") @map("evening_time")
+  timezone       String   @default("Asia/Tokyo")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("yui_notification_settings")
+}
+
+model YuiNotificationLog {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String   @map("user_id")
+  type        String
+  title       String
+  body        String
+  deliveredAt DateTime @default(now()) @map("delivered_at") @db.Timestamptz(6)
+  provider    String   @default("mock")
+  status      String   @default("delivered")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, deliveredAt])
+  @@map("yui_notification_logs")
+}
+
+model YuiMemoryProfile {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId         String   @map("user_id")
+  memoryKey      String   @map("memory_key")
+  memoryValue    String   @map("memory_value")
+  confidence     Decimal  @default(1.0)
+  lastObservedAt DateTime @default(now()) @map("last_observed_at") @db.Timestamptz(6)
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, memoryKey])
+  @@index([userId, updatedAt])
+  @@map("yui_memory_profiles")
 }

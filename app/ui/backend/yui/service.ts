@@ -1881,7 +1881,7 @@ export async function createYuiMemoryCandidate(
 
 export async function getLatestYuiReflection(userId: string): Promise<YuiReflection | null> {
   const { data, error } = await supabaseAdmin
-    .from("reflections")
+    .from("yui_reflections")
     .select("*")
     .eq("user_id", userId)
     .order("created_at", { ascending: false })
@@ -1897,7 +1897,7 @@ export async function getLatestYuiReflection(userId: string): Promise<YuiReflect
 
 export async function listYuiReflections(userId: string, limit = 20): Promise<YuiReflection[]> {
   const { data, error } = await supabaseAdmin
-    .from("reflections")
+    .from("yui_reflections")
     .select("*")
     .eq("user_id", userId)
     .order("created_at", { ascending: false })
@@ -2264,7 +2264,7 @@ export async function createYuiReflection(
   await ensureYuiProfile(user);
 
   const { data, error } = await supabaseAdmin
-    .from("reflections")
+    .from("yui_reflections")
     .insert({
       user_id: user.id,
       summary: input.summary.trim(),

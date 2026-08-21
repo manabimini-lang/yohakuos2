@@ -1,6 +1,8 @@
 -- ==============================================================================
 -- YOHAKU YUI Layer - Supabase / Postgres Schema
 -- ==============================================================================
+-- LEGACY REFERENCE ONLY: do not execute this monolith against Production.
+-- Versioned Prisma migrations are the executable schema source of truth.
 -- Sprint 1: YUI Personal OS prototype foundation
 -- - Existing YOHAKU admin / pipeline tables stay untouched
 -- - YUI data is stored separately and is ready for RLS-based access
@@ -164,7 +166,7 @@ CREATE POLICY "conversations_delete_own"
   USING (auth.uid()::text = user_id);
 
 -- 4. Reflections
-CREATE TABLE IF NOT EXISTS public.reflections (
+CREATE TABLE IF NOT EXISTS public.yui_reflections (
   id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id      TEXT NOT NULL,
   summary      TEXT NOT NULL,
@@ -173,33 +175,33 @@ CREATE TABLE IF NOT EXISTS public.reflections (
   created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX IF NOT EXISTS idx_reflections_user_id_created_at
-  ON public.reflections (user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_yui_reflections_user_id_created_at
+  ON public.yui_reflections (user_id, created_at DESC);
 
-ALTER TABLE public.reflections ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.yui_reflections ENABLE ROW LEVEL SECURITY;
 
-DROP POLICY IF EXISTS "reflections_select_own" ON public.reflections;
-CREATE POLICY "reflections_select_own"
-  ON public.reflections
+DROP POLICY IF EXISTS "yui_reflections_select_own" ON public.yui_reflections;
+CREATE POLICY "yui_reflections_select_own"
+  ON public.yui_reflections
   FOR SELECT
   USING (auth.uid()::text = user_id);
 
-DROP POLICY IF EXISTS "reflections_insert_own" ON public.reflections;
-CREATE POLICY "reflections_insert_own"
-  ON public.reflections
+DROP POLICY IF EXISTS "yui_reflections_insert_own" ON public.yui_reflections;
+CREATE POLICY "yui_reflections_insert_own"
+  ON public.yui_reflections
   FOR INSERT
   WITH CHECK (auth.uid()::text = user_id);
 
-DROP POLICY IF EXISTS "reflections_update_own" ON public.reflections;
-CREATE POLICY "reflections_update_own"
-  ON public.reflections
+DROP POLICY IF EXISTS "yui_reflections_update_own" ON public.yui_reflections;
+CREATE POLICY "yui_reflections_update_own"
+  ON public.yui_reflections
   FOR UPDATE
   USING (auth.uid()::text = user_id)
   WITH CHECK (auth.uid()::text = user_id);
 
-DROP POLICY IF EXISTS "reflections_delete_own" ON public.reflections;
-CREATE POLICY "reflections_delete_own"
-  ON public.reflections
+DROP POLICY IF EXISTS "yui_reflections_delete_own" ON public.yui_reflections;
+CREATE POLICY "yui_reflections_delete_own"
+  ON public.yui_reflections
   FOR DELETE
   USING (auth.uid()::text = user_id);
 
@@ -946,5 +948,3 @@ CREATE TABLE IF NOT EXISTS public.yui_memory_profiles (
 
 CREATE INDEX IF NOT EXISTS idx_yui_memory_profiles_user_id
   ON public.yui_memory_profiles (user_id);
-
-
