@@ -2,6 +2,7 @@ import { getMorningBrief } from "./brief_service";
 import { listYuiGoals, listYuiEvents, listYuiReflections } from "./service";
 import { refineNotificationWithAI } from "./ai_integration_service";
 import type { YuiNotificationPreview } from "./models";
+import { normalizeNotificationCopy } from "./notification_copy";
 
 export async function generateNotificationPreviews(userId: string): Promise<{
   morning: YuiNotificationPreview;
@@ -25,7 +26,7 @@ export async function generateNotificationPreviews(userId: string): Promise<{
 
   // Generate Morning Notification Message (Inherits AI refined message if present)
   const morningTitle = "今日の優先事項";
-  let morningMessage = `${morningBrief.greeting}。\n\n`;
+  let morningMessage = "おはようございます。\n\n";
   if (morningBrief.yesterdaySummary) {
     morningMessage += `${morningBrief.yesterdaySummary}\n\n`;
   }
@@ -79,7 +80,13 @@ export async function generateNotificationPreviews(userId: string): Promise<{
   ]);
 
   return {
-    morning: refinedMorning,
-    evening: refinedEvening,
+    morning: {
+      ...refinedMorning,
+      message: normalizeNotificationCopy(refinedMorning.message, "morning"),
+    },
+    evening: {
+      ...refinedEvening,
+      message: normalizeNotificationCopy(refinedEvening.message, "evening"),
+    },
   };
 }
