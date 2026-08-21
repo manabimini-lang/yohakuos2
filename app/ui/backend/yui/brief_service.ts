@@ -9,6 +9,7 @@ import { refineBriefWithAI } from "./ai_integration_service";
 import { getGmailInsights } from "./gmail_service";
 import { getUnifiedActions } from "./unified_action_service";
 import { buildPriorityContext, type YuiPriorityItem } from "./priority_engine";
+import { getYuiGreeting } from "./notification_copy";
 
 const supabaseAdmin = new Proxy({} as SupabaseClient, {
   get(_, prop: keyof SupabaseClient) {
@@ -32,17 +33,6 @@ export type YuiMorningBrief = {
   priorityItems?: YuiPriorityItem[];
   nextBestActions?: YuiPriorityItem[];
 };
-
-function getGreeting(date = new Date()): string {
-  const hour = date.getHours();
-  if (hour >= 5 && hour < 12) {
-    return "おはようございます";
-  }
-  if (hour >= 12 && hour < 18) {
-    return "こんにちは";
-  }
-  return "こんばんは";
-}
 
 function stableJson(value: unknown): string {
   return JSON.stringify(value, (_, item) => {
@@ -124,7 +114,7 @@ export async function getMorningBrief(userId: string): Promise<YuiMorningBrief> 
     listYuiConversations(userId, 20),
   ]);
 
-  const greeting = getGreeting(now);
+  const greeting = getYuiGreeting(now);
   const unreadEmailCount = gmailInsights.length;
   const actionCount = unifiedActions.length;
   const contextHash = buildContextHash({
