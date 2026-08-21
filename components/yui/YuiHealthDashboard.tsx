@@ -187,7 +187,7 @@ export function YuiHealthDashboard() {
     void checkHealth();
   }, []);
 
-  const renderBadge = (status: HealthStatus) => {
+  const renderBadge = (status: HealthStatus, area: "google" | "ai" | "notifications") => {
     switch (status) {
       case "connected":
         return (
@@ -200,7 +200,7 @@ export function YuiHealthDashboard() {
         return (
           <span className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2.5 py-0.5 text-xs font-semibold text-destructive border border-destructive/20">
             <AlertCircle className="h-3.5 w-3.5" />
-            Google Sync Error
+            {area === "google" ? "Google Sync Error" : area === "ai" ? "AI Connection Error" : "Notification Error"}
           </span>
         );
       case "needs_reauth":
@@ -265,7 +265,7 @@ export function YuiHealthDashboard() {
               Google Calendar
             </span>
             <div className="flex items-center gap-2">
-              {renderBadge(health.googleCalendar.status)}
+              {renderBadge(health.googleCalendar.status, "google")}
             </div>
           </div>
           <p className="text-xs font-medium text-foreground truncate">
@@ -285,7 +285,7 @@ export function YuiHealthDashboard() {
               <Sparkles className="h-3.5 w-3.5 text-primary" />
               AI Integration
             </span>
-            {renderBadge(health.aiIntegration.status)}
+            {renderBadge(health.aiIntegration.status, "ai")}
           </div>
           <p className="text-xs font-semibold text-foreground truncate">
             モード: {health.aiIntegration.mode}
@@ -307,7 +307,7 @@ export function YuiHealthDashboard() {
               <Bell className="h-3.5 w-3.5 text-primary" />
               Notifications
             </span>
-            {renderBadge(health.notifications.status)}
+            {renderBadge(health.notifications.status, "notifications")}
           </div>
           <p className="text-xs font-medium text-foreground truncate">
             {health.notifications.detail}

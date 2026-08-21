@@ -16,7 +16,7 @@ import {
   type GoogleTokenMetadata,
 } from "./google_token_vault";
 
-export type GoogleCalendarConnectionState = "connected" | "needs_reauth" | "sync_error" | "syncing";
+export type GoogleCalendarConnectionState = "connected" | "disconnected" | "needs_reauth" | "sync_error" | "syncing";
 
 export type GoogleCalendarStatus = {
   connected: boolean;
@@ -90,7 +90,7 @@ function buildGoogleConnectionStatus(
 ): GoogleCalendarStatus {
   return {
     connected: input.connected ?? false,
-    status: input.status ?? "needs_reauth",
+    status: input.status ?? "disconnected",
     account: input.account ?? "",
     lastSyncAt: input.lastSyncAt ?? null,
     message: input.message ?? "Google Calendar status unavailable",
@@ -108,7 +108,7 @@ export async function getGoogleCalendarStatus(userId: string): Promise<GoogleCal
   if (!connection) {
     return buildGoogleConnectionStatus({
       connected: false,
-      status: "needs_reauth",
+      status: "disconnected",
       message: "Google Calendar未接続",
     });
   }
@@ -292,6 +292,7 @@ export async function handleGoogleCallback(
       permissions: { readonly: true },
       metadata: newMetadata,
       connected_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     });
 
     if (error) {

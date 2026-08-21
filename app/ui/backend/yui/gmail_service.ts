@@ -79,6 +79,7 @@ export async function syncGmailMessages(userId: string): Promise<{ fetchedCount:
       received_at: new Date(parseInt(msgData.internalDate)).toISOString(),
       is_read: isRead,
       labels: msgData.labelIds || [],
+      updated_at: new Date().toISOString(),
     });
     savedCount++;
   }

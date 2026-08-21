@@ -24,6 +24,7 @@ type GoogleConnectionMetadata = GoogleTokenMetadata & {
 
 export type ConnectionHealthStatus =
   | "connected"
+  | "disconnected"
   | "syncing"
   | "maintenance"
   | "needs_reauth"
@@ -50,8 +51,7 @@ function normalizeScopes(scopeText: string | undefined): string[] {
 
 function buildHealthResponse(input: Partial<ConnectionHealth["google"]>): ConnectionHealth["google"] {
   return {
-    // default to needs_reauth when we don't have a confirmed connection
-    status: input.status ?? "needs_reauth",
+    status: input.status ?? "disconnected",
     calendarConnected: input.calendarConnected ?? false,
     gmailConnected: input.gmailConnected ?? false,
     scopes: input.scopes ?? [],
@@ -72,7 +72,7 @@ export async function getConnectionHealth(userId: string): Promise<ConnectionHea
   if (!connection) {
     return {
       google: buildHealthResponse({
-        status: "needs_reauth",
+        status: "disconnected",
         calendarConnected: false,
         gmailConnected: false,
         tokenValid: false,

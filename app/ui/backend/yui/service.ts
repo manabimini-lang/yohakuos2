@@ -264,6 +264,7 @@ export async function createYuiCalendarEvent(
       location: normalizeCalendarEventLocation(input.location),
       status: normalizeCalendarEventStatus(input.status),
       metadata: normalizeConnectionMap(input.metadata),
+      updated_at: new Date().toISOString(),
     })
     .select("*")
     .single();
@@ -312,6 +313,7 @@ export async function upsertYuiCalendarEvent(
     location: normalizeCalendarEventLocation(input.location),
     status: normalizeCalendarEventStatus(input.status),
     metadata: normalizeConnectionMap(input.metadata),
+    updated_at: new Date().toISOString(),
   };
 
   if (existing.data?.id) {
@@ -780,6 +782,7 @@ export async function createYuiConnection(
         : input.connected_at
           ? normalizeEventOccurredAt(input.connected_at)
           : null,
+      updated_at: new Date().toISOString(),
     })
     .select("*")
     .single();
@@ -802,6 +805,7 @@ export async function updateYuiConnectionStatus(
   const payload: Record<string, unknown> = {
     status: normalizedStatus,
     connected_at: normalizedStatus === "connected" ? new Date().toISOString() : null,
+    updated_at: new Date().toISOString(),
   };
 
   const { data, error } = await supabaseAdmin
