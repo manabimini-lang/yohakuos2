@@ -1,8 +1,10 @@
 import { GoogleGenerativeAI, GenerativeModel } from '@google/generative-ai';
 import { prisma } from '@/lib/prisma';
 import { decryptKey } from '@/lib/encryption';
+import { normalizeGeminiApiKey } from './gemini-key';
 
 const FALLBACK_GEMINI_MODEL = 'gemini-2.5-flash';
+export { normalizeGeminiApiKey } from './gemini-key';
 
 export type AIRequestOptions = string | {
     userId?: string;
@@ -40,7 +42,7 @@ function getFallbackApiCredentials(): { apiKey: string; modelName: string } {
     }
 
     return {
-        apiKey: STARTER_GEMINI_API_KEY,
+        apiKey: normalizeGeminiApiKey(STARTER_GEMINI_API_KEY),
         modelName: FALLBACK_GEMINI_MODEL,
     };
 }
@@ -54,7 +56,7 @@ export async function getApiCredentials(
 
     if (options && (options.apiKey || options.modelName)) {
         return {
-            apiKey: options.apiKey || STARTER_GEMINI_API_KEY || '',
+            apiKey: normalizeGeminiApiKey(options.apiKey || STARTER_GEMINI_API_KEY || ''),
             modelName: resolveGeminiModelName(options.modelName),
         };
     }
@@ -119,7 +121,7 @@ export async function getUserOwnedApiCredentials(
             }
 
             if (settings.encryptedApiKey) {
-                const decrypted = decryptKey(settings.encryptedApiKey);
+                const decrypted = normalizeGeminiApiKey(decryptKey(settings.encryptedApiKey));
                 const modelName = resolveGeminiModelName(settings.model);
                 console.log("FOUND USER GEMINI KEY FROM SETTINGS", {
                     userId,
@@ -332,7 +334,12 @@ export async function checkAIAvailability(userId: string): Promise<AIAvailabilit
         where: { userId },
     });
     if (settings?.isEnabled && settings.encryptedApiKey) {
-        return { available: true, source: (settings.provider as AIAvailabilitySource) || "user_ai_settings" };
+        try {
+            normalizeGeminiApiKey(decryptKey(settings.encryptedApiKey));
+            return { available: true, source: (settings.provider as AIAvailabilitySource) || "user_ai_settings" };
+        } catch {
+            return { available: false, source: null };
+        }
     }
 
     if (process.env.STARTER_GEMINI_API_KEY || process.env.GEMINI_API_KEY) {

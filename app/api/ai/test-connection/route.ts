@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { validateApiKey } from "@/lib/ai/gemini";
+import { normalizeGeminiApiKey } from "@/lib/ai/gemini-key";
 import { unstable_noStore as noStore } from "next/cache";
 
 export const dynamic = "force-dynamic";
@@ -22,13 +23,14 @@ export async function POST(req: Request) {
     };
 
     if (apiKey && apiKey !== "••••••••") {
-      if (!apiKey.startsWith("AIza") && !apiKey.startsWith("AQ.") && apiKey.length < 20) {
+      try {
+        options.apiKey = normalizeGeminiApiKey(apiKey);
+      } catch (error) {
         return NextResponse.json({
           connected: false,
-          error: "無効なGemini APIキーの形式です（通常、AIza... または AQ... から始まります）。",
+          error: error instanceof Error ? error.message : "Gemini APIキーの形式が無効です。",
         }, { status: 400 });
       }
-      options.apiKey = apiKey;
     }
 
     const result = await validateApiKey(options);

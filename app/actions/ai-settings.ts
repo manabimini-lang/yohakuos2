@@ -2,7 +2,8 @@
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { encryptKey } from "@/lib/encryption";
+import { decryptKey, encryptKey } from "@/lib/encryption";
+import { normalizeGeminiApiKey } from "@/lib/ai/gemini-key";
 import { revalidatePath } from "next/cache";
 import { log } from "@/core/audit/logger";
 
@@ -31,16 +32,19 @@ export async function saveAISettings(data: AiSettingsInput) {
 
     let encryptedApiKey: string | undefined = undefined;
     if (data.apiKey && data.apiKey !== "••••••••") {
-      // Basic verification of key format for Gemini keys (starts with AIza or AQ, or is sufficient length)
-      if (!data.apiKey.startsWith("AIza") && !data.apiKey.startsWith("AQ.") && data.apiKey.length < 20) {
-        throw new Error("無効なGemini APIキーの形式です（通常、AIza... または AQ... から始まります）。");
-      }
-      encryptedApiKey = encryptKey(data.apiKey);
+      encryptedApiKey = encryptKey(normalizeGeminiApiKey(data.apiKey));
     }
 
     const existing = await prisma.userAISettings.findUnique({
       where: { userId },
     });
+
+    if (data.isEnabled && encryptedApiKey === undefined) {
+      if (!existing?.encryptedApiKey) {
+        throw new Error("AIを有効にするには、APIキーを入力してください。");
+      }
+      normalizeGeminiApiKey(decryptKey(existing.encryptedApiKey));
+    }
 
     if (existing) {
       await prisma.userAISettings.update({
