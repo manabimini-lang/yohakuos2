@@ -9,7 +9,7 @@ const supabaseAdmin = new Proxy({} as SupabaseClient, {
   },
 });
 import { createYuiEvent, createYuiSuggestedTimeBlock, ensureYuiCalendarActionFromTimeBlock, listYuiCalendarEvents, listYuiDecisionsSince, listYuiGoals, listYuiMemoriesSince, listYuiSuggestedTimeBlocks, listYuiConversationsSince, listYuiEvents, getYuiProfile } from "./service";
-import { generateText, getUserOwnedApiCredentials } from "@/lib/ai/gemini";
+import { generateJSON, getUserOwnedApiCredentials } from "@/lib/ai/gemini";
 import type {
   CreateYuiRecommendationInput,
   YuiCalendarEvent,
@@ -408,11 +408,16 @@ async function tryGenerateRecommendationWithAi(
   ].join("\n");
 
   try {
-    const aiResponse = await generateText(prompt, "You produce concise JSON only.", {
+    const aiResponse = await generateJSON<{
+      title?: string;
+      reason?: string;
+      content?: string;
+      score?: number;
+    }>(prompt, "You produce concise JSON only.", {
       userId: user.id,
     });
 
-    const payload = parseAiRecommendationPayload(aiResponse.text);
+    const payload = parseAiRecommendationPayload(JSON.stringify(aiResponse.data));
     if (!payload) {
       console.warn("[YUI Recommendation] AI returned unparsable JSON, falling back to rule engine", {
         userId: user.id,
