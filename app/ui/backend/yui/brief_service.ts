@@ -11,6 +11,8 @@ import { getUnifiedActions } from "./unified_action_service";
 import { buildPriorityContext, type YuiPriorityItem } from "./priority_engine";
 import { getYuiGreeting } from "./notification_copy";
 
+const BRIEF_COPY_VERSION = 2;
+
 const supabaseAdmin = new Proxy({} as SupabaseClient, {
   get(_, prop: keyof SupabaseClient) {
     const target = getSupabaseAdmin();
@@ -118,6 +120,7 @@ export async function getMorningBrief(userId: string): Promise<YuiMorningBrief> 
   const unreadEmailCount = gmailInsights.length;
   const actionCount = unifiedActions.length;
   const contextHash = buildContextHash({
+    copyVersion: BRIEF_COPY_VERSION,
     calendarEventIds: calendarEvents.map((event) => event.id).sort(),
     gmailInsightIds: gmailInsights.map((email) => email.id).sort(),
     goals: goals.map((goal) => ({ id: goal.id, title: goal.title, description: goal.description ?? null, status: goal.status, updated_at: goal.updated_at ?? null })).sort((a, b) => a.id.localeCompare(b.id)),
