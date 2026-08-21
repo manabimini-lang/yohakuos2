@@ -33,6 +33,33 @@ type GoogleConnectionMetadata = GoogleTokenMetadata & {
   lastSyncAt?: string;
 };
 
+export type GoogleOAuthTraceEvent = {
+  stage:
+    | "token_exchange"
+    | "user_info"
+    | "connection_read"
+    | "token_encryption"
+    | "connection_persistence"
+    | "calendar_initial_sync";
+  outcome: "start" | "success" | "failure";
+  elapsedMs: number;
+  httpStatus?: number;
+  googleErrorCode?: string;
+};
+
+export class GoogleOAuthRuntimeError extends Error {
+  constructor(
+    public readonly stage: GoogleOAuthTraceEvent["stage"],
+    public readonly safeCode: string,
+    public readonly httpStatus?: number,
+  ) {
+    super(`Google OAuth failed during ${stage}`);
+    this.name = "GoogleOAuthRuntimeError";
+  }
+}
+
+type GoogleOAuthTrace = (event: GoogleOAuthTraceEvent) => void;
+
 const GOOGLE_OAUTH_SCOPES = [
   "openid",
   "email",
@@ -131,32 +158,61 @@ export async function getGoogleCalendarStatus(userId: string): Promise<GoogleCal
   }
 }
 
-export async function handleGoogleCallback(userId: string, code: string, redirectUri: string) {
+export async function handleGoogleCallback(
+  userId: string,
+  code: string,
+  redirectUri: string,
+  trace?: GoogleOAuthTrace,
+) {
+  const startedAt = Date.now();
+  const emit = (
+    stage: GoogleOAuthTraceEvent["stage"],
+    outcome: GoogleOAuthTraceEvent["outcome"],
+    details: Pick<GoogleOAuthTraceEvent, "httpStatus" | "googleErrorCode"> = {},
+  ) => trace?.({ stage, outcome, elapsedMs: Date.now() - startedAt, ...details });
   const clientId = process.env.GOOGLE_CLIENT_ID || "";
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET || "";
 
-  const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      code,
-      client_id: clientId,
-      client_secret: clientSecret,
-      redirect_uri: redirectUri,
-      grant_type: "authorization_code",
-    }),
-  });
+  emit("token_exchange", "start");
+  let tokenResponse: Response;
+  try {
+    tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        code,
+        client_id: clientId,
+        client_secret: clientSecret,
+        redirect_uri: redirectUri,
+        grant_type: "authorization_code",
+      }),
+    });
+  } catch {
+    emit("token_exchange", "failure", { googleErrorCode: "network_error" });
+    throw new GoogleOAuthRuntimeError("token_exchange", "network_error");
+  }
 
   if (!tokenResponse.ok) {
-    throw new Error(`Google token exchange failed with status ${tokenResponse.status}`);
+    const errorPayload = await tokenResponse.json().catch(() => null) as { error?: unknown } | null;
+    const googleErrorCode = typeof errorPayload?.error === "string" ? errorPayload.error : "unknown_error";
+    emit("token_exchange", "failure", {
+      httpStatus: tokenResponse.status,
+      googleErrorCode,
+    });
+    throw new GoogleOAuthRuntimeError("token_exchange", googleErrorCode, tokenResponse.status);
   }
 
   const tokenData = await tokenResponse.json();
   const accessToken = typeof tokenData.access_token === "string" ? tokenData.access_token : "";
   const refreshToken = tokenData.refresh_token as string | undefined;
   if (!accessToken) {
-    throw new Error("Google token exchange did not return an access token");
+    emit("token_exchange", "failure", {
+      httpStatus: tokenResponse.status,
+      googleErrorCode: "missing_access_token",
+    });
+    throw new GoogleOAuthRuntimeError("token_exchange", "missing_access_token", tokenResponse.status);
   }
+  emit("token_exchange", "success", { httpStatus: tokenResponse.status });
   const expiresIn = (tokenData.expires_in as number) || 3600;
   const scope =
     typeof tokenData.scope === "string" && tokenData.scope.trim()
@@ -165,6 +221,7 @@ export async function handleGoogleCallback(userId: string, code: string, redirec
 
   // Fetch User Info to get email
   let googleAccount = "";
+  emit("user_info", "start");
   try {
     const userRes = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
       headers: { Authorization: `Bearer ${accessToken}` },
@@ -173,32 +230,45 @@ export async function handleGoogleCallback(userId: string, code: string, redirec
       const userData = await userRes.json();
       googleAccount = userData.email || "";
     }
+    emit("user_info", userRes.ok ? "success" : "failure", { httpStatus: userRes.status });
   } catch (e) {
+    emit("user_info", "failure", { googleErrorCode: "network_error" });
     console.error("Failed to fetch Google user info", {
       name: e instanceof Error ? e.name : "UnknownError",
     });
   }
 
   // Get or create connection
+  emit("connection_read", "start");
   const { data: existingConnection } = await supabaseAdmin
     .from("connections")
     .select("*")
     .eq("user_id", userId)
     .eq("provider", "google_calendar")
     .maybeSingle();
+  emit("connection_read", "success");
 
   const existingMeta = (existingConnection?.metadata as GoogleConnectionMetadata) || {};
   const existingTokens = readGoogleTokens(existingMeta);
-  const newMetadata = withEncryptedGoogleTokens({
-    ...existingMeta,
-    googleAccount: googleAccount || existingMeta.googleAccount || "",
-    tokenExpiresAt: new Date(Date.now() + expiresIn * 1000).toISOString(),
-    scope: scope || existingMeta.scope || "",
-  }, {
-    accessToken,
-    refreshToken: refreshToken || existingTokens.refreshToken,
-  });
+  emit("token_encryption", "start");
+  let newMetadata: GoogleConnectionMetadata;
+  try {
+    newMetadata = withEncryptedGoogleTokens({
+      ...existingMeta,
+      googleAccount: googleAccount || existingMeta.googleAccount || "",
+      tokenExpiresAt: new Date(Date.now() + expiresIn * 1000).toISOString(),
+      scope: scope || existingMeta.scope || "",
+    }, {
+      accessToken,
+      refreshToken: refreshToken || existingTokens.refreshToken,
+    });
+    emit("token_encryption", "success");
+  } catch {
+    emit("token_encryption", "failure", { googleErrorCode: "encryption_failed" });
+    throw new GoogleOAuthRuntimeError("token_encryption", "encryption_failed");
+  }
 
+  emit("connection_persistence", "start");
   if (existingConnection) {
     const { error } = await supabaseAdmin
       .from("connections")
@@ -211,7 +281,8 @@ export async function handleGoogleCallback(userId: string, code: string, redirec
       .eq("id", existingConnection.id);
 
     if (error) {
-      throw new Error(`Failed to update Google connection: ${error.message}`);
+      emit("connection_persistence", "failure", { googleErrorCode: "update_failed" });
+      throw new GoogleOAuthRuntimeError("connection_persistence", "update_failed");
     }
   } else {
     const { error } = await supabaseAdmin.from("connections").insert({
@@ -224,12 +295,21 @@ export async function handleGoogleCallback(userId: string, code: string, redirec
     });
 
     if (error) {
-      throw new Error(`Failed to create Google connection: ${error.message}`);
+      emit("connection_persistence", "failure", { googleErrorCode: "insert_failed" });
+      throw new GoogleOAuthRuntimeError("connection_persistence", "insert_failed");
     }
   }
+  emit("connection_persistence", "success");
 
   // Await the initial sync so serverless execution cannot discard it after redirect.
-  await syncGoogleCalendarEvents(userId);
+  emit("calendar_initial_sync", "start");
+  try {
+    await syncGoogleCalendarEvents(userId);
+    emit("calendar_initial_sync", "success");
+  } catch {
+    emit("calendar_initial_sync", "failure", { googleErrorCode: "sync_failed" });
+    throw new GoogleOAuthRuntimeError("calendar_initial_sync", "sync_failed");
+  }
 
   try {
     const { completeYuiOnboarding } = await import("./service");
