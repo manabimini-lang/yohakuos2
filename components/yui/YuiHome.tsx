@@ -102,7 +102,7 @@ type YuiHomeSnapshot = {
   unifiedActions: any[];
 };
 
-const YUI_HOME_CACHE_KEY = "yui-home-cache-v1";
+const YUI_HOME_CACHE_KEY = "yui-home-cache-v2";
 
 function formatRelativeTime(timestamp: number | null): string {
   if (!timestamp) {
@@ -417,7 +417,7 @@ export function YuiHome({ displayName }: YuiHomeProps) {
       ]);
 
       const syncErrors = syncResults.flatMap((result, index) => {
-        if (result.status === "fulfilled" && !result.value.ok) {
+        if (result.status === "fulfilled" && !result.value.ok && result.value.status !== 409) {
           return [index === 0 ? "Google Calendar同期に失敗しました" : "Gmail同期に失敗しました"];
         }
         if (result.status === "rejected") {
@@ -441,6 +441,19 @@ export function YuiHome({ displayName }: YuiHomeProps) {
           fetch("/api/yui/daily-context"),
           fetch("/api/yui/unified-actions"),
           fetch("/api/yui/health"),
+          fetch("/api/yui/profile"),
+          fetch("/api/yui/memories"),
+          fetch("/api/yui/memory-candidates"),
+          fetch("/api/yui/conversations"),
+          fetch("/api/yui/decisions"),
+          fetch("/api/yui/goals"),
+          fetch("/api/yui/milestones"),
+          fetch("/api/yui/reflections"),
+          fetch("/api/yui/recommendations"),
+          fetch("/api/yui/time-blocks"),
+          fetch("/api/yui/calendar-actions"),
+          fetch("/api/yui/reflections/latest"),
+          fetch("/api/yui/notifications/status"),
         ].map(async (request) => {
           try {
             return await request;
@@ -456,6 +469,19 @@ export function YuiHome({ displayName }: YuiHomeProps) {
         dailyContextRes,
         unifiedActionsRes,
         healthRes,
+        profileRes,
+        memoriesRes,
+        memoryCandidatesRes,
+        conversationsRes,
+        decisionsRes,
+        goalsRes,
+        milestonesRes,
+        reflectionsRes,
+        recommendationsRes,
+        timeBlocksRes,
+        calendarActionsRes,
+        latestReflectionRes,
+        deliveryStatusRes,
       ] = responses;
 
       const currentCache = readYuiHomeCache()?.snapshot;
@@ -521,6 +547,70 @@ export function YuiHome({ displayName }: YuiHomeProps) {
         setGoogleHealth(null);
       }
 
+      if (profileRes?.ok) {
+        const payload = await profileRes.json();
+        nextSnapshot.profile = payload.profile ?? null;
+      }
+
+      if (memoriesRes?.ok) {
+        const payload = await memoriesRes.json();
+        nextSnapshot.memories = payload.memories ?? [];
+      }
+
+      if (memoryCandidatesRes?.ok) {
+        const payload = await memoryCandidatesRes.json();
+        nextSnapshot.memoryCandidates = payload.memoryCandidates ?? [];
+      }
+
+      if (conversationsRes?.ok) {
+        const payload = await conversationsRes.json();
+        nextSnapshot.conversations = payload.conversations ?? [];
+      }
+
+      if (decisionsRes?.ok) {
+        const payload = await decisionsRes.json();
+        nextSnapshot.decisions = payload.decisions ?? [];
+      }
+
+      if (goalsRes?.ok) {
+        const payload = await goalsRes.json();
+        nextSnapshot.goals = payload.goals ?? [];
+      }
+
+      if (milestonesRes?.ok) {
+        const payload = await milestonesRes.json();
+        nextSnapshot.milestones = payload.milestones ?? [];
+      }
+
+      if (reflectionsRes?.ok) {
+        const payload = await reflectionsRes.json();
+        nextSnapshot.reflections = payload.reflections ?? [];
+      }
+
+      if (recommendationsRes?.ok) {
+        const payload = await recommendationsRes.json();
+        nextSnapshot.recommendations = payload.recommendations ?? [];
+      }
+
+      if (timeBlocksRes?.ok) {
+        const payload = await timeBlocksRes.json();
+        nextSnapshot.timeBlocks = payload.timeBlocks ?? [];
+      }
+
+      if (calendarActionsRes?.ok) {
+        const payload = await calendarActionsRes.json();
+        nextSnapshot.calendarActions = payload.calendarActions ?? [];
+      }
+
+      if (latestReflectionRes?.ok) {
+        const payload = await latestReflectionRes.json();
+        nextSnapshot.latestReflection = payload.reflection ?? null;
+      }
+
+      if (deliveryStatusRes?.ok) {
+        nextSnapshot.deliveryStatus = await deliveryStatusRes.json();
+      }
+
       applySnapshot(nextSnapshot);
       writeYuiHomeCache(nextSnapshot);
       setCacheUpdatedAt(Date.now());
@@ -533,101 +623,7 @@ export function YuiHome({ displayName }: YuiHomeProps) {
   };
 
   const loadInitialData = async () => {
-    setError(null);
-    setSectionErrors({});
-    setIsInitialLoading(true);
-
-    const cached = readYuiHomeCache();
-    if (cached) {
-      applySnapshot(cached.snapshot);
-      setCacheUpdatedAt(cached.updatedAt);
-      setIsInitialLoading(false);
-      // load only today summary now; other sections lazy
-      try {
-        const healthRes = await fetch("/api/yui/health");
-        if (healthRes.ok) {
-          const payload = await healthRes.json();
-          setGoogleHealth(payload.google ?? null);
-        }
-
-        const unifiedActionsRes = await fetch("/api/yui/unified-actions");
-        if (unifiedActionsRes.ok) {
-          const payload = await unifiedActionsRes.json();
-          setUnifiedActions(payload.actions ?? []);
-        }
-      } catch (e) {
-        // ignore
-      }
-      return;
-    }
-
-    try {
-      const todayRes = await fetch("/api/yui/today");
-      if (todayRes.ok) {
-        const payload = await todayRes.json();
-        setToday(payload);
-      } else {
-        setSectionErrors((cur) => ({ ...cur, today: "Todayの取得に失敗しました" }));
-      }
-
-      const briefRes = await fetch("/api/yui/morning-brief");
-      if (briefRes.ok) {
-        const payload = await briefRes.json();
-        setMorningBrief(payload);
-      }
-
-      const unifiedActionsRes = await fetch("/api/yui/unified-actions");
-      if (unifiedActionsRes.ok) {
-        const payload = await unifiedActionsRes.json();
-        setUnifiedActions(payload.actions ?? []);
-      }
-
-      try {
-        const healthRes = await fetch("/api/yui/health");
-        if (healthRes.ok) {
-          const payload = await healthRes.json();
-          setGoogleHealth(payload.google ?? null);
-        }
-      } catch (e) {
-        // noop
-      }
-
-      setIsInitialLoading(false);
-      // persist minimal snapshot
-      const minimalSnapshot: YuiHomeSnapshot = {
-        today: today ?? null,
-        morningBrief: morningBrief ?? null,
-        dailyContext: null,
-        memoryLayer: null,
-        threadInsights: null,
-        threadProgress: null,
-        timeIntelligence: null,
-        planningSuggestions: null,
-        actions: [],
-        weeklyReview: null,
-        contextSummary: null,
-        profile: null,
-        memories: [],
-        memoryCandidates: [],
-        conversations: [],
-        decisions: [],
-        goals: [],
-        milestones: [],
-        reflections: [],
-        recommendations: [],
-        timeBlocks: [],
-        calendarActions: [],
-        latestReflection: null,
-        deliveryStatus: null,
-        gmailInsights: [],
-        unifiedActions: [],
-      };
-      writeYuiHomeCache(minimalSnapshot);
-      setCacheUpdatedAt(Date.now());
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "データの取得に失敗しました");
-      setIsInitialLoading(false);
-    }
+    await loadData({ background: true });
   };
 
   useEffect(() => {
