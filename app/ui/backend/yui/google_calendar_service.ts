@@ -10,6 +10,11 @@ const supabaseAdmin = new Proxy({} as SupabaseClient, {
 });
 import { upsertYuiCalendarEvent } from "./service";
 import { refreshMorningBriefCache } from "./brief_service";
+import {
+  readGoogleTokens,
+  withEncryptedGoogleTokens,
+  type GoogleTokenMetadata,
+} from "./google_token_vault";
 
 export type GoogleCalendarConnectionState = "connected" | "needs_reauth" | "sync_error" | "syncing";
 
@@ -21,10 +26,8 @@ export type GoogleCalendarStatus = {
   message: string;
 };
 
-type GoogleConnectionMetadata = Record<string, unknown> & {
+type GoogleConnectionMetadata = GoogleTokenMetadata & {
   googleAccount?: string;
-  accessToken?: string;
-  refreshToken?: string;
   tokenExpiresAt?: string;
   scope?: string;
   lastSyncAt?: string;
@@ -38,7 +41,7 @@ const GOOGLE_OAUTH_SCOPES = [
   "https://www.googleapis.com/auth/gmail.readonly",
 ];
 
-export function getGoogleAuthUrl(redirectUri: string): string {
+export function getGoogleAuthUrl(redirectUri: string, state: string): string {
   const clientId = process.env.GOOGLE_CLIENT_ID || "";
   const scopes = GOOGLE_OAUTH_SCOPES.join(" ");
 
@@ -49,6 +52,7 @@ export function getGoogleAuthUrl(redirectUri: string): string {
     scope: scopes,
     access_type: "offline",
     prompt: "consent",
+    state,
   });
 
   return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
@@ -84,25 +88,11 @@ export async function getGoogleCalendarStatus(userId: string): Promise<GoogleCal
 
   const metadata = (connection.metadata as Record<string, unknown>) || {};
   const scope = typeof metadata.scope === "string" ? metadata.scope : "";
-  const refreshToken = typeof metadata.refreshToken === "string" ? metadata.refreshToken : "";
-  const accessToken = typeof metadata.accessToken === "string" ? metadata.accessToken : "";
-  const tokenExpiresAt = typeof metadata.tokenExpiresAt === "string" ? new Date(metadata.tokenExpiresAt).getTime() : 0;
-
   if (connection.status !== "connected") {
     return buildGoogleConnectionStatus({
       connected: false,
       status: "needs_reauth",
       message: "Google Calendar再接続が必要です",
-      account: typeof metadata.googleAccount === "string" ? metadata.googleAccount : "",
-      lastSyncAt: typeof metadata.lastSyncAt === "string" ? metadata.lastSyncAt : null,
-    });
-  }
-
-  if (!refreshToken) {
-    return buildGoogleConnectionStatus({
-      connected: false,
-      status: "needs_reauth",
-      message: "Googleアカウントを再連携してください",
       account: typeof metadata.googleAccount === "string" ? metadata.googleAccount : "",
       lastSyncAt: typeof metadata.lastSyncAt === "string" ? metadata.lastSyncAt : null,
     });
@@ -158,13 +148,15 @@ export async function handleGoogleCallback(userId: string, code: string, redirec
   });
 
   if (!tokenResponse.ok) {
-    const errText = await tokenResponse.text();
-    throw new Error(`Google token exchange failed: ${errText}`);
+    throw new Error(`Google token exchange failed with status ${tokenResponse.status}`);
   }
 
   const tokenData = await tokenResponse.json();
-  const accessToken = tokenData.access_token as string;
+  const accessToken = typeof tokenData.access_token === "string" ? tokenData.access_token : "";
   const refreshToken = tokenData.refresh_token as string | undefined;
+  if (!accessToken) {
+    throw new Error("Google token exchange did not return an access token");
+  }
   const expiresIn = (tokenData.expires_in as number) || 3600;
   const scope =
     typeof tokenData.scope === "string" && tokenData.scope.trim()
@@ -182,7 +174,9 @@ export async function handleGoogleCallback(userId: string, code: string, redirec
       googleAccount = userData.email || "";
     }
   } catch (e) {
-    console.error("Failed to fetch Google user info", e);
+    console.error("Failed to fetch Google user info", {
+      name: e instanceof Error ? e.name : "UnknownError",
+    });
   }
 
   // Get or create connection
@@ -194,14 +188,16 @@ export async function handleGoogleCallback(userId: string, code: string, redirec
     .maybeSingle();
 
   const existingMeta = (existingConnection?.metadata as GoogleConnectionMetadata) || {};
-  const newMetadata: GoogleConnectionMetadata = {
+  const existingTokens = readGoogleTokens(existingMeta);
+  const newMetadata = withEncryptedGoogleTokens({
     ...existingMeta,
     googleAccount: googleAccount || existingMeta.googleAccount || "",
-    accessToken,
-    refreshToken: refreshToken || existingMeta.refreshToken || "",
     tokenExpiresAt: new Date(Date.now() + expiresIn * 1000).toISOString(),
     scope: scope || existingMeta.scope || "",
-  };
+  }, {
+    accessToken,
+    refreshToken: refreshToken || existingTokens.refreshToken,
+  });
 
   if (existingConnection) {
     const { error } = await supabaseAdmin
@@ -232,8 +228,8 @@ export async function handleGoogleCallback(userId: string, code: string, redirec
     }
   }
 
-  // Automatically trigger sync and complete onboarding
-  void syncGoogleCalendarEvents(userId);
+  // Await the initial sync so serverless execution cannot discard it after redirect.
+  await syncGoogleCalendarEvents(userId);
 
   try {
     const { completeYuiOnboarding } = await import("./service");
@@ -255,9 +251,10 @@ export async function getValidAccessToken(userId: string): Promise<{ accessToken
     throw new Error("Google Calendar is not connected");
   }
 
-  const metadata = (connection.metadata as Record<string, unknown>) || {};
-  let accessToken = typeof metadata.accessToken === "string" ? metadata.accessToken : "";
-  const refreshToken = typeof metadata.refreshToken === "string" ? metadata.refreshToken : "";
+  const metadata = (connection.metadata as GoogleConnectionMetadata) || {};
+  const storedTokens = readGoogleTokens(metadata);
+  let accessToken = storedTokens.accessToken;
+  const refreshToken = storedTokens.refreshToken;
   const scope = typeof metadata.scope === "string" ? metadata.scope : "";
   const tokenExpiresAt = typeof metadata.tokenExpiresAt === "string" ? new Date(metadata.tokenExpiresAt).getTime() : 0;
 
@@ -285,27 +282,33 @@ export async function getValidAccessToken(userId: string): Promise<{ accessToken
     });
 
     if (!refreshRes.ok) {
-      const errText = await refreshRes.text();
-      if (errText.includes("invalid_grant") || errText.includes("unauthorized")) {
+      if (refreshRes.status === 400 || refreshRes.status === 401) {
         throw new Error("Google refresh token is invalid. Please reconnect.");
       }
-      throw new Error(`Google token refresh failed: ${errText}`);
+      throw new Error(`Google token refresh failed with status ${refreshRes.status}`);
     }
 
     const refreshData = await refreshRes.json();
     accessToken = refreshData.access_token as string;
     const expiresIn = (refreshData.expires_in as number) || 3600;
 
-    const updatedMeta = {
+    const updatedMeta = withEncryptedGoogleTokens({
       ...metadata,
-      accessToken,
       tokenExpiresAt: new Date(Date.now() + expiresIn * 1000).toISOString(),
-    };
+    }, { accessToken, refreshToken });
 
-    await supabaseAdmin
+    const { error } = await supabaseAdmin
       .from("connections")
       .update({ metadata: updatedMeta, updated_at: new Date().toISOString() })
       .eq("id", connection.id);
+    if (error) throw new Error("Failed to persist refreshed Google credentials");
+  } else if (storedTokens.needsMigration) {
+    const migratedMetadata = withEncryptedGoogleTokens(metadata, { accessToken, refreshToken });
+    const { error } = await supabaseAdmin
+      .from("connections")
+      .update({ metadata: migratedMetadata, updated_at: new Date().toISOString() })
+      .eq("id", connection.id);
+    if (error) throw new Error("Failed to secure stored Google credentials");
   }
 
   if (!accessToken) {
@@ -340,14 +343,13 @@ export async function syncGoogleCalendarEvents(userId: string): Promise<{ synced
   });
 
   if (!response.ok) {
-    const errText = await response.text();
-    if (errText.includes("401") || errText.includes("invalid_token")) {
+    if (response.status === 401) {
       throw new Error("Google access token expired. Please reconnect.");
     }
-    if (errText.includes("403") || errText.includes("access_denied") || errText.includes("insufficient_scope")) {
+    if (response.status === 403) {
       throw new Error("Google Calendar/Gmail scope is missing. Please reconnect.");
     }
-    throw new Error(`Failed to fetch Google Calendar events: ${errText}`);
+    throw new Error(`Failed to fetch Google Calendar events with status ${response.status}`);
   }
 
   const data = await response.json();

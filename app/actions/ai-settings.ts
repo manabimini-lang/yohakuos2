@@ -23,8 +23,6 @@ export async function saveAISettings(data: AiSettingsInput) {
     }
 
     const userId = session.user.id;
-    console.log("[AI_SAVE_START]", { userId: session?.user?.id });
-    console.log("[AI_SAVE_INPUT]", data);
 
     // Validate input
     if (!data.provider) {
@@ -40,20 +38,11 @@ export async function saveAISettings(data: AiSettingsInput) {
       encryptedApiKey = encryptKey(data.apiKey);
     }
 
-    console.log("[AI_SAVE_DB_FIND_START]", userId)
     const existing = await prisma.userAISettings.findUnique({
       where: { userId },
     });
-    console.log("[AI_SAVE_EXISTING]", existing);
 
     if (existing) {
-      console.log("[AI_SAVE_WRITE]", { mode: "update" });
-      console.log("[AI_SAVE_DB_WRITE_ATTEMPT]", {
-        mode: "update",
-        userId,
-        isEnabled: data.isEnabled,
-        hasApiKey: !!data.apiKey
-      })
       await prisma.userAISettings.update({
         where: { userId },
         data: {
@@ -63,20 +52,12 @@ export async function saveAISettings(data: AiSettingsInput) {
           ...(encryptedApiKey !== undefined ? { encryptedApiKey } : {}),
         },
       });
-      console.log("[AI_SAVE_DB_WRITE_SUCCESS]")
     } else {
-      console.log("[AI_SAVE_WRITE]", { mode: "create" });
       // If creating a new record, require an API key
       if (data.isEnabled && (!data.apiKey || data.apiKey === "••••••••")) {
         throw new Error("AIを有効にするには、APIキーを入力してください。");
       }
 
-      console.log("[AI_SAVE_DB_WRITE_ATTEMPT]", {
-        mode: "create",
-        userId,
-        isEnabled: data.isEnabled,
-        hasApiKey: !!data.apiKey
-      })
       await prisma.userAISettings.create({
         data: {
           userId,
@@ -86,7 +67,6 @@ export async function saveAISettings(data: AiSettingsInput) {
           encryptedApiKey: encryptedApiKey || null,
         },
       });
-      console.log("[AI_SAVE_DB_WRITE_SUCCESS]")
     }
 
     if (data.isEnabled) {

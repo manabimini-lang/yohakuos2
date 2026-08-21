@@ -1,5 +1,10 @@
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import {
+  readGoogleTokens,
+  withEncryptedGoogleTokens,
+  type GoogleTokenMetadata,
+} from "./google_token_vault";
 
 const supabaseAdmin = new Proxy({} as SupabaseClient, {
   get(_, prop: keyof SupabaseClient) {
@@ -9,10 +14,8 @@ const supabaseAdmin = new Proxy({} as SupabaseClient, {
   },
 });
 
-type GoogleConnectionMetadata = Record<string, unknown> & {
+type GoogleConnectionMetadata = GoogleTokenMetadata & {
   googleAccount?: string;
-  accessToken?: string;
-  refreshToken?: string;
   tokenExpiresAt?: string;
   scope?: string;
   lastSyncAt?: string;
@@ -79,8 +82,23 @@ export async function getConnectionHealth(userId: string): Promise<ConnectionHea
 
   const metadata = (connection.metadata as GoogleConnectionMetadata) || {};
   const scopes = normalizeScopes(typeof metadata.scope === "string" ? metadata.scope : "");
-  const refreshToken = typeof metadata.refreshToken === "string" ? metadata.refreshToken : "";
-  const accessToken = typeof metadata.accessToken === "string" ? metadata.accessToken : "";
+  let accessToken = "";
+  let refreshToken = "";
+  let needsTokenMigration = false;
+  try {
+    const tokens = readGoogleTokens(metadata);
+    accessToken = tokens.accessToken;
+    refreshToken = tokens.refreshToken;
+    needsTokenMigration = tokens.needsMigration;
+  } catch {
+    return {
+      google: buildHealthResponse({
+        status: "needs_reauth",
+        scopes,
+        lastError: "保存済みのGoogle認証情報を読み取れません。再接続してください。",
+      }),
+    };
+  }
   const lastSyncAt = typeof metadata.lastSyncAt === "string" && metadata.lastSyncAt ? new Date(metadata.lastSyncAt) : null;
   const tokenExpiresAt =
     typeof metadata.tokenExpiresAt === "string" && metadata.tokenExpiresAt
@@ -139,10 +157,9 @@ export async function getConnectionHealth(userId: string): Promise<ConnectionHea
 
       if (!refreshResponse.ok) {
         const statusCode = refreshResponse.status;
-        const errText = await refreshResponse.text();
-        console.error("[Connection Health Diagnostics] Token refresh failed:", { statusCode, errText });
+        console.error("[Connection Health Diagnostics] Token refresh failed", { statusCode });
 
-        if (statusCode === 401 || errText.includes("invalid_grant") || errText.includes("unauthorized")) {
+        if (statusCode === 400 || statusCode === 401) {
           lastError = "Googleとの接続を更新できませんでした。もう一度接続してください。";
           status = "needs_reauth";
         } else if (statusCode >= 500) {
@@ -160,21 +177,21 @@ export async function getConnectionHealth(userId: string): Promise<ConnectionHea
           status = "needs_reauth";
           lastError = "Googleとの接続を更新できませんでした。もう一度接続してください。";
         } else {
-          const updatedMetadata = {
-            ...(metadata as Record<string, unknown>),
-            accessToken: refreshedAccessToken,
+          const updatedMetadata = withEncryptedGoogleTokens({
+            ...metadata,
             tokenExpiresAt: new Date(Date.now() + expiresIn * 1000).toISOString(),
             lastError: null,
-          } as GoogleConnectionMetadata;
+          }, { accessToken: refreshedAccessToken, refreshToken });
 
           try {
-            await supabaseAdmin
+            const { error } = await supabaseAdmin
               .from("connections")
               .update({
                 metadata: updatedMetadata,
                 updated_at: new Date().toISOString(),
               })
               .eq("id", connection.id);
+            if (error) throw new Error("Failed to persist refreshed Google credentials");
 
             status = "connected";
             tokenValid = true;
@@ -186,6 +203,14 @@ export async function getConnectionHealth(userId: string): Promise<ConnectionHea
         }
       }
     } else {
+      if (needsTokenMigration) {
+        const migratedMetadata = withEncryptedGoogleTokens(metadata, { accessToken, refreshToken });
+        const { error } = await supabaseAdmin
+          .from("connections")
+          .update({ metadata: migratedMetadata, updated_at: new Date().toISOString() })
+          .eq("id", connection.id);
+        if (error) throw new Error("Failed to secure stored Google credentials");
+      }
       status = "connected";
       tokenValid = true;
     }
