@@ -8,6 +8,7 @@ import {
   Check,
   Sparkles,
   LockKeyhole,
+  ArrowUpRight,
 } from "lucide-react";
 
 const journeySteps = [
@@ -49,34 +50,52 @@ const principles = [
   }
 ];
 
+const otherAiCategories = [
+  {
+    label: "A",
+    title: "予定を整えるAI",
+    description: "空いている時間を見つけ、予定を最適化する。",
+  },
+  {
+    label: "B",
+    title: "スケジュールを決めるAI",
+    description: "タスクを並べ、今日の時間割をつくる。",
+  },
+  {
+    label: "C",
+    title: "仕事を実行するAI",
+    description: "メールや定型業務を、AIに任せる。",
+  },
+];
+
 export default function LandingPage() {
   return (
     <main className="min-h-screen bg-[#f5f5f7] text-slate-900">
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(218,232,255,0.9),transparent_30%),radial-gradient(circle_at_80%_70%,rgba(222,210,255,0.72),transparent_32%),linear-gradient(135deg,#fafcff_0%,#f5f3ff_48%,#f8fafc_100%)]" />
-        <div className="absolute -right-24 top-8 h-96 w-96 rounded-full bg-violet-300/20 blur-3xl" />
+      <section className="relative overflow-hidden border-b border-slate-200/70">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_12%_18%,rgba(220,229,255,0.85),transparent_28%),radial-gradient(circle_at_82%_72%,rgba(232,225,255,0.7),transparent_30%)]" />
+        <div className="absolute -right-32 top-16 h-[26rem] w-[26rem] rounded-full bg-violet-300/15 blur-3xl" />
 
-        <div className="relative mx-auto grid min-h-[84vh] max-w-7xl items-center gap-14 px-6 py-16 sm:px-10 lg:grid-cols-[1.05fr_0.95fr] lg:px-16">
+        <div className="relative mx-auto grid min-h-[78vh] max-w-7xl items-center gap-14 px-6 py-20 sm:px-10 lg:grid-cols-[1.12fr_0.88fr] lg:px-16 lg:py-24">
           <div className="max-w-3xl">
-            <p className="inline-flex items-center gap-2 rounded-full border border-violet-200/80 bg-white/80 px-4 py-2 text-[11px] font-semibold tracking-[0.16em] text-violet-700 backdrop-blur">
-              <Sparkles className="h-3.5 w-3.5" />
-              PERSONAL AI MEMORY OS
+            <p className="inline-flex items-center gap-2 text-[11px] font-semibold tracking-[0.2em] text-violet-700">
+              <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
+              AI EXECUTIVE ASSISTANT
             </p>
 
-            <h1 className="mt-7 max-w-3xl text-5xl font-semibold leading-[1.13] tracking-[-0.055em] text-slate-950 sm:text-6xl lg:text-7xl">
-              書き留めるだけで、
-              <span className="block bg-gradient-to-r from-violet-700 via-indigo-600 to-sky-600 bg-clip-text text-transparent">あなたの次の一歩が見えてくる。</span>
+            <h1 className="mt-7 max-w-3xl text-5xl font-light leading-[1.16] tracking-[-0.06em] text-slate-950 sm:text-5xl lg:text-6xl xl:text-7xl">
+              今日、何をするか。<br />
+              <span className="sm:whitespace-nowrap">もう、探さなくていい。</span>
             </h1>
 
-            <p className="mt-7 max-w-xl text-lg leading-8 text-slate-600 sm:text-xl">
-              YOHAKUは、日々の気づき・気分・迷いをあなた専用のAIが記憶し、
-              整理、振り返り、次の行動までをひとつながりにするサービスです。
+            <p className="mt-8 max-w-xl text-lg font-light leading-8 text-slate-600 sm:text-xl">
+              予定、メール、目標、そしてこれまでの流れ。<br />
+              YOHAKUOSは、散らばった情報を並べるのではなく、あなたの今を理解して、今日進めることを一緒に考えます。
             </p>
 
-            <ul className="mt-7 space-y-3 text-sm font-medium text-slate-700">
+            <ul className="mt-8 space-y-3 text-sm font-medium text-slate-700">
               {[
                 "まとまっていない言葉も、そのまま記録できる",
-                "過去の自分と今の気持ちを、AIがやさしくつなぐ",
+                "過去の流れと、いまの気持ちをやさしくつなぐ",
                 "考えすぎずに始められる、今日の小さな提案",
               ].map((item) => (
                 <li key={item} className="flex items-center gap-3">
@@ -98,20 +117,60 @@ export default function LandingPage() {
           </div>
 
           <div className="relative mx-auto w-full max-w-md lg:max-w-none">
-            <div className="absolute inset-6 rounded-[2.5rem] bg-gradient-to-br from-violet-400/40 to-sky-300/30 blur-2xl" />
-            <div className="relative rounded-[2rem] border border-white/70 bg-white/75 p-5 shadow-2xl shadow-indigo-950/10 backdrop-blur-xl sm:p-7">
-              <div className="flex items-center justify-between border-b border-slate-200/80 pb-5">
-                <div className="flex items-center gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-600 text-white"><BrainCircuit className="h-5 w-5" /></span><div><p className="text-sm font-bold text-slate-900">YOHAKU AI</p><p className="text-xs text-emerald-600">あなたの文脈を読んでいます</p></div></div>
-                <span className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-medium text-slate-500">今日</span>
+            <div className="absolute -inset-8 rounded-full bg-violet-200/25 blur-3xl" />
+            <div className="relative border-l border-slate-300/80 pl-7 sm:pl-10 lg:ml-10">
+              <div className="flex items-center gap-3 text-xs font-medium tracking-[0.12em] text-slate-500">
+                <BrainCircuit className="h-4 w-4 text-violet-600" aria-hidden="true" />
+                TODAY&apos;S CONTEXT
               </div>
-              <div className="mt-6 space-y-4">
-                <div className="rounded-2xl rounded-tl-sm bg-slate-100 p-4 text-sm leading-6 text-slate-600">「忙しいのに、何も進んでいない気がする」</div>
-                <div className="ml-6 rounded-2xl rounded-tr-sm bg-gradient-to-br from-violet-600 to-indigo-600 p-4 text-sm leading-6 text-white shadow-lg shadow-violet-500/20">最近の記録には、「人と話す時間がある日は満たされる」という共通点があります。今日は15分、誰かに連絡してみませんか？</div>
+              <p className="mt-8 text-2xl font-light leading-relaxed tracking-[-0.035em] text-slate-900 sm:text-3xl">
+                「忙しいのに、何も進んでいない気がする」
+              </p>
+              <div className="mt-8 border-t border-slate-300/70 pt-6">
+                <p className="text-xs font-semibold tracking-[0.14em] text-violet-700">YOHAKU AI</p>
+                <p className="mt-3 text-base font-light leading-8 text-slate-600">
+                  最近の記録には、人と話す時間がある日は満たされるという共通点があります。今日は15分、誰かに連絡してみませんか？
+                </p>
               </div>
-              <div className="mt-5 grid grid-cols-2 gap-3">
-                <div className="rounded-2xl border border-violet-100 bg-violet-50 p-3"><p className="text-[11px] font-semibold text-violet-700">見つけた傾向</p><p className="mt-1 text-xs leading-5 text-slate-600">人との対話が、回復のきっかけ</p></div>
-                <div className="rounded-2xl border border-sky-100 bg-sky-50 p-3"><p className="text-[11px] font-semibold text-sky-700">今日の一歩</p><p className="mt-1 text-xs leading-5 text-slate-600">友人に短いメッセージを送る</p></div>
+              <div className="mt-8 flex items-center gap-3 text-sm text-slate-700">
+                <span className="h-px w-8 bg-violet-400" />
+                今日の一歩：友人に短いメッセージを送る
               </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-white py-24 sm:py-32">
+        <div className="mx-auto max-w-7xl px-6 sm:px-10 lg:px-16">
+          <div className="max-w-2xl">
+            <p className="text-xs font-semibold tracking-[0.2em] text-slate-400">POSITIONING</p>
+            <h2 className="mt-5 text-4xl font-light tracking-[-0.045em] text-slate-950 sm:text-5xl">AIは、何を手伝うべきだろう。</h2>
+            <p className="mt-6 text-base font-light leading-8 text-slate-500">便利にすることだけが、今日を前へ進めることではありません。</p>
+          </div>
+
+          <div className="mt-16 grid gap-x-12 gap-y-10 border-y border-slate-200 py-10 md:grid-cols-3">
+            {otherAiCategories.map((category) => (
+              <div key={category.label} className="max-w-xs">
+                <p className="text-xs font-semibold tracking-[0.18em] text-slate-400">{category.label}</p>
+                <h3 className="mt-4 text-lg font-medium text-slate-900">{category.title}</h3>
+                <p className="mt-3 text-sm font-light leading-7 text-slate-500">{category.description}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-16 grid gap-10 lg:grid-cols-[0.72fr_1.28fr] lg:items-end">
+            <div>
+              <p className="text-xs font-semibold tracking-[0.2em] text-violet-700">YOHAKUOS</p>
+              <h3 className="mt-4 text-3xl font-light tracking-[-0.04em] text-slate-950 sm:text-4xl">あなたを理解するAI</h3>
+            </div>
+            <div className="border-l border-violet-300 pl-6 sm:pl-9">
+              <p className="max-w-2xl text-xl font-light leading-9 tracking-[-0.025em] text-slate-700 sm:text-2xl">
+                予定も、メールも、目標も、それぞれを見るだけではありません。これまでの流れと今の状況から、今日、何を進めるべきかを一緒に考える。
+              </p>
+              <Link href="/signup" className="mt-7 inline-flex items-center gap-2 text-sm font-semibold text-slate-900 transition hover:text-violet-700">
+                YOHAKUOSをはじめる <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
+              </Link>
             </div>
           </div>
         </div>
