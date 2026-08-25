@@ -2,6 +2,23 @@
 const nextConfig = {
   reactStrictMode: true,
 
+  async redirects() {
+    return [
+      // Settings consolidation — β版の正式Settingsは /yui/settings
+      { source: "/settings", destination: "/yui/settings", permanent: false },
+      { source: "/settings/ai", destination: "/yui/settings", permanent: false },
+      { source: "/member/settings", destination: "/yui/settings", permanent: false },
+      // Legal consolidation
+      { source: "/legal/terms", destination: "/terms", permanent: true },
+      { source: "/legal/privacy", destination: "/privacy", permanent: true },
+      // Hide development memory routes (userId: 'default' hardcoded)
+      { source: "/memory/reflection", destination: "/memory", permanent: false },
+      { source: "/memory/values", destination: "/memory", permanent: false },
+      { source: "/memory/beliefs", destination: "/memory", permanent: false },
+    ];
+  },
+
+
   images: {
     domains: [
       'localhost',

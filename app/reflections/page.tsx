@@ -87,7 +87,7 @@ export default async function ReflectionsPage() {
               Gemini APIキーを設定すると、保存した記録が静かに整えられ、パーソナルAIとの対話や、内面の風景の描画が始まります。
             </p>
             <Link 
-              href="/member/settings"
+              href="/yui/settings"
               className="inline-flex items-center text-xs font-light text-black/40 dark:text-foreground/40 hover:text-black/60 dark:hover:text-foreground/60 transition-colors group"
             >
               AI設定へ
@@ -144,7 +144,7 @@ export default async function ReflectionsPage() {
                     <div className="flex gap-4 pt-1">
                       {latestReflectionErrorDetails.showSettings && (
                         <Link
-                          href="/member/settings"
+                          href="/yui/settings"
                           className="inline-flex items-center text-xs font-light text-black/40 dark:text-foreground/40 hover:text-black/60 dark:hover:text-foreground/60 transition-colors group"
                         >
                           AI設定を確認する
@@ -271,7 +271,7 @@ export default async function ReflectionsPage() {
             <h2 className="text-xs tracking-[0.2em] uppercase text-black/40 dark:text-foreground/40">
               次の余白
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 gap-6">
               <Link 
                 href="/quiet-return"
                 className="group p-8 rounded-2xl bg-black/[0.02] dark:bg-card border border-black/5 dark:border-border/50 hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition-colors flex flex-col justify-between min-h-[140px]"
@@ -280,21 +280,6 @@ export default async function ReflectionsPage() {
                   <h3 className="text-lg font-light text-black/80 dark:text-foreground/80">静かな戻り</h3>
                   <p className="text-sm font-light text-black/40 dark:text-foreground/40 leading-relaxed">
                     以前の記録に、<br />もう一度出会ってみる。
-                  </p>
-                </div>
-                <div className="flex justify-end">
-                  <ChevronRight className="w-4 h-4 text-black/20 dark:text-foreground/20 group-hover:text-black/40 dark:group-hover:text-foreground/40 group-hover:translate-x-1 transition-all" />
-                </div>
-              </Link>
-
-              <Link 
-                href="/learning"
-                className="group p-8 rounded-2xl bg-black/[0.02] dark:bg-card border border-black/5 dark:border-border/50 hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition-colors flex flex-col justify-between min-h-[140px]"
-              >
-                <div className="space-y-2">
-                  <h3 className="text-lg font-light text-black/80 dark:text-foreground/80">今日の学び</h3>
-                  <p className="text-sm font-light text-black/40 dark:text-foreground/40 leading-relaxed">
-                    保存した記録から、<br />ゆっくり学びを振り返る。
                   </p>
                 </div>
                 <div className="flex justify-end">

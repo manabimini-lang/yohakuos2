@@ -3,13 +3,9 @@ import { PWAProvider } from "@/components/pwa-provider";
 import { SessionProvider } from "next-auth/react";
 import { CaptureLayer } from "@/components/capture/CaptureLayer";
 import { auth } from "@/lib/auth";
-import { Inter, Noto_Sans_JP } from "next/font/google";
 import { PWAInstallCTA } from "@/components/pwa/pwa-install-cta";
 import { SettingsButton } from "@/components/ui/settings-button";
 import "./globals.css";
-
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
-const notoSansJP = Noto_Sans_JP({ subsets: ["latin"], variable: "--font-noto-sans-jp" });
 
 export const dynamic = "force-dynamic";
 
@@ -56,7 +52,7 @@ export default async function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
       </head>
-      <body className={`min-h-screen bg-background text-foreground antialiased ${inter.variable} ${notoSansJP.variable} font-sans`}>
+      <body className="min-h-screen bg-background text-foreground antialiased font-sans">
         <SessionProvider session={session}>
           <PWAProvider>
             <div className="min-h-screen">

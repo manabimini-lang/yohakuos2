@@ -8,7 +8,7 @@ import { usePathname } from "next/navigation";
 export function SettingsButton() {
   const pathname = usePathname();
 
-  if (pathname === "/" || pathname === "/login" || pathname.startsWith("/settings")) {
+  if (pathname === "/" || pathname === "/login" || pathname.startsWith("/settings") || pathname.startsWith("/yui/settings")) {
     return null;
   }
 
@@ -31,7 +31,7 @@ export function SettingsButton() {
   if (isPhase1) {
     return (
       <Link
-        href="/settings"
+        href="/yui/settings"
         className={cn(
           "fixed top-4 right-4 z-50 p-2 rounded-full",
           "bg-white/50 backdrop-blur-md border border-slate-200/50 shadow-sm",

@@ -23,7 +23,7 @@ export function LogList({ logs }: LogListProps) {
 
   const handleOrganize = (content: string) => {
     sessionStorage.setItem("yohaku_ai_target_log", content);
-    router.push("/ai");
+    router.push("/yui");
   };
 
   if (logs.length === 0) {

@@ -16,7 +16,7 @@ export function AiClient({ isPaidMember, hasKey }: { isPaidMember: boolean; hasK
         <p className="text-slate-600 text-sm mb-6">
           思考を整理するためのAIアシスタント機能は、有料会員向けのサービスです。
         </p>
-        <a href="/member/settings" className="inline-block rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-foreground">
+        <a href="/yui/settings" className="inline-block rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-foreground">
           設定画面でプランを確認する
         </a>
       </div>
@@ -30,7 +30,7 @@ export function AiClient({ isPaidMember, hasKey }: { isPaidMember: boolean; hasK
         <p className="text-slate-600 text-sm mb-6">
           この機能を利用するには、ご自身のGemini APIキーを設定していただく必要があります。
         </p>
-        <a href="/member/settings" className="inline-block rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700">
+        <a href="/yui/settings" className="inline-block rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700">
           設定画面を開く
         </a>
       </div>

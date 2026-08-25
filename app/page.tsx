@@ -1,17 +1,13 @@
 import Link from "next/link";
 import {
   ArrowRight,
-  Sparkles,
-  Brain,
   Feather,
-  ShieldCheck,
-  PenLine,
-  BookMarked,
-  Compass,
-  MessageCircle,
   Layers,
-  Cloud,
-  History
+  History,
+  BrainCircuit,
+  Check,
+  Sparkles,
+  LockKeyhole,
 } from "lucide-react";
 
 const journeySteps = [
@@ -57,25 +53,66 @@ export default function LandingPage() {
   return (
     <main className="min-h-screen bg-[#f5f5f7] text-slate-900">
       <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.95),rgba(245,245,247,0.92)_40%,rgba(245,245,247,0.72)_70%,rgba(245,245,247,0.55))]" />
-        <div className="absolute inset-x-0 top-0 h-64 bg-gradient-to-b from-white/90 to-transparent" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(218,232,255,0.9),transparent_30%),radial-gradient(circle_at_80%_70%,rgba(222,210,255,0.72),transparent_32%),linear-gradient(135deg,#fafcff_0%,#f5f3ff_48%,#f8fafc_100%)]" />
+        <div className="absolute -right-24 top-8 h-96 w-96 rounded-full bg-violet-300/20 blur-3xl" />
 
-        <div className="relative mx-auto flex min-h-[84vh] max-w-7xl flex-col justify-center px-6 py-16 sm:px-10 lg:px-16">
+        <div className="relative mx-auto grid min-h-[84vh] max-w-7xl items-center gap-14 px-6 py-16 sm:px-10 lg:grid-cols-[1.05fr_0.95fr] lg:px-16">
           <div className="max-w-3xl">
-            <p className="inline-flex items-center gap-2 rounded-full border border-slate-200/80 bg-white/70 px-4 py-2 text-[11px] font-medium tracking-[0.22em] text-slate-500 backdrop-blur">
-              <Feather className="h-3.5 w-3.5" />
-              YOHAKU OS
+            <p className="inline-flex items-center gap-2 rounded-full border border-violet-200/80 bg-white/80 px-4 py-2 text-[11px] font-semibold tracking-[0.16em] text-violet-700 backdrop-blur">
+              <Sparkles className="h-3.5 w-3.5" />
+              PERSONAL AI MEMORY OS
             </p>
 
-            <h1 className="mt-8 max-w-3xl text-5xl font-light tracking-[-0.04em] text-slate-950 sm:text-6xl lg:text-7xl">
-              深呼吸して、
-              <span className="block text-slate-500">今日は静かに始めましょう。</span>
+            <h1 className="mt-7 max-w-3xl text-5xl font-semibold leading-[1.13] tracking-[-0.055em] text-slate-950 sm:text-6xl lg:text-7xl">
+              書き留めるだけで、
+              <span className="block bg-gradient-to-r from-violet-700 via-indigo-600 to-sky-600 bg-clip-text text-transparent">あなたの次の一歩が見えてくる。</span>
             </h1>
 
-            <p className="mt-8 max-w-2xl text-lg leading-8 text-slate-600 sm:text-xl">
-              YOHAKUは、記録と整理を自然につなぎ、
-              「今の自分に必要な一歩」を静かに見つける場所です。
+            <p className="mt-7 max-w-xl text-lg leading-8 text-slate-600 sm:text-xl">
+              YOHAKUは、日々の気づき・気分・迷いをあなた専用のAIが記憶し、
+              整理、振り返り、次の行動までをひとつながりにするサービスです。
             </p>
+
+            <ul className="mt-7 space-y-3 text-sm font-medium text-slate-700">
+              {[
+                "まとまっていない言葉も、そのまま記録できる",
+                "過去の自分と今の気持ちを、AIがやさしくつなぐ",
+                "考えすぎずに始められる、今日の小さな提案",
+              ].map((item) => (
+                <li key={item} className="flex items-center gap-3">
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-violet-100 text-violet-700"><Check className="h-3.5 w-3.5" /></span>
+                  {item}
+                </li>
+              ))}
+            </ul>
+
+            <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+              <Link href="/signup" className="inline-flex items-center justify-center gap-2 rounded-full bg-slate-950 px-7 py-4 text-sm font-semibold text-white shadow-xl shadow-slate-900/15 transition hover:-translate-y-0.5 hover:bg-violet-700">
+                無料でYOHAKUをはじめる <ArrowRight className="h-4 w-4" />
+              </Link>
+              <Link href="/login" className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white/70 px-7 py-4 text-sm font-semibold text-slate-700 transition hover:bg-white">
+                ログイン
+              </Link>
+            </div>
+            <p className="mt-4 flex items-center gap-1.5 text-xs text-slate-500"><LockKeyhole className="h-3.5 w-3.5" />あなたの記録は、あなたのためだけに使われます。</p>
+          </div>
+
+          <div className="relative mx-auto w-full max-w-md lg:max-w-none">
+            <div className="absolute inset-6 rounded-[2.5rem] bg-gradient-to-br from-violet-400/40 to-sky-300/30 blur-2xl" />
+            <div className="relative rounded-[2rem] border border-white/70 bg-white/75 p-5 shadow-2xl shadow-indigo-950/10 backdrop-blur-xl sm:p-7">
+              <div className="flex items-center justify-between border-b border-slate-200/80 pb-5">
+                <div className="flex items-center gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-600 text-white"><BrainCircuit className="h-5 w-5" /></span><div><p className="text-sm font-bold text-slate-900">YOHAKU AI</p><p className="text-xs text-emerald-600">あなたの文脈を読んでいます</p></div></div>
+                <span className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-medium text-slate-500">今日</span>
+              </div>
+              <div className="mt-6 space-y-4">
+                <div className="rounded-2xl rounded-tl-sm bg-slate-100 p-4 text-sm leading-6 text-slate-600">「忙しいのに、何も進んでいない気がする」</div>
+                <div className="ml-6 rounded-2xl rounded-tr-sm bg-gradient-to-br from-violet-600 to-indigo-600 p-4 text-sm leading-6 text-white shadow-lg shadow-violet-500/20">最近の記録には、「人と話す時間がある日は満たされる」という共通点があります。今日は15分、誰かに連絡してみませんか？</div>
+              </div>
+              <div className="mt-5 grid grid-cols-2 gap-3">
+                <div className="rounded-2xl border border-violet-100 bg-violet-50 p-3"><p className="text-[11px] font-semibold text-violet-700">見つけた傾向</p><p className="mt-1 text-xs leading-5 text-slate-600">人との対話が、回復のきっかけ</p></div>
+                <div className="rounded-2xl border border-sky-100 bg-sky-50 p-3"><p className="text-[11px] font-semibold text-sky-700">今日の一歩</p><p className="mt-1 text-xs leading-5 text-slate-600">友人に短いメッセージを送る</p></div>
+              </div>
+            </div>
           </div>
         </div>
       </section>

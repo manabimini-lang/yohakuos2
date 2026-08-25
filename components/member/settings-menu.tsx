@@ -30,11 +30,8 @@ export default function SettingsMenu() {
       {open && (
         <div className="absolute right-0 mt-2 w-44 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
           <div className="py-1">
-            <Link href="/yui/settings" className="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">接続</Link>
-            <Link href="/settings/ai" className="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">AI設定</Link>
-            <Link href="/settings/notifications" className="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">通知</Link>
-            <Link href="/settings/appearance" className="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">テーマ</Link>
-            <Link href="/help" className="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">ヘルプ</Link>
+            <Link href="/yui/settings" className="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">設定</Link>
+            <Link href="/settings/account" className="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">外部連携</Link>
           </div>
         </div>
       )}

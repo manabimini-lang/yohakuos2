@@ -116,7 +116,7 @@ export async function GET(req: NextRequest) {
     });
 
     // 4. Redirect user back to account settings
-    return NextResponse.redirect(new URL("/member/settings/account?success=true", baseUrl));
+    return NextResponse.redirect(new URL("/settings/account?success=true", baseUrl));
   } catch (error) {
     console.error("[DISCORD_CALLBACK_ERROR]", error);
     return new NextResponse("Internal Server Error", { status: 500 });

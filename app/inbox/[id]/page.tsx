@@ -129,7 +129,7 @@ export default async function InboxDetailPage({ params }: { params: { id: string
               <div className="flex gap-4 pt-1">
                 {errorDetails.showSettings && (
                   <Link
-                    href="/member/settings"
+                    href="/yui/settings"
                     className="inline-flex items-center text-xs font-light text-muted-foreground hover:text-foreground transition-colors group"
                   >
                     AI設定を確認する

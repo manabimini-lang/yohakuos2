@@ -88,7 +88,7 @@ export async function saveAISettings(data: AiSettingsInput) {
       });
     }
 
-    revalidatePath("/member/settings");
+    revalidatePath("/yui/settings");
     return { success: true };
   } catch (error: any) {
     console.error("[AI_SAVE_ERROR]", error);

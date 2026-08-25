@@ -127,7 +127,7 @@ export function AiChatClient({
           </p>
         </div>
         <Link 
-          href="/member/settings"
+          href="/yui/settings"
           className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-6 py-3 text-sm font-medium text-foreground transition-opacity hover:opacity-90 dark:bg-slate-100 dark:text-foreground"
         >
           会員プランを見る

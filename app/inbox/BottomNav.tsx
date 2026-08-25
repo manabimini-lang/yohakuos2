@@ -18,12 +18,12 @@ const NAV_ITEMS = [
   },
   {
     label: "対話",
-    href: "/dialogue",
+    href: "/yui",
     icon: MessageCircle,
   },
   {
     label: "設定",
-    href: "/settings",
+    href: "/yui/settings",
     icon: Settings,
   },
 ];

@@ -19,6 +19,7 @@ import type {
   CreateYuiSuggestedTimeBlockInput,
   CreateYuiReflectionInput,
   UpdateYuiGoalInput,
+  UpdateYuiMilestoneInput,
   YuiCurrentPosition,
   YuiDecisionCard,
   YuiDecisionInput,
@@ -2477,4 +2478,95 @@ export async function createYuiMilestone(
   });
 
   return data as YuiMilestone;
+}
+
+export async function updateYuiMilestone(
+  user: SessionUser,
+  milestoneId: string,
+  input: UpdateYuiMilestoneInput,
+): Promise<YuiMilestone> {
+  await ensureYuiProfile(user);
+
+  const payload: Record<string, unknown> = {};
+  if (typeof input.title === "string") payload.title = input.title.trim();
+  if (typeof input.status === "string") payload.status = normalizeMilestoneStatus(input.status);
+
+  const { data, error } = await supabaseAdmin
+    .from("milestones")
+    .update(payload)
+    .eq("user_id", user.id)
+    .eq("id", milestoneId)
+    .select("*")
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  if (Object.keys(payload).length > 0) {
+    await createYuiEvent(user, {
+      event_type: "milestone_updated",
+      source: "manual",
+      title: data.title,
+      content: data.title,
+      metadata: {
+        milestone_id: data.id,
+        goal_id: data.goal_id,
+        status: data.status,
+      },
+      occurred_at: new Date().toISOString(),
+    });
+  }
+
+  return data as YuiMilestone;
+}
+
+export async function deleteYuiGoal(user: SessionUser, goalId: string): Promise<void> {
+  await ensureYuiProfile(user);
+
+  const { error } = await supabaseAdmin
+    .from("goals")
+    .delete()
+    .eq("user_id", user.id)
+    .eq("id", goalId);
+
+  if (error) {
+    throw error;
+  }
+
+  await createYuiEvent(user, {
+    event_type: "goal_deleted",
+    source: "manual",
+    title: `Goal Deleted`,
+    content: `Goal with ID ${goalId} was deleted`,
+    metadata: {
+      goal_id: goalId,
+    },
+    occurred_at: new Date().toISOString(),
+  });
+}
+
+export async function deleteYuiMilestone(user: SessionUser, milestoneId: string): Promise<void> {
+  await ensureYuiProfile(user);
+
+  const { error } = await supabaseAdmin
+    .from("milestones")
+    .delete()
+    .eq("user_id", user.id)
+    .eq("id", milestoneId);
+
+  if (error) {
+    throw error;
+  }
+
+  await createYuiEvent(user, {
+    event_type: "task_deleted",
+    source: "manual",
+    title: `Milestone Deleted`,
+    content: `Milestone with ID ${milestoneId} was deleted`,
+    metadata: {
+      milestone_id: milestoneId,
+    },
+    occurred_at: new Date().toISOString(),
+  });
 }

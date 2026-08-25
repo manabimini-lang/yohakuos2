@@ -125,7 +125,7 @@ export default async function LifePage() {
               Gemini APIキーを設定すると、保存した記録が静かに整えられ、パーソナルAIとの対話や、内面の風景の描画が始まります。
             </p>
             <Link 
-              href="/member/settings"
+              href="/yui/settings"
               className="inline-flex items-center text-xs font-light text-black/40 dark:text-foreground/40 hover:text-black/60 dark:hover:text-foreground/60 transition-colors group"
             >
               AI設定へ

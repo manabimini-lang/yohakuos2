@@ -7,10 +7,7 @@ import type { YuiConversation, YuiMemoryCandidate } from "@/app/ui/backend/yui/m
 type YuiChatProps = {
   conversations: YuiConversation[];
   memoryCandidates: YuiMemoryCandidate[];
-  onSend: (content: string) => Promise<{
-    conversation: YuiConversation;
-    memoryCandidate: YuiMemoryCandidate | null;
-  }>;
+  onSend: (content: string) => Promise<unknown>;
   onApproveCandidate: (candidateId: string) => Promise<void>;
   onRejectCandidate: (candidateId: string) => Promise<void>;
 };
@@ -72,16 +69,50 @@ export function YuiChat({
     <Card className="p-6 space-y-5">
       <div>
         <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Conversation</p>
-        <h2 className="mt-1 text-lg font-semibold">YUI との会話</h2>
+        <h2 className="mt-1 text-lg font-semibold">YUIに話す</h2>
+        <p className="mt-2 text-sm leading-6 text-muted-foreground">
+          予定、目標、保存したことをそのまま相談してください。変更は提案として出し、実行前に確認します。
+        </p>
       </div>
 
-      <div className="max-h-[22rem] space-y-3 overflow-auto pr-1">
+      <div className="flex flex-wrap gap-2 py-1">
+        {[
+          "明日の予定を整理して",
+          "新しい目標を追加して",
+          "予定を金曜に移して",
+          "今週の振り返りをして"
+        ].map((s) => (
+          <button
+            key={s}
+            type="button"
+            onClick={() => setContent(s)}
+            className="rounded-full bg-slate-100/80 hover:bg-slate-200/80 px-3 py-1.5 text-[11px] font-medium text-slate-600 transition"
+          >
+            「{s}」
+          </button>
+        ))}
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-3">
+        <textarea
+          value={content}
+          onChange={(event) => setContent(event.target.value)}
+          placeholder="例: 明日の予定を整理して"
+          rows={4}
+          className="yohaku-input resize-none"
+        />
+        <button type="submit" disabled={isSending} className="yohaku-btn">
+          {isSending ? "送信中..." : "保存して送る"}
+        </button>
+      </form>
+
+      <div className="max-h-[16rem] space-y-3 overflow-auto pr-1">
         {conversations.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             まだ会話はありません。最初のメッセージを送ると履歴が保存されます。
           </p>
         ) : (
-          conversations.map((message) => (
+          conversations.slice(0, 4).map((message) => (
             <div
               key={message.id}
               className={`rounded-2xl border p-4 text-sm leading-7 ${
@@ -93,24 +124,11 @@ export function YuiChat({
               <div className="mb-2 text-xs uppercase tracking-[0.2em] text-muted-foreground">
                 {message.role}
               </div>
-              <p className="whitespace-pre-wrap text-foreground/90">{message.content}</p>
+              <p className="line-clamp-3 whitespace-pre-wrap text-foreground/90">{message.content}</p>
             </div>
           ))
         )}
       </div>
-
-      <form onSubmit={handleSubmit} className="space-y-3">
-        <textarea
-          value={content}
-          onChange={(event) => setContent(event.target.value)}
-          placeholder="YUI に話しかける..."
-          rows={4}
-          className="yohaku-input resize-none"
-        />
-        <button type="submit" disabled={isSending} className="yohaku-btn">
-          {isSending ? "送信中..." : "保存して送る"}
-        </button>
-      </form>
 
       {actionError && (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">

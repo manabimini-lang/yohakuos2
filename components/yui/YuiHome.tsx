@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { format } from "date-fns";
 import Link from "next/link";
-import { Loader2, RefreshCw, Settings } from "lucide-react";
+import { GitBranch, Lightbulb, Loader2, RefreshCw, Settings, Target } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { YuiActionCard } from "@/components/yui/YuiActionCard";
+
 import type { YuiActionSuggestion } from "@/app/ui/backend/yui/action_service";
 import { MemoryList } from "@/components/yui/MemoryList";
 import { YuiChat } from "@/components/yui/YuiChat";
@@ -36,7 +36,7 @@ import type { YuiTimeIntelligence } from "@/app/ui/backend/yui/time_intelligence
 import type { YuiPlanningSuggestion } from "@/app/ui/backend/yui/planning_service";
 import type { YuiWeeklyReview } from "@/app/ui/backend/yui/weekly_review_service";
 import { YuiDailyContextCard } from "@/components/yui/YuiDailyContextCard";
-import { YuiMemoryLayerCard } from "@/components/yui/YuiMemoryLayerCard";
+
 import { YuiThreadInsightsCard } from "@/components/yui/YuiThreadInsightsCard";
 import { YuiProgressCard } from "@/components/yui/YuiProgressCard";
 import { YuiTimeInsightsCard } from "@/components/yui/YuiTimeInsightsCard";
@@ -219,6 +219,7 @@ export function YuiHome({ displayName }: YuiHomeProps) {
   const [conversations, setConversations] = useState<YuiConversation[]>([]);
   const [decisions, setDecisions] = useState<YuiDecision[]>([]);
   const [googleHealth, setGoogleHealth] = useState<YuiGoogleHealthState | null>(null);
+  const [aiConnected, setAiConnected] = useState<boolean | null>(null);
   const [goals, setGoals] = useState<YuiGoal[]>([]);
   const [milestones, setMilestones] = useState<YuiMilestone[]>([]);
   const [reflections, setReflections] = useState<YuiReflection[]>([]);
@@ -251,6 +252,9 @@ export function YuiHome({ displayName }: YuiHomeProps) {
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isSavingGoal, setIsSavingGoal] = useState(false);
   const [isSavingMilestone, setIsSavingMilestone] = useState(false);
+  const [deleteConfirmGoalId, setDeleteConfirmGoalId] = useState<string | null>(null);
+  const [deleteConfirmMilestoneId, setDeleteConfirmMilestoneId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sectionErrors, setSectionErrors] = useState<Record<string, string>>({});
   const [isInitialLoading, setIsInitialLoading] = useState(true);
@@ -261,6 +265,19 @@ export function YuiHome({ displayName }: YuiHomeProps) {
   const [showMore, setShowMore] = useState(false);
   const [showFabMenu, setShowFabMenu] = useState(false);
   const [gmailInsights, setGmailInsights] = useState<any[]>([]);
+
+  // Refs for Goal Form — used by Setup Guide CTA
+  const goalCardRef = useRef<HTMLDivElement>(null);
+  const goalTitleInputRef = useRef<HTMLInputElement>(null);
+
+  const openGoalForm = useCallback(() => {
+    setShowMore(true);
+    // Wait one frame for More section to render, then scroll + focus
+    setTimeout(() => {
+      goalCardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      setTimeout(() => goalTitleInputRef.current?.focus(), 300);
+    }, 80);
+  }, []);
   const [unifiedActions, setUnifiedActions] = useState<any[]>([]);
   const [executingActionId, setExecutingActionId] = useState<string | null>(null);
   const [completedActionIds, setCompletedActionIds] = useState<Set<string>>(new Set());
@@ -454,6 +471,7 @@ export function YuiHome({ displayName }: YuiHomeProps) {
           fetch("/api/yui/calendar-actions"),
           fetch("/api/yui/reflections/latest"),
           fetch("/api/yui/notifications/status"),
+          fetch("/api/ai/test-connection").catch(() => null),
         ].map(async (request) => {
           try {
             return await request;
@@ -482,6 +500,7 @@ export function YuiHome({ displayName }: YuiHomeProps) {
         calendarActionsRes,
         latestReflectionRes,
         deliveryStatusRes,
+        aiTestRes,
       ] = responses;
 
       const currentCache = readYuiHomeCache()?.snapshot;
@@ -545,6 +564,11 @@ export function YuiHome({ displayName }: YuiHomeProps) {
         setGoogleHealth(payload.google ?? null);
       } else {
         setGoogleHealth(null);
+      }
+
+      if (aiTestRes?.ok) {
+        const aiPayload = await aiTestRes.json().catch(() => null);
+        setAiConnected(aiPayload?.connected === true);
       }
 
       if (profileRes?.ok) {
@@ -703,6 +727,52 @@ export function YuiHome({ displayName }: YuiHomeProps) {
     }
 
     await loadData();
+  };
+
+  const handleExecuteAction = async (recommendationId: string) => {
+    setExecutingActionId(recommendationId);
+    setError(null);
+    try {
+      const response = await fetch("/api/yui/actions/execute", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ recommendationId }),
+      });
+
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null);
+        throw new Error(payload?.error ?? "提案の実行に失敗しました");
+      }
+
+      await loadData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "提案の実行に失敗しました");
+    } finally {
+      setExecutingActionId(null);
+    }
+  };
+
+  const handleRejectAction = async (recommendationId: string) => {
+    setExecutingActionId(recommendationId);
+    setError(null);
+    try {
+      const response = await fetch(`/api/yui/recommendations/${recommendationId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "rejected" }),
+      });
+
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null);
+        throw new Error(payload?.error ?? "提案の見送りに失敗しました");
+      }
+
+      await loadData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "提案の見送りに失敗しました");
+    } finally {
+      setExecutingActionId(null);
+    }
   };
 
   const handleDecisionChoice = async (
@@ -866,6 +936,40 @@ export function YuiHome({ displayName }: YuiHomeProps) {
     }
   };
 
+  const handleDeleteGoal = async (goalId: string) => {
+    setIsDeleting(true);
+    try {
+      const response = await fetch(`/api/yui/goals?id=${encodeURIComponent(goalId)}`, { method: "DELETE" });
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null);
+        throw new Error(payload?.error ?? "目標の削除に失敗しました");
+      }
+      setDeleteConfirmGoalId(null);
+      await loadData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "目標の削除に失敗しました");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleDeleteMilestone = async (milestoneId: string) => {
+    setIsDeleting(true);
+    try {
+      const response = await fetch(`/api/yui/milestones?id=${encodeURIComponent(milestoneId)}`, { method: "DELETE" });
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null);
+        throw new Error(payload?.error ?? "マイルストーンの削除に失敗しました");
+      }
+      setDeleteConfirmMilestoneId(null);
+      await loadData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "マイルストーンの削除に失敗しました");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const recentEvents = today?.recentEvents ?? [];
   const calendarEvents = today?.calendarEvents ?? [];
   const suggestedTimeBlocks = today?.suggestedTimeBlocks ?? [];
@@ -927,16 +1031,75 @@ export function YuiHome({ displayName }: YuiHomeProps) {
     });
   }
 
+  const currentFocus = goals.find((goal) => goal.status === "active") ?? goals[0] ?? null;
+  const focusMilestones = currentFocus
+    ? milestones.filter((milestone) => milestone.goal_id === currentFocus.id)
+    : [];
+  const nextMilestone =
+    focusMilestones.find((milestone) => milestone.status !== "completed") ?? focusMilestones[0] ?? null;
+  const compactTimelineItems = [
+    currentFocus
+      ? {
+          id: `goal-${currentFocus.id}`,
+          label: "Goal",
+          title: currentFocus.title,
+          meta: `${currentFocus.progress ?? 0}%`,
+        }
+      : null,
+    ...focusMilestones.slice(0, 3).map((milestone) => ({
+      id: `milestone-${milestone.id}`,
+      label: "Milestone",
+      title: milestone.title,
+      meta: milestone.status === "completed" ? "完了" : "次候補",
+    })),
+    calendarEvents[0]
+      ? {
+          id: `calendar-${calendarEvents[0].id}`,
+          label: "Calendar",
+          title: calendarEvents[0].title,
+          meta: format(new Date(calendarEvents[0].start_at), "MM/dd HH:mm"),
+        }
+      : null,
+  ].filter(Boolean) as Array<{ id: string; label: string; title: string; meta: string }>;
+  const compactInsights = [
+    contextSummary?.reason,
+    today?.recentInsights?.[0],
+    latestReflection?.insights?.[0],
+  ].filter(Boolean).slice(0, 2) as string[];
+  const pendingRecommendationActions = recommendations.filter(
+    (rec) => rec.type === "action" && rec.status === "pending",
+  );
+  const confirmationItems = [
+    ...pendingRecommendationActions.map((rec) => ({
+      id: rec.id,
+      title: rec.title,
+      description: rec.reason,
+      source: "YUI Chat",
+      kind: "recommendation" as const,
+      onAccept: () => handleExecuteAction(rec.id),
+      onReject: () => handleRejectAction(rec.id),
+    })),
+    ...unifiedActions.slice(0, Math.max(0, 3 - pendingRecommendationActions.length)).map((action) => ({
+      id: action.id,
+      title: action.title,
+      description: action.description,
+      source: action.source,
+      kind: "unified" as const,
+      onAccept: () => handleExecuteUnifiedAction(action),
+      onReject: null,
+    })),
+  ].slice(0, 3);
+
   const googleStatusLabel =
     googleHealth?.status === "connected"
-      ? "Connected"
+      ? "Google 接続済み"
       : googleHealth?.status === "refreshing"
-        ? "Syncing..."
+        ? "同期中..."
         : googleHealth?.status === "needs_reauth"
-          ? "Needs Re-auth"
+          ? "再接続が必要"
           : googleHealth?.status === "sync_error"
-            ? "Sync Error"
-            : "Disconnected";
+            ? "同期エラー"
+            : "未接続";
 
   return (
     <main className="min-h-screen bg-[#f5f5f7] text-slate-900">
@@ -959,12 +1122,12 @@ export function YuiHome({ displayName }: YuiHomeProps) {
               </button>
               {showHealthMenu ? (
                 <div className="absolute right-0 top-full z-10 mt-2 w-56 rounded-2xl border border-slate-200/80 bg-white/90 p-2 shadow-sm backdrop-blur">
-                  <p className="px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-slate-500">System Health</p>
+                  <p className="px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-slate-500">システム連携状態</p>
                   <div className="mt-2 space-y-1 text-sm">
-                    <p className="rounded-xl bg-slate-50 px-2 py-1 text-slate-600">Google: {googleHealth?.status === "connected" ? "Connected" : googleHealth?.status === "needs_reauth" ? "Needs Re-auth" : "Offline"}</p>
-                    <p className="rounded-xl bg-slate-50 px-2 py-1 text-slate-600">Gmail: {gmailInsights.length > 0 ? "Connected" : "Offline"}</p>
-                    <p className="rounded-xl bg-slate-50 px-2 py-1 text-slate-600">AI: {morningBrief ? "Connected" : "Offline"}</p>
-                    <p className="rounded-xl bg-slate-50 px-2 py-1 text-slate-600">Supabase: {error ? "Maintenance" : "Connected"}</p>
+                    <p className="rounded-xl bg-slate-50 px-2 py-1 text-slate-600">Google: {googleHealth?.status === "connected" ? "接続済み" : googleHealth?.status === "needs_reauth" ? "再認証が必要" : "未接続"}</p>
+                    <p className="rounded-xl bg-slate-50 px-2 py-1 text-slate-600">Gmail: {gmailInsights.length > 0 ? "接続済み" : "未接続"}</p>
+                    <p className="rounded-xl bg-slate-50 px-2 py-1 text-slate-600">AI: {morningBrief ? "接続済み" : "未接続"}</p>
+                    <p className="rounded-xl bg-slate-50 px-2 py-1 text-slate-600">Supabase: {error ? "メンテナンス中" : "接続中"}</p>
                   </div>
                 </div>
               ) : null}
@@ -991,10 +1154,10 @@ export function YuiHome({ displayName }: YuiHomeProps) {
               {showSettingsMenu ? (
                 <div className="absolute right-0 top-full z-10 mt-2 w-44 rounded-2xl border border-slate-200/80 bg-white/90 p-2 shadow-sm backdrop-blur">
                   <Link href="/yui/settings" className="block rounded-xl px-2 py-2 text-sm text-slate-600 hover:bg-slate-50">接続</Link>
-                  <Link href="/settings/ai" className="block rounded-xl px-2 py-2 text-sm text-slate-600 hover:bg-slate-50">AI設定</Link>
-                  <Link href="/settings" className="block rounded-xl px-2 py-2 text-sm text-slate-600 hover:bg-slate-50">通知</Link>
-                  <Link href="/settings" className="block rounded-xl px-2 py-2 text-sm text-slate-600 hover:bg-slate-50">テーマ</Link>
-                  <Link href="/help" className="block rounded-xl px-2 py-2 text-sm text-slate-600 hover:bg-slate-50">ヘルプ</Link>
+                  <Link href="/yui/settings" className="block rounded-xl px-2 py-2 text-sm text-slate-600 hover:bg-slate-50">AI設定</Link>
+                  <Link href="/yui/settings" className="block rounded-xl px-2 py-2 text-sm text-slate-600 hover:bg-slate-50">通知</Link>
+                  <Link href="/yui/settings" className="block rounded-xl px-2 py-2 text-sm text-slate-600 hover:bg-slate-50">テーマ</Link>
+                  <Link href="/yui/settings" className="block rounded-xl px-2 py-2 text-sm text-slate-600 hover:bg-slate-50">ヘルプ</Link>
                 </div>
               ) : null}
             </div>
@@ -1007,12 +1170,67 @@ export function YuiHome({ displayName }: YuiHomeProps) {
           </div>
         )}
 
+        {/* First-Use Setup Guide: shown when connections or goals are not yet configured */}
+        {!isInitialLoading && profile && profile.has_completed_onboarding !== false && (
+          (() => {
+            const googleConnected = googleHealth?.status === "connected";
+            const aiReady = aiConnected === true;
+            const hasGoal = goals.length > 0;
+            const completedCount = [googleConnected, aiReady, hasGoal].filter(Boolean).length;
+            if (completedCount === 3) return null;
+            const steps = [
+              {
+                done: googleConnected,
+                label: "Google カレンダー・Gmail を接続する",
+                action: <Link href="/yui/settings" className="text-sm text-slate-700 hover:text-slate-900 underline underline-offset-2">Google カレンダー・Gmail を接続する</Link>,
+              },
+              {
+                done: aiReady,
+                label: "AI（Gemini）を接続する",
+                action: <Link href="/yui/settings" className="text-sm text-slate-700 hover:text-slate-900 underline underline-offset-2">AI（Gemini）を接続する</Link>,
+              },
+              {
+                done: hasGoal,
+                label: "目的をひとつ登録する",
+                action: (
+                  <button type="button" onClick={openGoalForm} className="text-sm text-slate-700 hover:text-slate-900 underline underline-offset-2 text-left">
+                    目的をひとつ登録する
+                  </button>
+                ),
+              },
+            ];
+            return (
+              <div className="rounded-2xl border border-slate-200 bg-slate-50/80 px-5 py-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400">セットアップ</span>
+                  <span className="text-[10px] text-slate-400">{completedCount} / 3 完了</span>
+                </div>
+                <p className="text-sm font-medium text-slate-700">YUIを使い始めるための手順</p>
+                <ul className="space-y-2">
+                  {steps.map((step, i) => (
+                    <li key={i} className="flex items-center gap-3">
+                      <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${step.done ? "bg-emerald-500 text-white" : "bg-slate-200 text-slate-500"}`}>
+                        {step.done ? "✓" : i + 1}
+                      </span>
+                      {step.done ? (
+                        <span className="text-sm text-slate-400 line-through">{step.label}</span>
+                      ) : (
+                        step.action
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            );
+          })()
+        )}
+
         {profile && profile.has_completed_onboarding === false ? (
           <YuiFirstMeetingCard
             onComplete={() => {
               setProfileForm((prev) => ({ ...prev, has_completed_onboarding: true }));
               if (profile) {
-                profile.has_completed_onboarding = true;
+                setProfile({ ...profile, has_completed_onboarding: true });
               }
             }}
           />
@@ -1024,90 +1242,198 @@ export function YuiHome({ displayName }: YuiHomeProps) {
                   <div className="h-4 w-24 animate-pulse rounded-full bg-slate-200" />
                   <div className="h-12 w-3/4 animate-pulse rounded-2xl bg-slate-200" />
                   <div className="h-20 animate-pulse rounded-2xl bg-slate-200" />
-                  <div className="flex gap-3">
-                    <div className="h-11 w-40 animate-pulse rounded-full bg-slate-200" />
-                    <div className="h-11 w-32 animate-pulse rounded-full bg-slate-200" />
-                  </div>
                 </div>
               </section>
             ) : (
-              <section className="relative overflow-hidden">
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.95),rgba(245,245,247,0.92)_40%,rgba(245,245,247,0.72)_70%,rgba(245,245,247,0.55))]" />
-                <div className="absolute inset-x-0 top-0 h-64 bg-gradient-to-b from-white/90 to-transparent" />
+              <div className="space-y-8 animate-in fade-in duration-500">
+                {/* 1. Priority 1 — YUI Chat (Conversation Hub) */}
+                <YuiChat
+                  conversations={conversations}
+                  memoryCandidates={memoryCandidates}
+                  onSend={handleSendConversation}
+                  onApproveCandidate={handleApproveCandidate}
+                  onRejectCandidate={handleRejectCandidate}
+                />
 
-                <div className="relative flex min-h-[70vh] flex-col justify-center gap-6 py-8 md:py-12">
-                  <div className="flex items-center justify-between gap-3">
+                {/* 2. Compact Header (Good morning & Current Status summary) */}
+                <Card className="p-6 relative overflow-hidden border-slate-200 bg-white shadow-sm rounded-3xl">
+                  <div className="absolute top-0 right-0 p-4">
                     <LiveStatusBadge
                       status={isRefreshing ? "updating" : "cached"}
-                      text={isRefreshing ? "Updating" : "Updated just now"}
+                      text={isRefreshing ? "同期中" : "同期完了"}
                     />
                   </div>
-
-                  <div className="space-y-4">
-                    <p className="text-sm font-medium uppercase tracking-[0.18em] text-slate-500">
-                      {new Date().getHours() < 12 ? "Good morning" : new Date().getHours() < 18 ? "Good afternoon" : "Good evening"}
-                    </p>
-                    <h2 className="max-w-3xl text-5xl font-light tracking-[-0.04em] text-slate-950 sm:text-6xl lg:text-7xl">
-                      {displayName ? `${displayName}さん` : "今日の一歩"}
-                    </h2>
-                  </div>
-
                   <div className="space-y-3">
-                    <p className="max-w-2xl text-lg leading-8 text-slate-700 sm:text-xl">
-                      {contextSummary?.priority ?? morningBrief?.priority ?? "今日の最重要事項を整理しています。"}
-                      {" "}
-                      {morningBrief?.changeSummary ?? "重要な変化はまだありません。今すぐ最初の一歩を進めましょう。"}
-                    </p>
-                    <p className="max-w-2xl text-base leading-7 text-slate-600 md:text-lg md:leading-8">
-                      {contextSummary?.nextAction ?? "午後の集中時間を確保して、いちばん大事な作業に取り組みましょう。"}
-                    </p>
+                    <div className="space-y-1">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">
+                        {new Date().getHours() < 12 ? "Good morning" : new Date().getHours() < 18 ? "Good afternoon" : "Good evening"}
+                      </p>
+                      <h2 className="text-2xl font-light tracking-tight text-slate-900">
+                        {displayName ? `${displayName}さん` : "今日の一歩"}
+                      </h2>
+                    </div>
+                    <div className="space-y-2 text-sm text-slate-600 leading-relaxed font-light">
+                      <p className="font-medium text-slate-800">
+                        【最重要】{contextSummary?.priority || morningBrief?.priority || "今日の予定と目標をYUIと整理しましょう。"}
+                      </p>
+                      <p>
+                        【次の一歩】{contextSummary?.nextAction || "チャットで「今日の予定は？」と話しかけてみてください。"}
+                      </p>
+                    </div>
+                    {/* Status chips */}
+                    <div className="flex flex-wrap gap-2 pt-2">
+                      {[
+                        calendarEvents.length > 0 ? `予定 ×${calendarEvents.length}` : "予定 ×0",
+                        gmailInsights.length > 0 ? `メール未読 ×${gmailInsights.length}` : "未読 ×0",
+                        goals[0] ? `目標進捗 ${goals[0].progress ?? 0}%` : "目標進捗 0%",
+                      ].map((chip) => (
+                        <span
+                          key={chip}
+                          className="rounded-full bg-slate-50 px-2.5 py-1 text-xs font-light text-slate-600 border border-slate-100"
+                        >
+                          {chip}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </Card>
+
+                {/* 3. Confirmation Layer */}
+                <Card className="space-y-4 rounded-2xl border-slate-200 bg-white p-5 shadow-sm">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">YUIからの確認待ち</p>
+                      <h3 className="mt-1 text-lg font-semibold text-slate-900">実行する前に確認</h3>
+                    </div>
+                    <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-500">
+                      {confirmationItems.length}件
+                    </span>
                   </div>
 
-                  <div className="flex flex-wrap gap-3 pt-1">
-                    <button
-                      type="button"
-                      onClick={() => setShowMore(true)}
-                      className="inline-flex items-center justify-center rounded-full bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-700 motion-reduce:transition-none"
-                    >
-                      {heroPriorityItems[0]?.title ? `Reply to ${heroPriorityItems[0].title}` : "Start Focus Session"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setShowMore(true)}
-                      className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white/80 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-white motion-reduce:transition-none"
-                    >
-                      {goals[0] ? "Review Goal" : "Open Calendar"}
-                    </button>
-                  </div>
+                  {confirmationItems.length === 0 ? (
+                    <p className="text-sm text-slate-500">今すぐ確認が必要な提案はありません。</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {confirmationItems.map((item) => (
+                        <div key={`${item.kind}-${item.id}`} className="rounded-xl border border-slate-200 bg-slate-50/80 p-4">
+                          <div className="flex flex-wrap items-start justify-between gap-3">
+                            <div className="min-w-0 flex-1 space-y-1">
+                              <p className="text-sm font-semibold text-slate-900">{item.title}</p>
+                              <p className="line-clamp-2 text-xs leading-5 text-slate-500">{item.description}</p>
+                              <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400">{item.source}</p>
+                            </div>
+                            <div className="flex shrink-0 items-center gap-2">
+                              {item.onReject ? (
+                                <button
+                                  type="button"
+                                  onClick={item.onReject}
+                                  disabled={executingActionId === item.id}
+                                  className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-500 transition hover:bg-slate-100"
+                                >
+                                  見送る
+                                </button>
+                              ) : null}
+                              <button
+                                type="button"
+                                onClick={item.onAccept}
+                                disabled={executingActionId === item.id || completedActionIds.has(item.id)}
+                                className="inline-flex items-center gap-1.5 rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-slate-800 disabled:opacity-60"
+                              >
+                                {executingActionId === item.id ? (
+                                  <>
+                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                    実行中
+                                  </>
+                                ) : completedActionIds.has(item.id) ? (
+                                  "完了"
+                                ) : (
+                                  "実行する"
+                                )}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </Card>
 
-                  <div className="flex flex-wrap gap-2 pt-2">
-                    {[
-                      calendarEvents.length > 0 ? `Meeting ×${Math.min(calendarEvents.length, 9)}` : "Meeting ×0",
-                      gmailInsights.length > 0 ? `Unread ×${Math.min(gmailInsights.length, 9)}` : "Unread ×0",
-                      contextSummary ? `Focus ${Math.max(30, contextSummary.priorityScore ?? 90)} min` : "Focus 90 min",
-                      goals[0] ? `Goal ${goals[0].progress ?? 0}%` : "Goal 0%",
-                    ].map((chip) => (
-                      <span
-                        key={chip}
-                        className="rounded-full border border-slate-200/80 bg-slate-50/70 px-3 py-1.5 text-xs font-medium text-slate-600"
-                      >
-                        {chip}
-                      </span>
-                    ))}
-                  </div>
+                {/* 4. Today / Focus / Timeline / Insight */}
+                <div className="grid gap-6 md:grid-cols-2">
+                  <TodaySummary
+                    todaySummary={morningBrief?.summary ?? today?.summary ?? null}
+                    eventsCount={morningBrief?.todayEventsCount ?? (calendarEvents?.length ?? 0)}
+                    unreadEmails={gmailInsights?.length ?? 0}
+                    topPriority={contextSummary?.priority ?? morningBrief?.priority ?? null}
+                    updatedAt={cacheUpdatedAt}
+                    changeSummary={morningBrief?.changeSummary ?? null}
+                  />
+
+                  <Card className="space-y-4 rounded-2xl border-slate-200 bg-white p-5 shadow-sm">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">Current Focus</p>
+                        <h3 className="mt-1 text-lg font-semibold text-slate-900">
+                          {currentFocus?.title ?? "YUIに目的を話す"}
+                        </h3>
+                      </div>
+                      <Target className="h-5 w-5 text-slate-400" />
+                    </div>
+                    <div className="space-y-2">
+                      <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+                        <div
+                          className="h-full rounded-full bg-slate-900"
+                          style={{ width: `${Math.min(100, Math.max(0, currentFocus?.progress ?? 0))}%` }}
+                        />
+                      </div>
+                      <div className="flex items-center justify-between text-xs text-slate-500">
+                        <span>{currentFocus ? `${currentFocus.progress ?? 0}%` : "未設定"}</span>
+                        <span>{nextMilestone ? `次: ${nextMilestone.title}` : "「始めたいこと」を送る"}</span>
+                      </div>
+                    </div>
+                  </Card>
+
+                  <Card className="space-y-4 rounded-2xl border-slate-200 bg-white p-5 shadow-sm">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">Life Timeline</p>
+                      <GitBranch className="h-5 w-5 text-slate-400" />
+                    </div>
+                    <div className="space-y-3">
+                      {compactTimelineItems.length === 0 ? (
+                        <p className="text-sm text-slate-500">まだ流れはありません。YUIに「来週までにこれを終わらせたい」と話してみてください。</p>
+                      ) : (
+                        compactTimelineItems.map((item) => (
+                          <div key={item.id} className="flex items-center gap-3">
+                            <span className="h-2 w-2 shrink-0 rounded-full bg-slate-300" />
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-sm font-medium text-slate-800">{item.title}</p>
+                              <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400">{item.label}</p>
+                            </div>
+                            <span className="shrink-0 rounded-full bg-slate-100 px-2 py-1 text-[11px] text-slate-500">{item.meta}</span>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </Card>
+
+                  <Card className="space-y-4 rounded-2xl border-slate-200 bg-white p-5 shadow-sm">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">YUI Insight</p>
+                      <Lightbulb className="h-5 w-5 text-slate-400" />
+                    </div>
+                    {compactInsights.length === 0 ? (
+                      <p className="text-sm text-slate-500">まだ気づきはありません。予定・会話・保存データが増えるとここに出ます。</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {compactInsights.map((insight) => (
+                          <p key={insight} className="line-clamp-2 text-sm leading-6 text-slate-700">{insight}</p>
+                        ))}
+                      </div>
+                    )}
+                  </Card>
                 </div>
-              </section>
-            )}
-
-            <section className="space-y-3">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-muted-foreground">Activity</p>
-                </div>
-                <span className="text-xs text-slate-500">{Math.min(activityItems.length, 5)} items</span>
               </div>
-              <ActivityFeedCard items={activityItems.slice(0, 5)} />
-            </section>
+            )}
 
             <section className="space-y-4">
               <div className="flex items-center justify-between gap-3">
@@ -1155,6 +1481,8 @@ export function YuiHome({ displayName }: YuiHomeProps) {
                     updatedAt={cacheUpdatedAt}
                     changeSummary={morningBrief?.changeSummary ?? null}
                   />
+
+                  <ActivityFeedCard items={activityItems.slice(0, 5)} />
                 </div>
               ) : null}
             </section>
@@ -1235,6 +1563,7 @@ export function YuiHome({ displayName }: YuiHomeProps) {
           </>
         )}
 
+        {showMore ? (
         <section className="grid gap-6 lg:grid-cols-[1.3fr_0.7fr]">
           <div className="space-y-6">
             <Card className="space-y-5 p-6">
@@ -1576,8 +1905,132 @@ export function YuiHome({ displayName }: YuiHomeProps) {
                   <div className="space-y-2">
                     {goalsState.data.slice(0, 5).map((goal: any) => (
                       <div key={goal.id} className="rounded-2xl border border-border bg-card p-3">
-                        <p className="text-sm font-medium">{goal.title}</p>
-                        <p className="mt-1 text-xs text-muted-foreground">進捗: {goal.progress ?? 0}%</p>
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-semibold">{goal.title}</p>
+                            <p className="mt-0.5 text-xs text-muted-foreground">進捗: {goal.progress ?? 0}%</p>
+
+                            {/* Milestones inside this Goal */}
+                            <div className="mt-3 space-y-1.5 pl-3 border-l border-slate-200">
+                              <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">マイルストーン</p>
+                              {milestones.filter(m => m.goal_id === goal.id).length === 0 ? (
+                                <p className="text-[11px] text-slate-400 font-light">マイルストーンはありません。</p>
+                              ) : (
+                                milestones.filter(m => m.goal_id === goal.id).map(m => (
+                                  <div key={m.id} className="flex items-center justify-between gap-2 text-xs">
+                                    <span className={m.status === 'completed' ? 'line-through text-slate-400' : 'text-slate-700'}>
+                                      • {m.title}
+                                    </span>
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="text-[9px] bg-slate-100 px-1 py-0.5 rounded text-slate-500">{m.status}</span>
+                                      {deleteConfirmMilestoneId === m.id ? (
+                                        <div className="flex items-center gap-1">
+                                          <button
+                                            type="button"
+                                            disabled={isDeleting}
+                                            onClick={() => void handleDeleteMilestone(m.id)}
+                                            className="text-[10px] text-red-500 hover:underline"
+                                          >
+                                            削除
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() => setDeleteConfirmMilestoneId(null)}
+                                            className="text-[10px] text-slate-400 hover:underline"
+                                          >
+                                            キャンセル
+                                          </button>
+                                        </div>
+                                      ) : (
+                                        <button
+                                          type="button"
+                                          onClick={() => setDeleteConfirmMilestoneId(m.id)}
+                                          className="text-[10px] text-slate-400 hover:text-red-500 transition-colors"
+                                        >
+                                          削除
+                                        </button>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))
+                              )}
+
+                              {/* Quick Add Milestone Inline Form */}
+                              <form
+                                onSubmit={async (e) => {
+                                  e.preventDefault();
+                                  const form = e.currentTarget;
+                                  const input = form.elements.namedItem('milestoneTitle') as HTMLInputElement;
+                                  if (!input || !input.value.trim()) return;
+
+                                  setIsSavingMilestone(true);
+                                  try {
+                                    const response = await fetch("/api/yui/milestones", {
+                                      method: "POST",
+                                      headers: { "Content-Type": "application/json" },
+                                      body: JSON.stringify({
+                                        goal_id: goal.id,
+                                        title: input.value.trim(),
+                                        status: "pending"
+                                      }),
+                                    });
+                                    if (!response.ok) {
+                                      const payload = await response.json().catch(() => null);
+                                      throw new Error(payload?.error ?? "マイルストーンの保存に失敗しました");
+                                    }
+                                    input.value = "";
+                                    await loadData();
+                                  } catch (err) {
+                                    setError(err instanceof Error ? err.message : "マイルストーンの保存に失敗しました");
+                                  } finally {
+                                    setIsSavingMilestone(false);
+                                  }
+                                }}
+                                className="mt-2 flex gap-1.5"
+                              >
+                                <input
+                                  name="milestoneTitle"
+                                  placeholder="新しいマイルストーン..."
+                                  className="flex-1 text-xs border border-slate-200 rounded px-2 py-1 bg-white focus:outline-none focus:border-slate-300"
+                                />
+                                <button
+                                  type="submit"
+                                  disabled={isSavingMilestone}
+                                  className="text-[10px] bg-slate-900 text-white px-2 py-1 rounded hover:bg-slate-800 disabled:opacity-50"
+                                >
+                                  追加
+                                </button>
+                              </form>
+                            </div>
+                          </div>
+                          {deleteConfirmGoalId === goal.id ? (
+                            <div className="flex shrink-0 items-center gap-2">
+                              <button
+                                type="button"
+                                disabled={isDeleting}
+                                onClick={() => void handleDeleteGoal(goal.id)}
+                                className="rounded-full bg-red-500 px-3 py-1 text-[11px] font-semibold text-white transition hover:bg-red-600 disabled:opacity-50"
+                              >
+                                {isDeleting ? "…" : "削除する"}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setDeleteConfirmGoalId(null)}
+                                className="rounded-full border border-border px-3 py-1 text-[11px] font-medium text-muted-foreground transition hover:bg-muted"
+                              >
+                                キャンセル
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => setDeleteConfirmGoalId(goal.id)}
+                              className="shrink-0 rounded-full border border-border px-2.5 py-1 text-[11px] font-medium text-muted-foreground transition hover:border-red-300 hover:text-red-500"
+                            >
+                              削除
+                            </button>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -1997,23 +2450,6 @@ export function YuiHome({ displayName }: YuiHomeProps) {
 
             <Card className="space-y-4 p-6">
               <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Consult</p>
-                <h2 className="mt-1 text-lg font-semibold">YUI に相談</h2>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  保存後に記憶候補が出るので、後から「これは覚えておきますか？」へ繋げられます。
-                </p>
-              </div>
-              <YuiChat
-                conversations={conversations}
-                memoryCandidates={memoryCandidates}
-                onSend={handleSendConversation}
-                onApproveCandidate={handleApproveCandidate}
-                onRejectCandidate={handleRejectCandidate}
-              />
-            </Card>
-
-            <Card className="space-y-4 p-6">
-              <div>
                 <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Reflection</p>
                 <h2 className="mt-1 text-lg font-semibold">今日の Reflection</h2>
               </div>
@@ -2189,7 +2625,7 @@ export function YuiHome({ displayName }: YuiHomeProps) {
               </div>
             </Card>
 
-            <Card className="space-y-4 p-6">
+            <Card ref={goalCardRef} id="goal-form-card" className="space-y-4 p-6">
               <div className="space-y-2">
                 <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Goals</p>
                 <h2 className="mt-1 text-lg font-semibold">目的とマイルストーン</h2>
@@ -2200,6 +2636,7 @@ export function YuiHome({ displayName }: YuiHomeProps) {
 
               <form onSubmit={handleSaveGoal} className="space-y-3 rounded-3xl border border-border bg-muted/20 p-4">
                 <input
+                  ref={goalTitleInputRef}
                   value={goalForm.title}
                   onChange={(event) => setGoalForm((current) => ({ ...current, title: event.target.value }))}
                   placeholder="目的"
@@ -2238,51 +2675,6 @@ export function YuiHome({ displayName }: YuiHomeProps) {
                 </button>
               </form>
 
-              <form
-                onSubmit={handleSaveMilestone}
-                className="space-y-3 rounded-3xl border border-border bg-background p-4"
-              >
-                <select
-                  value={milestoneForm.goal_id}
-                  onChange={(event) =>
-                    setMilestoneForm((current) => ({ ...current, goal_id: event.target.value }))
-                  }
-                  className="yohaku-input"
-                >
-                  <option value="">目的を選ぶ</option>
-                  {goals.map((goal) => (
-                    <option key={goal.id} value={goal.id}>
-                      {goal.title}
-                    </option>
-                  ))}
-                </select>
-                <input
-                  value={milestoneForm.title}
-                  onChange={(event) =>
-                    setMilestoneForm((current) => ({ ...current, title: event.target.value }))
-                  }
-                  placeholder="マイルストーン"
-                  className="yohaku-input"
-                />
-                <select
-                  value={milestoneForm.status}
-                  onChange={(event) =>
-                    setMilestoneForm((current) => ({ ...current, status: event.target.value }))
-                  }
-                  className="yohaku-input"
-                >
-                  <option value="pending">pending</option>
-                  <option value="completed">completed</option>
-                </select>
-                <button
-                  type="submit"
-                  disabled={isSavingMilestone || goals.length === 0}
-                  className="yohaku-btn"
-                >
-                  {isSavingMilestone ? "保存中..." : "マイルストーンを追加"}
-                </button>
-              </form>
-
               <div className="space-y-3 rounded-3xl border border-border bg-muted/20 p-4">
                 <div>
                   <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">現在の目的</p>
@@ -2302,35 +2694,57 @@ export function YuiHome({ displayName }: YuiHomeProps) {
                   ) : (
                     goals.slice(0, 3).map((goal) => (
                       <div key={goal.id} className="rounded-2xl border border-border bg-background px-3 py-2">
-                        <p className="text-sm font-medium">{goal.title}</p>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          {goal.status} / {goal.progress}%
-                        </p>
+                        {deleteConfirmGoalId === goal.id ? (
+                          <div className="space-y-2 py-1">
+                            <p className="text-xs text-red-600 font-medium">この目的を削除しますか？</p>
+                            <p className="text-[10px] text-muted-foreground">この操作は元に戻せません。配下のマイルストーンも自動的に削除されます。</p>
+                            <div className="flex gap-2">
+                              <button
+                                type="button"
+                                disabled={isDeleting}
+                                onClick={() => handleDeleteGoal(goal.id)}
+                                className="rounded bg-red-600 px-2 py-1 text-[10px] font-medium text-white hover:bg-red-700"
+                              >
+                                {isDeleting ? "削除中..." : "削除する"}
+                              </button>
+                              <button
+                                type="button"
+                                disabled={isDeleting}
+                                onClick={() => setDeleteConfirmGoalId(null)}
+                                className="rounded bg-slate-100 px-2 py-1 text-[10px] font-medium text-slate-700 hover:bg-slate-200"
+                              >
+                                キャンセル
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm font-medium">{goal.title}</p>
+                              <p className="mt-1 text-xs text-muted-foreground">
+                                {goal.status} / {goal.progress}%
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setDeleteConfirmGoalId(goal.id)}
+                              className="text-xs text-slate-400 hover:text-red-600 transition-colors p-1"
+                            >
+                              削除
+                            </button>
+                          </div>
+                        )}
                       </div>
                     ))
                   )}
                 </div>
 
-                <div className="space-y-2">
-                  <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
-                    次のマイルストーン
-                  </p>
-                  {milestones.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">まだマイルストーンはありません。</p>
-                  ) : (
-                    milestones.slice(0, 3).map((milestone) => (
-                      <div key={milestone.id} className="rounded-2xl border border-border bg-background px-3 py-2">
-                        <p className="text-sm leading-6">{milestone.title}</p>
-                        <p className="mt-1 text-xs text-muted-foreground">{milestone.status}</p>
-                      </div>
-                    ))
-                  )}
-                </div>
               </div>
             </Card>
 
           </div>
         </section>
+        ) : null}
       </div>
       <div className="fixed bottom-5 right-5 z-20 flex flex-col items-end gap-2">
         {showFabMenu ? (

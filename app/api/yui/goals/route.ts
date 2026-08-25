@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getYuiGoals, postYuiGoal } from "@/app/ui/backend/yui/api";
+import { getYuiGoals, postYuiGoal, patchYuiGoal, deleteGoal } from "@/app/ui/backend/yui/api";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -43,6 +43,51 @@ export async function POST(request: Request) {
       : error instanceof Error
         ? error.message
         : "Failed to save YUI goal";
+    return NextResponse.json({ error: message }, { status: message === "Unauthorized" ? 401 : 500 });
+  }
+}
+
+export async function PATCH(request: Request) {
+  try {
+    const body = await request.json();
+    const id = body?.id;
+    if (!id) {
+      return NextResponse.json({ error: "id is required" }, { status: 400 });
+    }
+
+    const goal = await patchYuiGoal(id, {
+      title: body.title,
+      description: body.description,
+      status: body.status,
+      progress: typeof body.progress === "number" ? body.progress : undefined,
+    });
+
+    return NextResponse.json({ goal });
+  } catch (error) {
+    const message = error instanceof Error && error.message === "Unauthorized"
+      ? "Unauthorized"
+      : error instanceof Error
+        ? error.message
+        : "Failed to update YUI goal";
+    return NextResponse.json({ error: message }, { status: message === "Unauthorized" ? 401 : 500 });
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get("id");
+    if (!id) {
+      return NextResponse.json({ error: "id is required" }, { status: 400 });
+    }
+    await deleteGoal(id);
+    return NextResponse.json({ status: "deleted" });
+  } catch (error) {
+    const message = error instanceof Error && error.message === "Unauthorized"
+      ? "Unauthorized"
+      : error instanceof Error
+        ? error.message
+        : "Failed to delete YUI goal";
     return NextResponse.json({ error: message }, { status: message === "Unauthorized" ? 401 : 500 });
   }
 }

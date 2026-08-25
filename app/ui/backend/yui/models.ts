@@ -389,6 +389,8 @@ export type CreateYuiMilestoneInput = {
   status?: string;
 };
 
+export type UpdateYuiMilestoneInput = Partial<Pick<CreateYuiMilestoneInput, "title" | "status">>;
+
 export type CreateYuiCalendarEventInput = YuiCalendarEventInput;
 
 export type CreateYuiSuggestedTimeBlockInput = YuiSuggestedTimeBlockInput;
@@ -455,7 +457,6 @@ export type YuiMemoryProfile = {
   last_observed_at: string;
   updated_at: string;
 };
-
 
 
 

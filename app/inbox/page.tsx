@@ -124,7 +124,7 @@ export default async function InboxPage() {
             <Caption className="text-foreground/40">
               今日の余白
             </Caption>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 gap-6">
               {/* Quiet Return */}
               <Link 
                 href="/quiet-return"
@@ -134,38 +134,6 @@ export default async function InboxPage() {
                   <SectionTitle className="text-lg text-foreground/80">静かな戻り</SectionTitle>
                   <Body className="text-foreground/40">
                     以前の記録に、<br />もう一度出会ってみる。
-                  </Body>
-                </div>
-                <div className="flex justify-end">
-                  <ChevronRight className="w-4 h-4 text-foreground/20 group-hover:text-foreground/40 group-hover:translate-x-1 transition-all" />
-                </div>
-              </Link>
-
-              {/* Learning */}
-              <Link 
-                href="/learning"
-                className="group p-8 rounded-2xl bg-card border border-border/50 hover:bg-white/[0.04] transition-colors flex flex-col justify-between min-h-[160px]"
-              >
-                <div className="space-y-2">
-                  <SectionTitle className="text-lg text-foreground/80">今日の学び</SectionTitle>
-                  <Body className="text-foreground/40">
-                    保存した記録から、<br />ゆっくり学びを振り返る。
-                  </Body>
-                </div>
-                <div className="flex justify-end">
-                  <ChevronRight className="w-4 h-4 text-foreground/20 group-hover:text-foreground/40 group-hover:translate-x-1 transition-all" />
-                </div>
-              </Link>
-
-              {/* Ritual */}
-              <Link 
-                href="/ritual"
-                className="group p-8 rounded-2xl bg-card border border-border/50 hover:bg-white/[0.04] transition-colors flex flex-col justify-between min-h-[160px]"
-              >
-                <div className="space-y-2">
-                  <SectionTitle className="text-lg text-foreground/80">小さな儀式</SectionTitle>
-                  <Body className="text-foreground/40">
-                    考える前に、<br />少しだけ整える。
                   </Body>
                 </div>
                 <div className="flex justify-end">

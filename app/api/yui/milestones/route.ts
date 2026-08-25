@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getYuiMilestones, postYuiMilestone } from "@/app/ui/backend/yui/api";
+import { getYuiMilestones, postYuiMilestone, patchYuiMilestone, deleteMilestone } from "@/app/ui/backend/yui/api";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -43,6 +43,49 @@ export async function POST(request: Request) {
       : error instanceof Error
         ? error.message
         : "Failed to save YUI milestone";
+    return NextResponse.json({ error: message }, { status: message === "Unauthorized" ? 401 : 500 });
+  }
+}
+
+export async function PATCH(request: Request) {
+  try {
+    const body = await request.json();
+    const id = body?.id;
+    if (!id) {
+      return NextResponse.json({ error: "id is required" }, { status: 400 });
+    }
+
+    const milestone = await patchYuiMilestone(id, {
+      title: body.title,
+      status: body.status,
+    });
+
+    return NextResponse.json({ milestone });
+  } catch (error) {
+    const message = error instanceof Error && error.message === "Unauthorized"
+      ? "Unauthorized"
+      : error instanceof Error
+        ? error.message
+        : "Failed to update YUI milestone";
+    return NextResponse.json({ error: message }, { status: message === "Unauthorized" ? 401 : 500 });
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get("id");
+    if (!id) {
+      return NextResponse.json({ error: "id is required" }, { status: 400 });
+    }
+    await deleteMilestone(id);
+    return NextResponse.json({ status: "deleted" });
+  } catch (error) {
+    const message = error instanceof Error && error.message === "Unauthorized"
+      ? "Unauthorized"
+      : error instanceof Error
+        ? error.message
+        : "Failed to delete YUI milestone";
     return NextResponse.json({ error: message }, { status: message === "Unauthorized" ? 401 : 500 });
   }
 }

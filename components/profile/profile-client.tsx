@@ -253,7 +253,7 @@ export function ProfileClient() {
         <div className="divide-y divide-slate-100 border border-slate-100 rounded-2xl bg-white overflow-hidden text-xs">
           {/* Gemini Key Config */}
           <Link 
-            href="/member/settings"
+            href="/yui/settings"
             className="flex items-center justify-between p-4 text-slate-650 hover:bg-slate-50 transition-colors"
           >
             <div className="flex items-center space-x-2.5">
@@ -265,7 +265,7 @@ export function ProfileClient() {
 
           {/* Discord Connection Settings */}
           <Link 
-            href="/member/settings"
+            href="/settings/account"
             className="flex items-center justify-between p-4 text-slate-650 hover:bg-slate-50 transition-colors"
           >
             <div className="flex items-center space-x-2.5">
@@ -289,7 +289,7 @@ export function ProfileClient() {
 
           {/* Local Data Management */}
           <Link 
-            href="/member/settings"
+            href="/yui/settings"
             className="flex items-center justify-between p-4 text-slate-650 hover:bg-slate-50 transition-colors"
           >
             <div className="flex items-center space-x-2.5">
@@ -301,7 +301,7 @@ export function ProfileClient() {
 
           {/* General App Settings */}
           <Link 
-            href="/member/settings"
+            href="/yui/settings"
             className="flex items-center justify-between p-4 text-slate-650 hover:bg-slate-50 transition-colors"
           >
             <div className="flex items-center space-x-2.5">

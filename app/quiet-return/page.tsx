@@ -121,7 +121,7 @@ export default async function QuietReturnPage() {
                 Gemini APIキーを設定すると、保存した記録が静かに整えられ、パーソナルAIとの対話や、内面の風景の描画が始まります。
               </p>
               <Link 
-                href="/member/settings"
+                href="/yui/settings"
                 className="inline-flex items-center text-xs font-light text-black/40 dark:text-foreground/40 hover:text-black/60 dark:hover:text-foreground/60 transition-colors group"
               >
                 AI設定へ
@@ -227,18 +227,7 @@ export default async function QuietReturnPage() {
           </div>
         )}
 
-        {/* Link to Learning */}
-        {hasReturns && hasAiAccess && (
-          <div className="pt-16 pb-8 border-t border-black/5 dark:border-border/50 text-center">
-            <Link 
-              href="/learning"
-              className="inline-flex items-center text-xs font-light tracking-[0.1em] text-black/40 dark:text-foreground/40 hover:text-black/60 dark:hover:text-foreground/60 transition-colors group"
-            >
-              この記録から学びを見る
-              <ChevronRight className="w-3 h-3 ml-1 group-hover:translate-x-1 transition-transform" />
-            </Link>
-          </div>
-        )}
+
       </div>
 
       {/* Footer philosophy */}

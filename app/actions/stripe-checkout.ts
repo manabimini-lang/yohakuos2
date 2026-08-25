@@ -118,8 +118,8 @@ export async function createStripeCheckoutSession({ priceId, turnstileToken }: C
         },
       ],
       mode: "subscription",
-      success_url: `${process.env.NEXTAUTH_URL}/member/settings?success=true`,
-      cancel_url: `${process.env.NEXTAUTH_URL}/member/settings?canceled=true`,
+      success_url: `${process.env.NEXTAUTH_URL}/yui/settings?success=true`,
+      cancel_url: `${process.env.NEXTAUTH_URL}/yui/settings?canceled=true`,
       metadata: {
         userId: user.id,
       },

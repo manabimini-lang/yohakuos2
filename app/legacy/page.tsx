@@ -252,10 +252,10 @@ export default async function LegacyPage() {
                   </h2>
                 </div>
                 <Link
-                  href="/companion"
+                  href="/yui"
                   className="inline-flex items-center gap-2 rounded-full border border-black/10 dark:border-border bg-black/[0.04] dark:bg-white/10 px-5 py-3 text-sm font-light text-black/70 dark:text-foreground/70 hover:bg-black/[0.08] dark:hover:bg-white/15 transition-colors"
                 >
-                  余白を話す
+                  YUIホームへ
                   <ChevronRight className="w-4 h-4" />
                 </Link>
               </div>

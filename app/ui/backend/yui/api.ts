@@ -42,9 +42,13 @@ import {
   rejectYuiMemoryCandidate,
   updateYuiSuggestedTimeBlockStatus,
   updateYuiProfile,
+  updateYuiGoal,
+  updateYuiMilestone,
   listYuiEvents,
   updateYuiConnectionStatus,
   updateYuiCalendarActionStatus,
+  deleteYuiGoal,
+  deleteYuiMilestone,
 } from "./service";
 import {
   generateYuiRecommendation,
@@ -158,6 +162,11 @@ export async function postYuiGoal(input: CreateYuiGoalInput) {
   return createYuiGoal(session.user, input);
 }
 
+export async function patchYuiGoal(goalId: string, input: Partial<CreateYuiGoalInput>) {
+  const session = await requireYuiSession();
+  return updateYuiGoal(session.user, goalId, input);
+}
+
 export async function getYuiMilestones(goalId?: string, limit = 50) {
   const session = await requireYuiSession();
   return listYuiMilestones(session.user.id, goalId, limit);
@@ -167,6 +176,22 @@ export async function postYuiMilestone(input: CreateYuiMilestoneInput) {
   const session = await requireYuiSession();
   return createYuiMilestone(session.user, input);
 }
+
+export async function patchYuiMilestone(milestoneId: string, input: Partial<CreateYuiMilestoneInput>) {
+  const session = await requireYuiSession();
+  return updateYuiMilestone(session.user, milestoneId, input);
+}
+
+export async function deleteGoal(goalId: string) {
+  const session = await requireYuiSession();
+  return deleteYuiGoal(session.user, goalId);
+}
+
+export async function deleteMilestone(milestoneId: string) {
+  const session = await requireYuiSession();
+  return deleteYuiMilestone(session.user, milestoneId);
+}
+
 
 export async function postYuiEvent(input: CreateYuiEventInput) {
   const session = await requireYuiSession();
@@ -322,6 +347,5 @@ export async function triggerNotificationDeliveryForUser(type: "morning" | "even
   const { deliverNotification } = await import("./notification_scheduler");
   return deliverNotification(session.user.id, type);
 }
-
 
 

@@ -126,7 +126,7 @@ export function PricingClient() {
                 現在 Premiumプラン利用中です
               </p>
               <button
-                onClick={() => router.push("/member/settings")}
+                onClick={() => router.push("/yui/settings")}
                 className="w-full flex items-center justify-center space-x-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium py-3 transition-colors text-sm"
               >
                 <span>設定ページへ</span>

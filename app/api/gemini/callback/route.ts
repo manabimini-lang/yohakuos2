@@ -20,7 +20,7 @@ export async function GET(req: Request) {
     const code = url.searchParams.get("code");
     
     if (!code) {
-      return NextResponse.redirect(new URL("/member/settings?gemini=error", req.url));
+      return NextResponse.redirect(new URL("/yui/settings?gemini=error", req.url));
     }
 
     const clientId = process.env.GOOGLE_CLIENT_ID;
@@ -29,7 +29,7 @@ export async function GET(req: Request) {
 
     if (!clientId || !clientSecret || !nextAuthUrl) {
       console.error("Missing Google OAuth configuration");
-      return NextResponse.redirect(new URL("/member/settings?gemini=error", req.url));
+      return NextResponse.redirect(new URL("/yui/settings?gemini=error", req.url));
     }
 
     const redirectUri = `${nextAuthUrl}/api/gemini/callback`;
@@ -50,7 +50,7 @@ export async function GET(req: Request) {
 
     if (!tokenResponse.ok) {
       console.error("Failed to exchange token", await tokenResponse.text());
-      return NextResponse.redirect(new URL("/member/settings?gemini=error", req.url));
+      return NextResponse.redirect(new URL("/yui/settings?gemini=error", req.url));
     }
 
     const tokenData = await tokenResponse.json();
@@ -79,12 +79,12 @@ export async function GET(req: Request) {
       },
     });
 
-    const response = NextResponse.redirect(new URL("/member/settings?gemini=connected", req.url));
+    const response = NextResponse.redirect(new URL("/yui/settings?gemini=connected", req.url));
     response.cookies.delete("gemini_oauth_state");
     return response;
 
   } catch (error) {
     console.error("[GEMINI_CALLBACK]", error);
-    return NextResponse.redirect(new URL("/member/settings?gemini=error", req.url));
+    return NextResponse.redirect(new URL("/yui/settings?gemini=error", req.url));
   }
 }
