@@ -7,6 +7,7 @@ import { AdminHeader } from "@/components/admin/header";
 import { AdminSidebar } from "@/components/admin/sidebar";
 import { auth } from "@/lib/auth";
 import { extractPermissionsFromSession, hasMinRoleLevel } from "@/lib/permissions/helpers";
+import { isAdminAccessEmail } from "@/lib/auth/admin-access";
 
 export default async function AdminLayout({
   children,
@@ -17,6 +18,10 @@ export default async function AdminLayout({
 
   if (!session?.user) {
     redirect("/login");
+  }
+
+  if (!isAdminAccessEmail(session.user.email)) {
+    redirect("/member");
   }
 
   // Use RBAC permission-based check

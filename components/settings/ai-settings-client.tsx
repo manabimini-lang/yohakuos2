@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ChevronLeft, Key, Cpu, CheckCircle2, AlertCircle, Sparkles, Loader2 } from "lucide-react";
+import { ChevronLeft, Key, CheckCircle2, AlertCircle, Sparkles, Loader2, Eye, EyeOff } from "lucide-react";
 // Server Action import removed; using API route instead
 
 type AiSettingsClientProps = {
+  isPremium: boolean;
   initialSettings: {
     provider: string;
     hasKey: boolean;
@@ -16,15 +17,104 @@ type AiSettingsClientProps = {
   aiSource?: string | null;
 };
 
-export function AiSettingsClient({ initialSettings, aiAvailable, aiSource }: AiSettingsClientProps) {
+export function AiSettingsClient({ initialSettings, aiAvailable, aiSource, isPremium }: AiSettingsClientProps) {
   const [provider, setProvider] = useState(initialSettings?.provider || "gemini");
   const [apiKey, setApiKey] = useState(initialSettings?.hasKey ? "••••••••" : "");
+  const [hasSavedKey, setHasSavedKey] = useState(initialSettings?.hasKey ?? false);
+  const [isApiKeyVisible, setIsApiKeyVisible] = useState(false);
+  const [isRevealingKey, setIsRevealingKey] = useState(false);
   const [isEnabled, setIsEnabled] = useState(initialSettings?.isEnabled || false);
 
   const FIXED_MODEL = "gemini-2.5-flash";
   const [testing, setTesting] = useState(false);
   const [saving, setSaving] = useState(false);
   const [statusMsg, setStatusMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  const handleManagedConnectionTest = async () => {
+    setTesting(true);
+    setStatusMsg(null);
+    try {
+      const response = await fetch("/api/ai/test-connection", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      const data = await response.json().catch(() => null);
+
+      setStatusMsg(
+        response.ok && data?.connected
+          ? { type: "success", text: data.message || "YOHAKUのAI接続は正常です。" }
+          : { type: "error", text: data?.error || "YOHAKUのAI接続を確認できませんでした。管理者にお問い合わせください。" },
+      );
+    } catch {
+      setStatusMsg({ type: "error", text: "接続テスト中にエラーが発生しました。時間をおいて再度お試しください。" });
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  if (isPremium) {
+    return (
+      <div className="mx-auto w-full max-w-xl space-y-8 px-6 py-12 md:py-24">
+        <Link href="/settings" className="inline-flex items-center text-xs text-muted-foreground hover:text-slate-650">
+          <ChevronLeft className="mr-1 h-3.5 w-3.5" />Settings
+        </Link>
+        <div className="rounded-2xl border border-emerald-200 bg-white p-6 shadow-sm md:p-8">
+          <div className="flex items-center gap-3">
+            <Sparkles className="h-5 w-5 text-emerald-600" />
+            <h1 className="text-xl font-serif text-foreground">PremiumのAI接続</h1>
+          </div>
+          <p className="mt-5 text-sm leading-7 text-slate-600">Gemini APIキーの設定は不要です。AI利用料はPremium料金に含まれ、AI相談・提案・要約・自動レポートを合計で月500回まで利用できます。</p>
+          <p className="mt-3 text-xs leading-6 text-muted-foreground">対話・重要な振り返りはGemini 2.5 Flash、要約・分類などの軽量処理はFlash-Liteへ自動で振り分け、品質とコストを両立しています。</p>
+          {statusMsg && (
+            <div className={`mt-5 flex items-start gap-2 rounded-xl border p-3 text-xs ${
+              statusMsg.type === "success"
+                ? "border-emerald-100 bg-emerald-50 text-emerald-700"
+                : "border-rose-100 bg-rose-50 text-rose-700"
+            }`}>
+              {statusMsg.type === "success" ? <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" /> : <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />}
+              <span>{statusMsg.text}</span>
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={() => void handleManagedConnectionTest()}
+            disabled={testing}
+            className="mt-5 inline-flex items-center justify-center gap-2 rounded-full border border-emerald-300 px-4 py-2 text-sm font-medium text-emerald-700 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {testing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+            YOHAKUのAI接続をテスト
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const handleToggleApiKeyVisibility = async () => {
+    if (isApiKeyVisible) {
+      setIsApiKeyVisible(false);
+      if (hasSavedKey) setApiKey("••••••••");
+      return;
+    }
+    if (!hasSavedKey || apiKey !== "••••••••") {
+      setIsApiKeyVisible(true);
+      return;
+    }
+
+    setIsRevealingKey(true);
+    setStatusMsg(null);
+    try {
+      const response = await fetch("/api/ai/settings?reveal=true", { cache: "no-store" });
+      const data = await response.json().catch(() => null);
+      if (!response.ok || !data?.apiKey) throw new Error(data?.error ?? "保存済みAPIキーを表示できませんでした。");
+      setApiKey(data.apiKey);
+      setIsApiKeyVisible(true);
+    } catch (error) {
+      setStatusMsg({ type: "error", text: error instanceof Error ? error.message : "保存済みAPIキーを表示できませんでした。" });
+    } finally {
+      setIsRevealingKey(false);
+    }
+  };
 
   const handleTestConnection = async () => {
     setTesting(true);
@@ -78,6 +168,7 @@ export function AiSettingsClient({ initialSettings, aiAvailable, aiSource }: AiS
       });
       const res = await response.json();
       if (response.ok && res?.success) {
+        if (apiKey && apiKey !== "••••••••") setHasSavedKey(true);
         setStatusMsg({
           type: "success",
           text: isEnabled ? "AI設定を保存し、静かに接続されました。" : "AI設定を保存し、機能を停止しました。",
@@ -85,7 +176,7 @@ export function AiSettingsClient({ initialSettings, aiAvailable, aiSource }: AiS
       } else {
         setStatusMsg({
           type: "error",
-          text: res?.error?.message ?? "設定の保存に失敗しました。",
+          text: typeof res?.error === "string" ? res.error : res?.error?.message ?? "設定の保存に失敗しました。",
         });
       }
     } catch (error: any) {
@@ -120,9 +211,8 @@ export function AiSettingsClient({ initialSettings, aiAvailable, aiSource }: AiS
           {aiAvailable 
             ? `接続済み (${
                 aiSource === "gemini_oauth" ? "Gemini OAuth連携" :
-                aiSource === "legacy_api_key" ? "Legacy API Key設定" :
-                aiSource === "user_ai_settings" ? "APIキー設定有効" :
-                aiSource === "starter" ? "Starter Journey利用中" : "接続中"
+                aiSource === "managed" ? "Premiumの管理接続" :
+                aiSource === "user_ai_settings" ? "APIキー設定有効" : "接続中"
               })` 
             : "AIを接続すると、余白に意味がゆっくり積もり始めます。"}
         </p>
@@ -189,19 +279,25 @@ export function AiSettingsClient({ initialSettings, aiAvailable, aiSource }: AiS
             <label className="text-xs font-semibold text-slate-700 block">プロバイダー</label>
             <select
               value={provider}
-              onChange={(e) => setProvider(e.target.value)}
+              onChange={(e) => {
+                setProvider(e.target.value);
+                setApiKey("");
+                setHasSavedKey(false);
+                setIsApiKeyVisible(false);
+              }}
               className="w-full text-xs rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-foreground focus:outline-none focus:border-slate-400 transition-colors"
             >
               <option value="gemini">Google Gemini</option>
+              <option value="groq">Groq</option>
             </select>
           </div>
 
           {/* API Key */}
           <div className="space-y-1.5">
             <div className="flex justify-between items-center">
-              <label className="text-xs font-semibold text-slate-700 block">APIキー</label>
+              <label className="text-xs font-semibold text-slate-700 block">{provider === "groq" ? "Groq APIキー" : "Gemini APIキー"}</label>
               <a 
-                href="https://aistudio.google.com/" 
+                href={provider === "groq" ? "https://console.groq.com/keys" : "https://aistudio.google.com/"}
                 target="_blank" 
                 rel="noopener noreferrer" 
                 className="text-[10px] text-muted-foreground hover:text-slate-600 transition-colors underline"
@@ -212,19 +308,37 @@ export function AiSettingsClient({ initialSettings, aiAvailable, aiSource }: AiS
             <div className="relative">
               <Key className="absolute left-3.5 top-3 w-4 h-4 text-muted-foreground" />
               <input
-                type="password"
+                type={isApiKeyVisible ? "text" : "password"}
                 value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                placeholder="AIzaSy..."
-                className="w-full text-xs rounded-xl border border-slate-200 bg-white pl-10 pr-3.5 py-2.5 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-slate-400 transition-colors font-mono"
+                onChange={(e) => {
+                  setApiKey(e.target.value);
+                  if (e.target.value !== "••••••••") setHasSavedKey(false);
+                }}
+                placeholder={provider === "groq" ? "gsk_..." : "AIzaSy..."}
+                autoComplete="off"
+                spellCheck={false}
+                className="w-full text-xs rounded-xl border border-slate-200 bg-white pl-10 pr-12 py-2.5 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-slate-400 transition-colors font-mono"
               />
+              <button
+                type="button"
+                onClick={() => void handleToggleApiKeyVisibility()}
+                disabled={isRevealingKey || !apiKey}
+                aria-label={isApiKeyVisible ? "APIキーを隠す" : "APIキーを表示する"}
+                aria-pressed={isApiKeyVisible}
+                className="absolute inset-y-0 right-1 inline-flex w-10 items-center justify-center rounded-xl text-muted-foreground transition hover:bg-slate-50 disabled:opacity-40"
+              >
+                {isRevealingKey ? <Loader2 className="h-4 w-4 animate-spin" /> : isApiKeyVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
             </div>
+            <p className="text-[10px] leading-relaxed text-muted-foreground">
+              保存済みのキーはログインし直しても変わりません。目のボタンを押した時だけ表示します。
+            </p>
           </div>
 
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-slate-700 block">利用モデル</label>
             <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600">
-              gemini-2.5-flash（固定）
+              {provider === "groq" ? "Groq GPT-OSS 20B（文章生成）" : "Gemini 2.5 Flash / Flash-Lite（用途別に自動選択）"}
             </div>
           </div>
         </div>
@@ -250,7 +364,7 @@ export function AiSettingsClient({ initialSettings, aiAvailable, aiSource }: AiS
           <button
             type="submit"
             disabled={saving || testing}
-            className="flex-1 inline-flex items-center justify-center space-x-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 active:bg-slate-950 text-foreground font-medium px-4 py-2.5 transition-colors text-xs disabled:opacity-50 disabled:pointer-events-none shadow-sm"
+            className="flex-1 inline-flex items-center justify-center space-x-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 active:bg-slate-950 text-white font-medium px-4 py-2.5 transition-colors text-xs disabled:opacity-50 disabled:pointer-events-none shadow-sm"
           >
             {saving ? (
               <>

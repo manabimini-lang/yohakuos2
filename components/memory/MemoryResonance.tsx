@@ -1,8 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
-import { ChevronRight } from "lucide-react";
 
 interface MemoryResonanceProps {
   userId: string;
@@ -105,15 +103,6 @@ export function MemoryResonance({ userId, themes }: MemoryResonanceProps) {
         ))}
       </div>
 
-      {resonances.length > 0 && (
-        <Link
-          href="/memory/resonance"
-          className="inline-flex items-center text-xs font-light text-black/40 dark:text-foreground/40 hover:text-black/60 dark:hover:text-foreground/60 transition-colors group"
-        >
-          その他のつながりを見る
-          <ChevronRight className="w-3 h-3 ml-1 group-hover:translate-x-1 transition-transform" />
-        </Link>
-      )}
     </section>
   );
 }

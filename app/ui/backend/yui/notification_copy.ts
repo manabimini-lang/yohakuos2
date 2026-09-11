@@ -16,6 +16,7 @@ export function normalizeNotificationCopy(message: string, type: "morning" | "ev
   let normalized = message
     .replace(/。{2,}/g, "。")
     .replace(/！{2,}/g, "！")
+    .replace(/\bGoals?\b/g, "目的")
     .trim();
 
   if (type === "morning") {

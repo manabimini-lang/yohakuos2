@@ -2,6 +2,7 @@
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { isAdminAccessEmail } from "@/lib/auth/admin-access";
 
 function startOfMonth(now: Date): Date {
   return new Date(now.getFullYear(), now.getMonth(), 1);
@@ -23,8 +24,7 @@ async function verifyAdmin() {
   if (!session?.user) {
     throw new Error("Unauthorized");
   }
-  const role = (session.user as any).role;
-  if (role !== "ADMIN" && role !== "SUPER_ADMIN") {
+  if (!isAdminAccessEmail(session.user.email)) {
     throw new Error("Forbidden");
   }
   return session;
@@ -145,7 +145,7 @@ export async function getDashboardMetrics() {
   }
 
   const stripeStatus = !!process.env.STRIPE_SECRET_KEY;
-  const geminiStatus = !!process.env.GEMINI_API_KEY;
+  const geminiStatus = !!process.env.MANAGED_GEMINI_API_KEY;
   
   const recentWebhook = await prisma.auditLog.findFirst({
     where: {

@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Bell, Clock, Send, CheckCircle2 } from "lucide-react";
 import type { YuiNotificationPreview, YuiNotificationDeliveryStatus } from "@/app/ui/backend/yui/models";
 
-export function YuiNotificationPreviewCard() {
+export function YuiNotificationPreviewCard({ isPremium }: { isPremium: boolean }) {
   const [previews, setPreviews] = useState<{
     morning: YuiNotificationPreview;
     evening: YuiNotificationPreview;
@@ -52,8 +52,11 @@ export function YuiNotificationPreviewCard() {
         body: JSON.stringify({ type }),
       });
       if (res.ok) {
-        setTriggerMsg(`${type === "morning" ? "朝" : "夜"}通知のテスト配信ログを記録しました。`);
+        setTriggerMsg(`${type === "morning" ? "朝" : "夜"}のアプリ内まとめを更新し、表示ログを記録しました。`);
         await fetchData();
+      } else {
+        const payload = await res.json().catch(() => null);
+        setError(payload?.error ?? "自動ブリーフはPremiumで利用できます。無料版ではプレビューをご確認ください。");
       }
     } catch (e) {
       console.error("Failed to trigger test notification", e);
@@ -82,7 +85,7 @@ export function YuiNotificationPreviewCard() {
     <Card className="space-y-6 p-6 md:p-8 border-primary/20 bg-background/90 shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border/40 pb-4">
         <div>
-          <h2 className="text-xl font-semibold tracking-tight">Notification Schedule & Preview</h2>
+          <h2 className="text-xl font-semibold tracking-tight">朝晩のまとめとプレビュー</h2>
           <p className="text-sm leading-6 text-muted-foreground">
             YUIから配信予定の通知スケジュールとメッセージイメージです。
           </p>
@@ -99,18 +102,24 @@ export function YuiNotificationPreviewCard() {
 
       {/* Schedule Banner */}
       {deliveryStatus && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-900">
+          現在はアプリ内の配信ログを記録します。メール・プッシュ通知は送信先設定後に利用できます。
+        </div>
+      )}
+
+      {deliveryStatus && (
         <div className="grid gap-3 sm:grid-cols-2 text-xs md:text-sm">
           <div className="rounded-2xl border border-border bg-muted/20 p-4 space-y-1">
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block">
               朝の配信予定
             </span>
             <p className="font-semibold text-foreground text-base">
-              {deliveryStatus.morningTime} (JST)
+              {deliveryStatus.morningTime} ({deliveryStatus.timezone})
             </p>
             {deliveryStatus.isTodayMorningDelivered && (
               <span className="inline-flex items-center gap-1 text-xs text-emerald-600 font-medium pt-1">
                 <CheckCircle2 className="h-3.5 w-3.5" />
-                本日配信済み
+                本日アプリ内に表示済み
               </span>
             )}
           </div>
@@ -120,12 +129,12 @@ export function YuiNotificationPreviewCard() {
               夜の配信予定
             </span>
             <p className="font-semibold text-foreground text-base">
-              {deliveryStatus.eveningTime} (JST)
+              {deliveryStatus.eveningTime} ({deliveryStatus.timezone})
             </p>
             {deliveryStatus.isTodayEveningDelivered && (
               <span className="inline-flex items-center gap-1 text-xs text-emerald-600 font-medium pt-1">
                 <CheckCircle2 className="h-3.5 w-3.5" />
-                本日配信済み
+                本日アプリ内に表示済み
               </span>
             )}
           </div>
@@ -144,16 +153,16 @@ export function YuiNotificationPreviewCard() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-primary">
               <Bell className="h-4 w-4" />
-              朝の通知メッセージ ({deliveryStatus?.morningTime || "07:30"})
+              朝の作戦会議 ({deliveryStatus?.morningTime || "07:30"})
             </div>
             <button
               type="button"
-              disabled={triggering === "morning"}
+              disabled={!isPremium || triggering === "morning"}
               onClick={() => void handleTestTrigger("morning")}
               className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-background px-3 py-1 text-xs font-medium text-foreground hover:bg-muted/40 transition"
             >
               <Send className="h-3 w-3" />
-              {triggering === "morning" ? "送信中..." : "テスト配信"}
+              {triggering === "morning" ? "更新中..." : isPremium ? "表示を更新" : "Premium"}
             </button>
           </div>
           <p className="text-sm font-semibold text-foreground">{previews.morning.title}</p>
@@ -167,16 +176,16 @@ export function YuiNotificationPreviewCard() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               <Bell className="h-4 w-4" />
-              夜の通知メッセージ ({deliveryStatus?.eveningTime || "21:00"})
+              今日を明日につなぐ振り返り ({deliveryStatus?.eveningTime || "21:00"})
             </div>
             <button
               type="button"
-              disabled={triggering === "evening"}
+              disabled={!isPremium || triggering === "evening"}
               onClick={() => void handleTestTrigger("evening")}
               className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-background px-3 py-1 text-xs font-medium text-foreground hover:bg-muted/40 transition"
             >
               <Send className="h-3 w-3" />
-              {triggering === "evening" ? "送信中..." : "テスト配信"}
+              {triggering === "evening" ? "更新中..." : isPremium ? "表示を更新" : "Premium"}
             </button>
           </div>
           <p className="text-sm font-semibold text-foreground">{previews.evening.title}</p>

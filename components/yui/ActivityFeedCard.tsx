@@ -17,8 +17,8 @@ export function ActivityFeedCard({ items }: Props) {
     <Card className="p-4">
       <div className="flex items-center justify-between gap-2">
         <div>
-          <p className="text-xs font-semibold text-muted-foreground">Activity</p>
-          <h3 className="text-lg font-bold">YUI Feed</h3>
+          <p className="text-xs font-semibold text-muted-foreground">保存したメモ・タスク・振り返り</p>
+          <h3 className="text-lg font-bold">最近の記録</h3>
         </div>
         <span className="text-xs text-muted-foreground">{items.length}件</span>
       </div>

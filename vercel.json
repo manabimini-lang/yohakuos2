@@ -1,5 +1,19 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "regions": ["hnd1"],
   "crons": [
+    {
+      "path": "/api/internal/sync-google-calendar",
+      "schedule": "0 21 * * *"
+    },
+    {
+      "path": "/api/internal/process-notifications/morning",
+      "schedule": "0 22 * * *"
+    },
+    {
+      "path": "/api/internal/process-notifications/evening",
+      "schedule": "0 11 * * *"
+    },
     {
       "path": "/api/internal/process-ai-jobs",
       "schedule": "0 22 * * *"

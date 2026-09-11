@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { checkAIAvailability } from "@/lib/ai/gemini";
 import { hasPremiumAccess } from "@/lib/constants/plan";
+import { storagePathFromReference } from "@/lib/audio/audio-history";
 
 export const dynamic = "force-dynamic";
 
@@ -43,10 +44,16 @@ export default async function ReflectionsPage() {
     orderBy: { createdAt: "desc" },
     take: isPremium ? 50 : 10,
   });
+  const audioReflectionsWithUrls = audioReflections.map((reflection) => ({
+    ...reflection,
+    playbackUrl: storagePathFromReference(reflection.audioUrl)
+      ? `/api/yui/audio/${reflection.id}`
+      : reflection.audioUrl ?? "",
+  }));
 
   // Split reflections: latest vs past
-  const latestReflection = audioReflections[0] || null;
-  const pastReflections = audioReflections.slice(1);
+  const latestReflection = audioReflectionsWithUrls[0] || null;
+  const pastReflections = audioReflectionsWithUrls.slice(1);
 
   // Fetch lastError from the latest generate_audio_reflection job if the latest reflection failed
   let latestReflectionError: string | null = null;
@@ -64,16 +71,16 @@ export default async function ReflectionsPage() {
   const latestReflectionErrorDetails = classifyAiError(latestReflectionError);
 
   return (
-    <div className="min-h-screen bg-[#FDFDFD] dark:bg-[#0A0A0A] text-black/80 dark:text-foreground/80 pb-32 selection:bg-black/10 dark:selection:bg-white/10">
+    <div className="audio-history-page min-h-screen bg-[#FDFDFD] dark:bg-[#0A0A0A] text-black/80 dark:text-foreground/80 pb-32 selection:bg-black/10 dark:selection:bg-white/10">
       <main className="max-w-3xl mx-auto px-6 pt-24 md:pt-32 space-y-32">
         
         {/* Header section */}
         <section className="space-y-6">
           <h1 className="text-xl md:text-2xl font-light tracking-widest text-black/90 dark:text-foreground/90">
-            夜の机
+            音声ブリーフ履歴
           </h1>
           <p className="text-sm md:text-base text-black/50 dark:text-foreground/50 leading-relaxed font-light">
-            言葉にならないものが、静かに語り返してくる空間。
+            これまでに生成した音声と、その原稿を振り返れます。
           </p>
         </section>
 
@@ -84,7 +91,7 @@ export default async function ReflectionsPage() {
               AI接続がまだ行われていません。
             </p>
             <p className="text-xs text-black/50 dark:text-foreground/50 leading-relaxed font-light">
-              Gemini APIキーを設定すると、保存した記録が静かに整えられ、パーソナルAIとの対話や、内面の風景の描画が始まります。
+              AIを接続すると、保存した記録が静かに整えられ、パーソナルAIとの対話や、内面の風景の描画が始まります。PremiumはAPIキー不要です。
             </p>
             <Link 
               href="/yui/settings"
@@ -100,7 +107,7 @@ export default async function ReflectionsPage() {
         {latestReflection ? (
           <section className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-1000 fill-mode-both">
             <h2 className="text-xs tracking-[0.2em] uppercase text-black/40 dark:text-foreground/40">
-              今日の余白
+              最新の音声ブリーフ
             </h2>
             
             <div className="group space-y-8">
@@ -121,7 +128,7 @@ export default async function ReflectionsPage() {
                 {latestReflection.status === "completed" && latestReflection.audioUrl && (
                   <div className="pt-4">
                     <QuietAudioPlayer 
-                      src={latestReflection.audioUrl} 
+                      src={latestReflection.playbackUrl}
                       title="静かな振り返り" 
                     />
                   </div>
@@ -173,7 +180,7 @@ export default async function ReflectionsPage() {
         ) : (
           <section className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-1000 fill-mode-both">
             <h2 className="text-xs tracking-[0.2em] uppercase text-black/40 dark:text-foreground/40">
-              今日の余白
+              最新の音声ブリーフ
             </h2>
             <div className="p-8 rounded-2xl bg-black/[0.02] dark:bg-card border border-black/5 dark:border-border/50 text-center space-y-4">
               <p className="text-sm text-black/40 dark:text-foreground/40 font-light">
@@ -218,7 +225,7 @@ export default async function ReflectionsPage() {
                     <div className="flex items-center justify-between gap-4 text-xs">
                       {audio.status === "completed" && audio.audioUrl && (
                         <QuietAudioPlayer 
-                          src={audio.audioUrl} 
+                          src={audio.playbackUrl}
                           title="静かな振り返り" 
                         />
                       )}
@@ -252,7 +259,7 @@ export default async function ReflectionsPage() {
         {audioReflections.length === 0 && hasAiConnection && (
           <section className="text-center space-y-4">
             <p className="text-sm text-black/30 dark:text-foreground/30 italic font-light">
-              記憶が降り積もるのを待っています...
+              まだ保存済みの音声ブリーフはありません。YUIの画面から作成すると、ここでいつでも聞き返せます。
             </p>
           </section>
         )}

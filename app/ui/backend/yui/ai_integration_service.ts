@@ -1,15 +1,12 @@
-import { getUserOwnedApiCredentials, generateText, generateJSON } from "@/lib/ai/gemini";
-import { prisma } from "@/lib/prisma";
+import { checkAIAvailability, generateText, generateJSON } from "@/lib/ai/gemini";
 import { buildSecretaryPrompt, buildNotificationPrompt } from "./prompt_builder";
 import type { YuiMorningBrief } from "./brief_service";
 import type { YuiNotificationPreview } from "./models";
+import { extractReplyCharLimit, fitReplyToCharLimit } from "@/lib/yui-ux";
 
 export async function isYuiAiEnabled(userId: string): Promise<boolean> {
   try {
-    const settings = await prisma.userAISettings.findUnique({
-      where: { userId },
-    });
-    return Boolean(settings?.isEnabled && settings?.encryptedApiKey);
+    return (await checkAIAvailability(userId)).available;
   } catch (e) {
     return false;
   }
@@ -25,15 +22,10 @@ export async function refineBriefWithAI(
   }
 
   try {
-    const creds = await getUserOwnedApiCredentials(userId);
-    if (!creds?.apiKey) {
-      return rawBrief;
-    }
-
     const { systemPrompt, userPrompt } = buildSecretaryPrompt({ brief: rawBrief });
     const { text } = await generateText(userPrompt, systemPrompt, {
-      apiKey: creds.apiKey,
       userId,
+      taskClass: "standard",
     });
 
     if (!text) {
@@ -68,6 +60,7 @@ export async function refineBriefWithAI(
 export async function refineNotificationWithAI(
   userId: string,
   rawPreview: YuiNotificationPreview,
+  context?: Record<string, unknown>,
 ): Promise<YuiNotificationPreview> {
   const enabled = await isYuiAiEnabled(userId);
   if (!enabled) {
@@ -75,19 +68,16 @@ export async function refineNotificationWithAI(
   }
 
   try {
-    const creds = await getUserOwnedApiCredentials(userId);
-    if (!creds?.apiKey) {
-      return rawPreview;
-    }
-
     const { systemPrompt, userPrompt } = buildNotificationPrompt({
+      type: rawPreview.type,
       title: rawPreview.title,
       message: rawPreview.message,
+      context,
     });
 
     const { text } = await generateText(userPrompt, systemPrompt, {
-      apiKey: creds.apiKey,
       userId,
+      taskClass: "economy",
     });
 
     if (!text) {
@@ -114,6 +104,7 @@ export async function refineNotificationWithAI(
 
 export interface YuiIntentResponse {
   reply: string;
+  error?: boolean;
   proposedAction?: {
     type:
       | "create_goal"
@@ -132,17 +123,12 @@ export async function generateYuiResponse(
   userMessage: string,
   chatHistory: { role: string; content: string }[],
 ): Promise<YuiIntentResponse> {
+  const requestedCharLimit = extractReplyCharLimit(userMessage);
   const enabled = await isYuiAiEnabled(userId);
   if (!enabled) {
     return {
-      reply: "AI接続がまだ設定されていないか、無効になっています。設定画面でGemini APIキーを登録してください。",
-    };
-  }
-
-  const creds = await getUserOwnedApiCredentials(userId);
-  if (!creds?.apiKey) {
-    return {
-      reply: "APIキーが見つかりません。設定画面をご確認ください。",
+      error: true,
+      reply: "AI相談が未接続です。無料プランでは設定画面からご自身のGeminiまたはGroq APIキーを登録してください。PremiumではAPIキーは不要です。",
     };
   }
 
@@ -153,6 +139,7 @@ export async function generateYuiResponse(
 カレンダーの予定（日付・時間）を検出した場合は、必ず年・月・日・開始時刻・終了時刻を特定し、params に timezone (Asia/Tokyo) や ISO形式 (YYYY-MM-DDTHH:mm:ssZ) の日時の値を含めてください。
 目標やマイルストーンの更新・削除で対象IDが分からない場合は、params に title_hint を入れてください。YUIは勝手に実行せず、必ず確認を求める文章にしてください。
 現在時刻は: ${new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })} です。
+${requestedCharLimit ? `ユーザーは回答を${requestedCharLimit}字以内と指定しています。replyは挨拶や依頼の言い換えを省き、必ず${requestedCharLimit}字以内にしてください。` : "ユーザーが文字数・件数・形式を指定した場合は、その条件を優先して守ってください。"}
 
 返却するJSONのスキーマ:
 {
@@ -175,7 +162,7 @@ export async function generateYuiResponse(
 
   const historyText = chatHistory
     .slice(-10)
-    .map((h) => `${h.role === "user" ? "ユーザー" : "YUI"}: ${h.content}`)
+    .map((h) => `${h.role === "user" ? "ユーザー" : "YUI"}: ${h.content.slice(0, 300)}`)
     .join("\n");
 
   const prompt = `
@@ -190,13 +177,18 @@ ${historyText}
 
   try {
     const { data } = await generateJSON<YuiIntentResponse>(prompt, systemInstruction, {
-      apiKey: creds.apiKey,
       userId,
+      allowEnvFallback: true,
+      taskClass: "standard",
     });
+    if (requestedCharLimit && !data.proposedAction && typeof data.reply === "string") {
+      return { ...data, reply: fitReplyToCharLimit(data.reply, requestedCharLimit) };
+    }
     return data;
   } catch (e) {
     console.error("[YUI AI] Failed to generate Yui response", e);
     return {
+      error: true,
       reply: "すみません、少し考えがまとまりませんでした。もう一度話しかけてみてください。",
     };
   }

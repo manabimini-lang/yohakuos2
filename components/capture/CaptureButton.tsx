@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Plus } from "lucide-react";
+import { Camera } from "lucide-react";
 import { useCaptureStore } from "@/store/capture-store";
 
 export function CaptureButton() {
@@ -17,8 +17,8 @@ export function CaptureButton() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
     >
-      <Plus className="w-4 h-4" />
-      <span>余白に置く</span>
+      <Camera className="w-4 h-4" />
+      <span>写真を記録</span>
     </motion.button>
   );
 }

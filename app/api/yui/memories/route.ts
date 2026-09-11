@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { getYuiMemories, postYuiMemory } from "@/app/ui/backend/yui/api";
+import { getYuiMemories, postYuiMemory, requireYuiSession } from "@/app/ui/backend/yui/api";
+import { deleteAllYuiMemories, deleteYuiMemory, getYuiProfile, setYuiMemoryCollectionEnabled } from "@/app/ui/backend/yui/service";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -46,5 +47,31 @@ export async function POST(request: Request) {
         ? error.message
         : "Failed to save YUI memory";
     return NextResponse.json({ error: message }, { status: message === "Unauthorized" ? 401 : 500 });
+  }
+}
+
+export async function PATCH(request: Request) {
+  try {
+    const { enabled } = await request.json();
+    if (typeof enabled !== "boolean") return NextResponse.json({ error: "enabled must be boolean" }, { status: 400 });
+    const session = await requireYuiSession();
+    const profile = await setYuiMemoryCollectionEnabled(session.user, enabled);
+    return NextResponse.json({ enabled: profile.preferences?.memory_collection_enabled !== false });
+  } catch (error) {
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Failed to update memory setting" }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const session = await requireYuiSession();
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get("id");
+    if (id) await deleteYuiMemory(session.user, id);
+    else if (searchParams.get("scope") === "all") await deleteAllYuiMemories(session.user);
+    else return NextResponse.json({ error: "id or scope=all is required" }, { status: 400 });
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Failed to delete memory" }, { status: 500 });
   }
 }

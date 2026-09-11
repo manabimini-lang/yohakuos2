@@ -1,10 +1,13 @@
 "use client";
 
+import { goalProgress, isFutureInterval, isTestContent, isUserActivity } from "@/lib/yui-ux";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { format } from "date-fns";
 import Link from "next/link";
-import { GitBranch, Lightbulb, Loader2, RefreshCw, Settings, Target } from "lucide-react";
+import { Bell, GitBranch, Lightbulb, Loader2, RefreshCw, Settings, Target } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { BriefAudio } from "@/components/yui/BriefAudio";
+import { LegacyLocalLogMigration } from "@/components/yui/LegacyLocalLogMigration";
 
 import type { YuiActionSuggestion } from "@/app/ui/backend/yui/action_service";
 import { MemoryList } from "@/components/yui/MemoryList";
@@ -25,6 +28,7 @@ import type {
   YuiSuggestedTimeBlock,
   YuiToday,
   YuiNotificationDeliveryStatus,
+  YuiNotificationPreview,
 } from "@/app/ui/backend/yui/models";
 import type { YuiContextSummary } from "@/app/ui/backend/yui/context_service";
 import type { YuiMorningBrief } from "@/app/ui/backend/yui/brief_service";
@@ -46,8 +50,9 @@ import { YuiCardSkeleton } from "@/components/yui/YuiCardSkeleton";
 import TodaySummary from "@/components/yui/TodaySummary";
 import ActionArea from "@/components/yui/ActionArea";
 import InfoAccordion from "@/components/yui/InfoAccordion";
-import { LiveStatusBadge } from "@/components/yui/LiveStatusBadge";
 import { ActivityFeedCard } from "@/components/yui/ActivityFeedCard";
+import { YuiPresenceDashboard, type YuiPresenceState } from "@/components/yui/YuiPresenceDashboard";
+import { useCaptureStore } from "@/store/capture-store";
 
 type YuiHomeProps = {
   displayName?: string | null;
@@ -98,8 +103,18 @@ type YuiHomeSnapshot = {
   calendarActions: YuiCalendarAction[];
   latestReflection: YuiReflection | null;
   deliveryStatus: YuiNotificationDeliveryStatus | null;
+  notificationPreviews: {
+    morning: YuiNotificationPreview;
+    evening: YuiNotificationPreview;
+  } | null;
   gmailInsights: any[];
   unifiedActions: any[];
+};
+
+type YuiDashboardPayload = {
+  data?: Partial<YuiHomeSnapshot> & { googleHealth?: YuiGoogleHealthState | null };
+  errors?: Record<string, string>;
+  error?: string;
 };
 
 const YUI_HOME_CACHE_KEY = "yui-home-cache-v2";
@@ -195,13 +210,57 @@ function parseRecommendationContent(content: string): ParsedRecommendationConten
   }
 }
 
-function looksLikeTimePlanningRequest(content: string) {
-  const text = content.trim();
-  if (!text) return false;
-  return /時間|確保|作りたい|作成|予定|勉強|教材|集中|来週|今週|来月|来年度/.test(text);
+function formatProposedSchedule(startAt: string, endAt: string) {
+  if (!startAt) return null;
+  const start = new Date(startAt);
+  const end = endAt ? new Date(endAt) : null;
+  if (Number.isNaN(start.getTime()) || (end && Number.isNaN(end.getTime()))) return null;
+  const date = format(start, "M月d日（E）");
+  const startTime = format(start, "HH:mm");
+  const endTime = end ? format(end, "HH:mm") : null;
+  return `予定日時: ${date} ${startTime}${endTime ? `〜${endTime}` : ""}`;
+}
+
+function formatRecommendationReason(reason: string) {
+  return reason.trim() === "YUI Chatでの対話から自動提案されました。"
+    ? "YUIとの相談内容から提案しました。"
+    : reason;
+}
+
+
+
+function timeSlotKey(input: Pick<YuiSuggestedTimeBlock, "title" | "start_at" | "end_at">) {
+  return [input.title.trim(), input.start_at, input.end_at].join("|");
+}
+
+function dedupeSuggestedTimeBlocks(blocks: YuiSuggestedTimeBlock[]) {
+  const statusRank: Record<string, number> = { created: 4, approved: 3, pending: 2, rejected: 1 };
+  const selected = new Map<string, YuiSuggestedTimeBlock>();
+
+  for (const block of blocks) {
+    const key = timeSlotKey(block);
+    const current = selected.get(key);
+    if (!current
+      || (statusRank[block.status] ?? 0) > (statusRank[current.status] ?? 0)
+      || ((statusRank[block.status] ?? 0) === (statusRank[current.status] ?? 0)
+        && new Date(block.updated_at).getTime() > new Date(current.updated_at).getTime())) {
+      selected.set(key, block);
+    }
+  }
+
+  return [...selected.values()];
+}
+
+function orderCalendarActions(actions: YuiCalendarAction[]) {
+  const statusRank: Record<string, number> = { scheduled: 4, approved: 3, pending: 2, rejected: 1 };
+  return [...actions].sort((left, right) => {
+    const rankDifference = (statusRank[right.status] ?? 0) - (statusRank[left.status] ?? 0);
+    return rankDifference || new Date(right.updated_at).getTime() - new Date(left.updated_at).getTime();
+  });
 }
 
 export function YuiHome({ displayName }: YuiHomeProps) {
+  const openCapture = useCaptureStore((state) => state.openCapture);
   const [today, setToday] = useState<YuiToday | null>(null);
   const [morningBrief, setMorningBrief] = useState<YuiMorningBrief | null>(null);
   const [dailyContext, setDailyContext] = useState<YuiDailyContext | null>(null);
@@ -219,7 +278,7 @@ export function YuiHome({ displayName }: YuiHomeProps) {
   const [conversations, setConversations] = useState<YuiConversation[]>([]);
   const [decisions, setDecisions] = useState<YuiDecision[]>([]);
   const [googleHealth, setGoogleHealth] = useState<YuiGoogleHealthState | null>(null);
-  const [aiConnected, setAiConnected] = useState<boolean | null>(null);
+  const [aiConnectionState, setAiConnectionState] = useState<"checking" | "configured" | "missing" | "error">("checking");
   const [goals, setGoals] = useState<YuiGoal[]>([]);
   const [milestones, setMilestones] = useState<YuiMilestone[]>([]);
   const [reflections, setReflections] = useState<YuiReflection[]>([]);
@@ -228,14 +287,8 @@ export function YuiHome({ displayName }: YuiHomeProps) {
   const [calendarActions, setCalendarActions] = useState<YuiCalendarAction[]>([]);
   const [latestReflection, setLatestReflection] = useState<YuiReflection | null>(null);
   const [profileForm, setProfileForm] = useState<YuiProfileSettings>({
-    display_name: displayName ?? "",
-    assistant_name: displayName ?? "YUI",
-    tone: "gentle",
-    life_theme: "",
-    focus_area: "",
-    notification_strength: "normal",
-    summary_frequency: "daily",
-    timezone: "Asia/Tokyo",
+    display_name: displayName ?? "", assistant_name: displayName ?? "YUI", tone: "gentle", life_theme: "", focus_area: "",
+    notification_strength: "normal", summary_frequency: "daily", timezone: "Asia/Tokyo",
   });
   const [goalForm, setGoalForm] = useState({
     title: "",
@@ -249,12 +302,18 @@ export function YuiHome({ displayName }: YuiHomeProps) {
     status: "pending",
   });
   const [deliveryStatus, setDeliveryStatus] = useState<YuiNotificationDeliveryStatus | null>(null);
+  const [notificationPreviews, setNotificationPreviews] = useState<{
+    morning: YuiNotificationPreview;
+    evening: YuiNotificationPreview;
+  } | null>(null);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isSavingGoal, setIsSavingGoal] = useState(false);
   const [isSavingMilestone, setIsSavingMilestone] = useState(false);
   const [deleteConfirmGoalId, setDeleteConfirmGoalId] = useState<string | null>(null);
   const [deleteConfirmMilestoneId, setDeleteConfirmMilestoneId] = useState<string | null>(null);
+  const [cancelCalendarActionId, setCancelCalendarActionId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [savedNotice, setSavedNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [sectionErrors, setSectionErrors] = useState<Record<string, string>>({});
   const [isInitialLoading, setIsInitialLoading] = useState(true);
@@ -264,11 +323,40 @@ export function YuiHome({ displayName }: YuiHomeProps) {
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
   const [showMore, setShowMore] = useState(false);
   const [showFabMenu, setShowFabMenu] = useState(false);
+  const [isEditingText, setIsEditingText] = useState(false);
+  const [focusGoalIndex, setFocusGoalIndex] = useState(0);
+  const focusTouchStartX = useRef<number | null>(null);
+  const [chatDraftRequest, setChatDraftRequest] = useState({ id: 0, value: "" });
   const [gmailInsights, setGmailInsights] = useState<any[]>([]);
+  // Keep unsaved progress local to each goal. A single draft value here would
+  // leak the slider value when Current Focus is switched to another goal.
+  const [progressDrafts, setProgressDrafts] = useState<Record<string, number>>({});
+  const [isUpdatingProgress, setIsUpdatingProgress] = useState(false);
+  const [quickPanel, setQuickPanel] = useState<"task" | "reflection" | "memo" | null>(null);
+  const [quickTaskDraft, setQuickTaskDraft] = useState("");
+  const [quickReflectionDraft, setQuickReflectionDraft] = useState("");
+  const [quickNextActionDraft, setQuickNextActionDraft] = useState("");
+  const [quickMemoDraft, setQuickMemoDraft] = useState("");
+  const [isSavingQuickPanel, setIsSavingQuickPanel] = useState(false);
+  const [addingTaskActionId, setAddingTaskActionId] = useState<string | null>(null);
+  const [addedTaskActionIds, setAddedTaskActionIds] = useState<Set<string>>(new Set());
 
   // Refs for Goal Form — used by Setup Guide CTA
   const goalCardRef = useRef<HTMLDivElement>(null);
   const goalTitleInputRef = useRef<HTMLInputElement>(null);
+  const chatCardRef = useRef<HTMLDivElement>(null);
+  const chatComposerRef = useRef<HTMLTextAreaElement>(null);
+
+  const openChatComposer = useCallback((draft?: string) => {
+    setShowFabMenu(false);
+    if (draft !== undefined) {
+      setChatDraftRequest((current) => ({ id: current.id + 1, value: draft }));
+    }
+    setTimeout(() => {
+      chatCardRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      chatComposerRef.current?.focus();
+    }, 80);
+  }, []);
 
   const openGoalForm = useCallback(() => {
     setShowMore(true);
@@ -335,6 +423,46 @@ export function YuiHome({ displayName }: YuiHomeProps) {
     } catch (e: any) {
       setMemoryState((prev) => ({ ...prev, loaded: false, loading: false, error: e?.message ?? "取得失敗" }));
     }
+  };
+
+  const handleMemoryCollectionToggle = async () => {
+    const enabled = profile?.preferences?.memory_collection_enabled !== false;
+    const response = await fetch("/api/yui/memories", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ enabled: !enabled }),
+    });
+    if (!response.ok) throw new Error("記憶の設定を更新できませんでした");
+    await loadData();
+  };
+
+  const handleDeleteMemory = async (memoryId: string) => {
+    if (!window.confirm("この記憶を削除します。元に戻せません。")) return;
+    const response = await fetch(`/api/yui/memories?id=${encodeURIComponent(memoryId)}`, { method: "DELETE" });
+    if (!response.ok) throw new Error("記憶を削除できませんでした");
+    await loadData();
+    await fetchMemories(true);
+  };
+
+  const handleDeleteAllMemories = async () => {
+    if (!window.confirm("YUIが保存したすべての記憶を削除します。元に戻せません。")) return;
+    const response = await fetch("/api/yui/memories?scope=all", { method: "DELETE" });
+    if (!response.ok) throw new Error("記憶を削除できませんでした");
+    await loadData();
+    await fetchMemories(true);
+  };
+
+  const handleExportMemories = async () => {
+    const response = await fetch("/api/yui/memories?limit=100", { cache: "no-store" });
+    if (!response.ok) throw new Error("記憶を出力できませんでした");
+    const payload = await response.json();
+    const blob = new Blob([JSON.stringify({ exportedAt: new Date().toISOString(), memories: payload.memories ?? [] }, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "yui-memories.json";
+    link.click();
+    URL.revokeObjectURL(url);
   };
 
   const fetchInsights = async (force = false) => {
@@ -408,6 +536,7 @@ export function YuiHome({ displayName }: YuiHomeProps) {
     setCalendarActions(snapshot.calendarActions);
     setLatestReflection(snapshot.latestReflection);
     setDeliveryStatus(snapshot.deliveryStatus);
+    setNotificationPreviews(snapshot.notificationPreviews);
     setGmailInsights(snapshot.gmailInsights);
     setUnifiedActions(snapshot.unifiedActions);
   };
@@ -428,80 +557,11 @@ export function YuiHome({ displayName }: YuiHomeProps) {
     setSectionErrors({});
 
     try {
-      const syncResults = await Promise.allSettled([
-        fetch("/api/yui/google/sync", { method: "POST" }),
-        fetch("/api/yui/gmail/sync", { method: "POST" }),
-      ]);
-
-      const syncErrors = syncResults.flatMap((result, index) => {
-        if (result.status === "fulfilled" && !result.value.ok && result.value.status !== 409) {
-          return [index === 0 ? "Google Calendar同期に失敗しました" : "Gmail同期に失敗しました"];
-        }
-        if (result.status === "rejected") {
-          return [index === 0 ? "Google Calendar同期に失敗しました" : "Gmail同期に失敗しました"];
-        }
-        return [];
-      });
-
-      if (syncErrors.length > 0) {
-        setSectionErrors((current) => ({
-          ...current,
-          calendar: syncErrors.includes("Google Calendar同期に失敗しました") ? "Google Calendar同期に失敗しました" : current.calendar,
-          gmail: syncErrors.includes("Gmail同期に失敗しました") ? "Gmail同期に失敗しました" : current.gmail,
-        }));
+      const response = await fetch("/api/yui/dashboard", { cache: "no-store" });
+      const payload = await response.json().catch(() => null) as YuiDashboardPayload | null;
+      if (!response.ok) {
+        throw new Error(payload?.error ?? "YUIデータの取得に失敗しました");
       }
-
-      const responses = await Promise.all(
-        [
-          fetch("/api/yui/today"),
-          fetch("/api/yui/morning-brief"),
-          fetch("/api/yui/daily-context"),
-          fetch("/api/yui/unified-actions"),
-          fetch("/api/yui/health"),
-          fetch("/api/yui/profile"),
-          fetch("/api/yui/memories"),
-          fetch("/api/yui/memory-candidates"),
-          fetch("/api/yui/conversations"),
-          fetch("/api/yui/decisions"),
-          fetch("/api/yui/goals"),
-          fetch("/api/yui/milestones"),
-          fetch("/api/yui/reflections"),
-          fetch("/api/yui/recommendations"),
-          fetch("/api/yui/time-blocks"),
-          fetch("/api/yui/calendar-actions"),
-          fetch("/api/yui/reflections/latest"),
-          fetch("/api/yui/notifications/status"),
-          fetch("/api/ai/test-connection").catch(() => null),
-        ].map(async (request) => {
-          try {
-            return await request;
-          } catch {
-            return null;
-          }
-        }),
-      );
-
-      const [
-        todayRes,
-        briefRes,
-        dailyContextRes,
-        unifiedActionsRes,
-        healthRes,
-        profileRes,
-        memoriesRes,
-        memoryCandidatesRes,
-        conversationsRes,
-        decisionsRes,
-        goalsRes,
-        milestonesRes,
-        reflectionsRes,
-        recommendationsRes,
-        timeBlocksRes,
-        calendarActionsRes,
-        latestReflectionRes,
-        deliveryStatusRes,
-        aiTestRes,
-      ] = responses;
 
       const currentCache = readYuiHomeCache()?.snapshot;
       const nextSnapshot: YuiHomeSnapshot = {
@@ -529,111 +589,17 @@ export function YuiHome({ displayName }: YuiHomeProps) {
         calendarActions: currentCache?.calendarActions ?? [],
         latestReflection: currentCache?.latestReflection ?? null,
         deliveryStatus: currentCache?.deliveryStatus ?? null,
+        notificationPreviews: currentCache?.notificationPreviews ?? null,
         gmailInsights: currentCache?.gmailInsights ?? [],
         unifiedActions: currentCache?.unifiedActions ?? [],
       };
 
-      if (todayRes?.ok) {
-        const payload = await todayRes.json();
-        nextSnapshot.today = payload;
-      } else {
-        setSectionErrors((current) => ({ ...current, today: "Todayの取得に失敗しました" }));
+      const { googleHealth: refreshedGoogleHealth, ...snapshotPatch } = payload?.data ?? {};
+      Object.assign(nextSnapshot, snapshotPatch);
+      if (payload?.data && Object.prototype.hasOwnProperty.call(payload.data, "googleHealth")) {
+        setGoogleHealth(refreshedGoogleHealth ?? null);
       }
-
-      if (briefRes?.ok) {
-        const payload = await briefRes.json();
-        nextSnapshot.morningBrief = payload;
-      } else {
-        setSectionErrors((current) => ({ ...current, morningBrief: "Morning Briefの取得に失敗しました" }));
-      }
-
-      if (dailyContextRes?.ok) {
-        const payload = await dailyContextRes.json();
-        nextSnapshot.dailyContext = payload;
-      }
-
-      if (unifiedActionsRes?.ok) {
-        const payload = await unifiedActionsRes.json();
-        nextSnapshot.unifiedActions = payload.actions ?? [];
-      } else {
-        setSectionErrors((current) => ({ ...current, unifiedActions: "Unified Actionsの取得に失敗しました" }));
-      }
-
-      if (healthRes?.ok) {
-        const payload = await healthRes.json();
-        setGoogleHealth(payload.google ?? null);
-      } else {
-        setGoogleHealth(null);
-      }
-
-      if (aiTestRes?.ok) {
-        const aiPayload = await aiTestRes.json().catch(() => null);
-        setAiConnected(aiPayload?.connected === true);
-      }
-
-      if (profileRes?.ok) {
-        const payload = await profileRes.json();
-        nextSnapshot.profile = payload.profile ?? null;
-      }
-
-      if (memoriesRes?.ok) {
-        const payload = await memoriesRes.json();
-        nextSnapshot.memories = payload.memories ?? [];
-      }
-
-      if (memoryCandidatesRes?.ok) {
-        const payload = await memoryCandidatesRes.json();
-        nextSnapshot.memoryCandidates = payload.memoryCandidates ?? [];
-      }
-
-      if (conversationsRes?.ok) {
-        const payload = await conversationsRes.json();
-        nextSnapshot.conversations = payload.conversations ?? [];
-      }
-
-      if (decisionsRes?.ok) {
-        const payload = await decisionsRes.json();
-        nextSnapshot.decisions = payload.decisions ?? [];
-      }
-
-      if (goalsRes?.ok) {
-        const payload = await goalsRes.json();
-        nextSnapshot.goals = payload.goals ?? [];
-      }
-
-      if (milestonesRes?.ok) {
-        const payload = await milestonesRes.json();
-        nextSnapshot.milestones = payload.milestones ?? [];
-      }
-
-      if (reflectionsRes?.ok) {
-        const payload = await reflectionsRes.json();
-        nextSnapshot.reflections = payload.reflections ?? [];
-      }
-
-      if (recommendationsRes?.ok) {
-        const payload = await recommendationsRes.json();
-        nextSnapshot.recommendations = payload.recommendations ?? [];
-      }
-
-      if (timeBlocksRes?.ok) {
-        const payload = await timeBlocksRes.json();
-        nextSnapshot.timeBlocks = payload.timeBlocks ?? [];
-      }
-
-      if (calendarActionsRes?.ok) {
-        const payload = await calendarActionsRes.json();
-        nextSnapshot.calendarActions = payload.calendarActions ?? [];
-      }
-
-      if (latestReflectionRes?.ok) {
-        const payload = await latestReflectionRes.json();
-        nextSnapshot.latestReflection = payload.reflection ?? null;
-      }
-
-      if (deliveryStatusRes?.ok) {
-        nextSnapshot.deliveryStatus = await deliveryStatusRes.json();
-      }
+      setSectionErrors(payload?.errors ?? {});
 
       applySnapshot(nextSnapshot);
       writeYuiHomeCache(nextSnapshot);
@@ -650,40 +616,47 @@ export function YuiHome({ displayName }: YuiHomeProps) {
     await loadData({ background: true });
   };
 
+  const handleSaveProfile = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setIsSavingProfile(true);
+    try {
+      const response = await fetch("/api/yui/profile", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(profileForm) });
+      if (!response.ok) throw new Error((await response.json().catch(() => null))?.error ?? "プロフィールの保存に失敗しました");
+      await loadData();
+    } catch (err) { setError(err instanceof Error ? err.message : "プロフィールの保存に失敗しました"); }
+    finally { setIsSavingProfile(false); }
+  };
+
   useEffect(() => {
     void loadInitialData();
   }, []);
 
-  const handleSaveProfile = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setError(null);
+  useEffect(() => {
+    const controller = new AbortController();
+    const refreshAiConnection = () => {
+      void fetch("/api/ai/status", { cache: "no-store", signal: controller.signal })
+        .then(async (response) => {
+          if (!response.ok) throw new Error("AI設定の取得に失敗しました");
+          const payload = await response.json() as { configured?: boolean };
+          setAiConnectionState(payload.configured ? "configured" : "missing");
+        })
+        .catch(() => {
+          if (!controller.signal.aborted) setAiConnectionState("error");
+        });
+    };
+    refreshAiConnection();
+    window.addEventListener("focus", refreshAiConnection);
+    return () => {
+      controller.abort();
+      window.removeEventListener("focus", refreshAiConnection);
+    };
+  }, []);
 
-    setIsSavingProfile(true);
-    try {
-      const response = await fetch("/api/yui/profile", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(profileForm),
-      });
-
-      if (!response.ok) {
-        const payload = await response.json().catch(() => null);
-        throw new Error(payload?.error ?? "プロフィールの保存に失敗しました");
-      }
-
-      await loadData();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "プロフィールの保存に失敗しました");
-    } finally {
-      setIsSavingProfile(false);
-    }
-  };
-
-  const handleSendConversation = async (content: string) => {
+  const handleSendConversation = async (content: string, goalId?: string) => {
     const response = await fetch("/api/yui/conversations", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ role: "user", content }),
+      body: JSON.stringify({ role: "user", content, ...(goalId ? { goal_id: goalId, goal_association_source: "confirmed", goal_association_confidence: 100 } : {}) }),
     });
 
     if (!response.ok) {
@@ -692,14 +665,13 @@ export function YuiHome({ displayName }: YuiHomeProps) {
     }
 
     const payload = await response.json();
-    if (looksLikeTimePlanningRequest(content)) {
-      await fetch("/api/yui/recommendations", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "time_block", context: content }),
-      });
-    }
-    await loadData();
+    // The assistant reply is ready at this point. Refresh secondary cards in
+    // the background so the composer does not remain stuck on "送信中...".
+    void (async () => {
+      await loadData({ background: true });
+    })().catch((error) => {
+      console.error("[YUI] Background refresh after conversation failed", error);
+    });
     return payload;
   };
 
@@ -714,6 +686,16 @@ export function YuiHome({ displayName }: YuiHomeProps) {
     }
 
     await loadData();
+  };
+
+  const handleChangeConversationGoal = async (conversationId: string, goalId: string | null) => {
+    const response = await fetch(`/api/yui/conversations/${conversationId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ goal_id: goalId }),
+    });
+    if (!response.ok) throw new Error((await response.json().catch(() => null))?.error ?? "記録先の変更に失敗しました");
+    await loadData({ background: true });
   };
 
   const handleRejectCandidate = async (candidateId: string) => {
@@ -815,6 +797,60 @@ export function YuiHome({ displayName }: YuiHomeProps) {
     await loadData();
   };
 
+  const handleScheduleSuggestedTimeBlock = async (block: YuiSuggestedTimeBlock) => {
+    setError(null);
+    try {
+      // Keep the suggested block and the external-calendar action in sync.
+      const approval = await fetch(`/api/yui/time-blocks/${block.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "approved" }),
+      });
+      if (!approval.ok) {
+        const payload = await approval.json().catch(() => null);
+        throw new Error(payload?.error ?? "時間提案の承認に失敗しました");
+      }
+
+      const actionResponse = await fetch("/api/yui/calendar-actions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          time_block_id: block.id,
+          provider: "google_calendar",
+          title: block.title,
+          start_at: block.start_at,
+          end_at: block.end_at,
+          status: "approved",
+        }),
+      });
+      if (!actionResponse.ok) {
+        const payload = await actionResponse.json().catch(() => null);
+        throw new Error(payload?.error ?? "予定登録候補の作成に失敗しました");
+      }
+
+      const { calendarAction } = await actionResponse.json();
+      if (calendarAction?.status !== "scheduled") {
+        const scheduleResponse = await fetch(`/api/yui/calendar-actions/${calendarAction.id}/schedule`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+        });
+        if (!scheduleResponse.ok) {
+          const payload = await scheduleResponse.json().catch(() => null);
+          throw new Error(payload?.error ?? "Google Calendarへの登録に失敗しました");
+        }
+      }
+
+      await fetch(`/api/yui/time-blocks/${block.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "created" }),
+      });
+      await loadData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Google Calendarへの登録に失敗しました");
+    }
+  };
+
   const handleGenerateRecommendation = async () => {
     const response = await fetch("/api/yui/recommendations", {
       method: "POST",
@@ -879,6 +915,17 @@ export function YuiHome({ displayName }: YuiHomeProps) {
     await loadData();
   };
 
+  const handleCancelCalendarAction = async (actionId: string) => {
+    try {
+      const response = await fetch(`/api/yui/calendar-actions/${actionId}/cancel`, { method: "POST" });
+      if (!response.ok) throw new Error("Google Calendarの予定を取り消せませんでした");
+      setCancelCalendarActionId(null);
+      await loadData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Google Calendarの予定を取り消せませんでした");
+    }
+  };
+
   const handleSaveGoal = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
@@ -893,7 +940,17 @@ export function YuiHome({ displayName }: YuiHomeProps) {
 
       if (!response.ok) {
         const payload = await response.json().catch(() => null);
-        throw new Error(payload?.error ?? "目標の保存に失敗しました");
+        throw new Error(payload?.error ?? "目的の保存に失敗しました");
+      }
+
+      const payload = await response.json();
+      if (payload.goal) {
+        setGoals((current) => [payload.goal, ...current.filter((goal) => goal.id !== payload.goal.id)]);
+        setGoalsState((current) => ({
+          ...current,
+          loaded: true,
+          data: [payload.goal, ...(current.data ?? []).filter((goal: any) => goal.id !== payload.goal.id)],
+        }));
       }
 
       setGoalForm({
@@ -904,7 +961,7 @@ export function YuiHome({ displayName }: YuiHomeProps) {
       });
       await loadData();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "目標の保存に失敗しました");
+      setError(err instanceof Error ? err.message : "目的の保存に失敗しました");
     } finally {
       setIsSavingGoal(false);
     }
@@ -942,12 +999,12 @@ export function YuiHome({ displayName }: YuiHomeProps) {
       const response = await fetch(`/api/yui/goals?id=${encodeURIComponent(goalId)}`, { method: "DELETE" });
       if (!response.ok) {
         const payload = await response.json().catch(() => null);
-        throw new Error(payload?.error ?? "目標の削除に失敗しました");
+        throw new Error(payload?.error ?? "目的の削除に失敗しました");
       }
       setDeleteConfirmGoalId(null);
       await loadData();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "目標の削除に失敗しました");
+      setError(err instanceof Error ? err.message : "目的の削除に失敗しました");
     } finally {
       setIsDeleting(false);
     }
@@ -970,12 +1027,183 @@ export function YuiHome({ displayName }: YuiHomeProps) {
     }
   };
 
+  const handleUpdateGoalProgress = async (goalId: string, progress: number) => {
+    setIsUpdatingProgress(true);
+    setError(null);
+    try {
+      const response = await fetch("/api/yui/goals", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: goalId, progress }),
+      });
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null);
+        throw new Error(payload?.error ?? "進捗の更新に失敗しました");
+      }
+      setProgressDrafts((current) => {
+        if (!(goalId in current)) return current;
+        const next = { ...current };
+        delete next[goalId];
+        return next;
+      });
+      await loadData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "進捗の更新に失敗しました");
+    } finally {
+      setIsUpdatingProgress(false);
+    }
+  };
+
+  const handleCompleteMilestone = async (milestoneId: string) => {
+    setIsUpdatingProgress(true);
+    setError(null);
+    try {
+      const response = await fetch("/api/yui/milestones", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: milestoneId, status: "completed" }),
+      });
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null);
+        throw new Error(payload?.error ?? "マイルストーンの更新に失敗しました");
+      }
+      await loadData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "マイルストーンの更新に失敗しました");
+    } finally {
+      setIsUpdatingProgress(false);
+    }
+  };
+
+  const handleUpdateMilestoneStatus = async (milestoneId: string, status: "pending" | "paused") => {
+    setIsUpdatingProgress(true);
+    setError(null);
+    try {
+      const response = await fetch("/api/yui/milestones", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: milestoneId, status }),
+      });
+      if (!response.ok) throw new Error((await response.json().catch(() => null))?.error ?? "タスク状態の更新に失敗しました");
+      await loadData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "タスク状態の更新に失敗しました");
+    } finally {
+      setIsUpdatingProgress(false);
+    }
+  };
+
+  const handleQuickTaskSave = async () => {
+    if (!currentFocus || !quickTaskDraft.trim() || isSavingQuickPanel) return;
+    setIsSavingQuickPanel(true);
+    setError(null);
+    try {
+      const response = await fetch("/api/yui/milestones", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ goal_id: currentFocus.id, title: quickTaskDraft.trim(), status: "pending" }),
+      });
+      if (!response.ok) throw new Error((await response.json().catch(() => null))?.error ?? "タスクの追加に失敗しました");
+      setQuickTaskDraft("");
+      setQuickPanel(null);
+      await loadData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "タスクの追加に失敗しました");
+    } finally {
+      setIsSavingQuickPanel(false);
+    }
+  };
+
+  const handleAddSuggestedTask = async (action: YuiActionSuggestion | any) => {
+    if (!currentFocus || addingTaskActionId === action.id) return;
+    setAddingTaskActionId(action.id);
+    setError(null);
+    try {
+      const response = await fetch("/api/yui/milestones", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ goal_id: currentFocus.id, title: action.title, status: "pending" }),
+      });
+      if (!response.ok) throw new Error((await response.json().catch(() => null))?.error ?? "提案をタスクに追加できませんでした");
+      setAddedTaskActionIds((previous) => new Set(previous).add(action.id));
+      await loadData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "提案をタスクに追加できませんでした");
+    } finally {
+      setAddingTaskActionId(null);
+    }
+  };
+
+  const handleQuickReflectionSave = async () => {
+    if (!quickReflectionDraft.trim() || isSavingQuickPanel) return;
+    setIsSavingQuickPanel(true);
+    setError(null);
+    try {
+      const response = await fetch("/api/yui/reflect", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ summary: quickReflectionDraft.trim(), insights: [], next_actions: quickNextActionDraft.trim() ? [quickNextActionDraft.trim()] : [] }),
+      });
+      if (!response.ok) throw new Error((await response.json().catch(() => null))?.error ?? "振り返りの保存に失敗しました");
+      setSavedNotice("振り返りを保存しました");
+      setQuickReflectionDraft("");
+      if (quickNextActionDraft.trim() && currentFocus) {
+        const taskResponse = await fetch("/api/yui/milestones", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ goal_id: currentFocus.id, title: quickNextActionDraft.trim(), status: "pending" }),
+        });
+        if (!taskResponse.ok) throw new Error("次のタスクの追加に失敗しました");
+      }
+      setQuickNextActionDraft("");
+      setQuickPanel(null);
+      await loadData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "振り返りの保存に失敗しました");
+    } finally {
+      setIsSavingQuickPanel(false);
+    }
+  };
+
+  const handleQuickMemoSave = async () => {
+    if (!quickMemoDraft.trim() || isSavingQuickPanel) return;
+    setIsSavingQuickPanel(true);
+    setError(null);
+    try {
+      const response = await fetch("/api/yui/events", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          event_type: "note_created",
+          source: "manual",
+          title: "メモ",
+          content: quickMemoDraft.trim(),
+        }),
+      });
+      if (!response.ok) throw new Error((await response.json().catch(() => null))?.error ?? "メモの保存に失敗しました");
+      setSavedNotice("メモを保存しました");
+      setQuickMemoDraft("");
+      setQuickPanel(null);
+      await loadData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "メモの保存に失敗しました");
+    } finally {
+      setIsSavingQuickPanel(false);
+    }
+  };
+
   const recentEvents = today?.recentEvents ?? [];
   const calendarEvents = today?.calendarEvents ?? [];
-  const suggestedTimeBlocks = today?.suggestedTimeBlocks ?? [];
+  const latestEverydayGoal = goals.find((goal) => !isTestContent(`${goal.title} ${goal.description ?? ""}`));
+  const suggestedTimeBlocks = dedupeSuggestedTimeBlocks(today?.suggestedTimeBlocks ?? []).filter(block => isFutureInterval(block.start_at, block.end_at))
+    .filter((block) => !calendarActions.some((action) =>
+      timeSlotKey(action) === timeSlotKey(block)
+      && ["approved", "scheduled"].includes(action.status),
+    ));
+  const orderedCalendarActions = orderCalendarActions(calendarActions);
 
   const activityItems = [
-    ...recentEvents.slice(0, 4).map((event) => ({
+    ...recentEvents.filter(isUserActivity).slice(0, 4).map((event) => ({
       time: format(new Date(event.occurred_at), "HH:mm"),
       title: event.title || event.event_type,
       detail: event.content || event.event_type,
@@ -984,10 +1212,10 @@ export function YuiHome({ displayName }: YuiHomeProps) {
       ? [{ time: "今日", title: "Google Calendar同期", detail: `${calendarEvents.length}件の予定を確認しました。` }]
       : []),
     ...(gmailInsights.length > 0
-      ? [{ time: "今日", title: "新着メール", detail: `${gmailInsights.length}件の未読メールがあります。` }]
+      ? [{ time: "今日", title: "要確認メール", detail: `${gmailInsights.length}件のメールを確認できます。` }]
       : []),
-    ...(goals.length > 0
-      ? [{ time: "今日", title: "Goal更新", detail: `${goals[0]?.title ?? "目標"} が今の優先事項です。` }]
+    ...(latestEverydayGoal
+      ? [{ time: "今日", title: "目的を更新", detail: `${latestEverydayGoal.title} が今の優先事項です。` }]
       : []),
   ].slice(0, 6);
 
@@ -1001,7 +1229,7 @@ export function YuiHome({ displayName }: YuiHomeProps) {
 
   if (gmailInsights[0]) {
     recentChangeCards.push({
-      label: "Gmail",
+      label: "メール",
       title: gmailInsights[0].subject ?? "新着メール",
       detail: gmailInsights[0].snippet ?? "重要メールを確認しました。",
     });
@@ -1009,7 +1237,7 @@ export function YuiHome({ displayName }: YuiHomeProps) {
 
   if (calendarEvents[0]) {
     recentChangeCards.push({
-      label: "Calendar",
+      label: "予定",
       title: calendarEvents[0].title ?? "予定",
       detail: calendarEvents[0].start_at ? `今日 ${format(new Date(calendarEvents[0].start_at), "HH:mm")}` : "今日の予定を確認しました。",
     });
@@ -1017,52 +1245,77 @@ export function YuiHome({ displayName }: YuiHomeProps) {
 
   if (goals[0]) {
     recentChangeCards.push({
-      label: "Goals",
-      title: goals[0].title ?? "目標",
+      label: "目的",
+      title: goals[0].title ?? "目的",
       detail: goals[0].description ?? "今の軸を維持しています。",
     });
   }
 
   if (reflections[0]) {
     recentChangeCards.push({
-      label: "Reflections",
+      label: "振り返り",
       title: "振り返り",
       detail: reflections[0].summary || "今週の気づきを記録しました。",
     });
   }
 
-  const currentFocus = goals.find((goal) => goal.status === "active") ?? goals[0] ?? null;
+  const focusGoals = goals.filter((goal) => !isTestContent(`${goal.title} ${goal.description ?? ""}`)).sort((left, right) => {
+    const rank = (status: string) => status === "active" ? 0 : status === "paused" ? 1 : 2;
+    return rank(left.status) - rank(right.status) || new Date(right.updated_at).getTime() - new Date(left.updated_at).getTime();
+  });
+  useEffect(() => {
+    if (focusGoals.length > 0 && focusGoalIndex >= focusGoals.length) setFocusGoalIndex(0);
+  }, [focusGoals.length, focusGoalIndex]);
+  const selectedFocus = focusGoals[focusGoalIndex] ?? null;
+  const selectedMilestones = milestones.filter((item) => item.goal_id === selectedFocus?.id);
+  const currentFocus = selectedFocus ? { ...selectedFocus, progress: goalProgress(selectedFocus.progress, selectedMilestones) } : null;
+  const openReflectionComposer = useCallback(() => {
+    setShowFabMenu(false);
+    setQuickPanel("reflection");
+    if (currentFocus) {
+      window.setTimeout(() => {
+        document.getElementById("current-focus")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 80);
+    }
+  }, [currentFocus]);
+  const visibleContextSummary = contextSummary && !isTestContent(`${contextSummary.priority} ${contextSummary.reason} ${contextSummary.nextAction}`)
+    ? contextSummary
+    : null;
+  const visibleMorningBrief = morningBrief && !isTestContent(`${morningBrief.priority} ${morningBrief.reason} ${morningBrief.nextAction}`)
+    ? morningBrief
+    : null;
+  const currentProgressDraft = currentFocus ? progressDrafts[currentFocus.id] : undefined;
   const focusMilestones = currentFocus
     ? milestones.filter((milestone) => milestone.goal_id === currentFocus.id)
     : [];
   const nextMilestone =
-    focusMilestones.find((milestone) => milestone.status !== "completed") ?? focusMilestones[0] ?? null;
+    focusMilestones.find((milestone) => milestone.status === "pending") ?? null;
   const compactTimelineItems = [
     currentFocus
       ? {
           id: `goal-${currentFocus.id}`,
-          label: "Goal",
+          label: "目的",
           title: currentFocus.title,
           meta: `${currentFocus.progress ?? 0}%`,
         }
       : null,
     ...focusMilestones.slice(0, 3).map((milestone) => ({
       id: `milestone-${milestone.id}`,
-      label: "Milestone",
+      label: "マイルストーン",
       title: milestone.title,
       meta: milestone.status === "completed" ? "完了" : "次候補",
     })),
     calendarEvents[0]
       ? {
           id: `calendar-${calendarEvents[0].id}`,
-          label: "Calendar",
+          label: "予定",
           title: calendarEvents[0].title,
           meta: format(new Date(calendarEvents[0].start_at), "MM/dd HH:mm"),
         }
       : null,
   ].filter(Boolean) as Array<{ id: string; label: string; title: string; meta: string }>;
   const compactInsights = [
-    contextSummary?.reason,
+    visibleContextSummary?.reason,
     today?.recentInsights?.[0],
     latestReflection?.insights?.[0],
   ].filter(Boolean).slice(0, 2) as string[];
@@ -1070,44 +1323,123 @@ export function YuiHome({ displayName }: YuiHomeProps) {
     (rec) => rec.type === "action" && rec.status === "pending",
   );
   const confirmationItems = [
-    ...pendingRecommendationActions.map((rec) => ({
-      id: rec.id,
-      title: rec.title,
-      description: rec.reason,
-      source: "YUI Chat",
-      kind: "recommendation" as const,
-      onAccept: () => handleExecuteAction(rec.id),
-      onReject: () => handleRejectAction(rec.id),
-    })),
+    ...pendingRecommendationActions.map((rec) => {
+      const content = parseRecommendationContent(rec.content);
+      const isCalendarRegistration = rec.title.startsWith("カレンダー登録");
+      const requiresScheduleDetails = isCalendarRegistration && !content?.proposed_start_at;
+      const scheduleTitle = rec.title.replace(/^カレンダー登録:\s*/, "");
+      return {
+        id: rec.id,
+        title: rec.title,
+        description: formatRecommendationReason(rec.reason),
+        schedule: content
+          ? (formatProposedSchedule(content.proposed_start_at, content.proposed_end_at) ?? (isCalendarRegistration ? "予定日時: 日時の指定なし" : null))
+          : (isCalendarRegistration ? "予定日時: 日時の指定なし" : null),
+        source: "YUIとの相談から",
+        kind: "recommendation" as const,
+        requiresScheduleDetails,
+        onRequestSchedule: requiresScheduleDetails
+          ? () => openChatComposer(`「${scheduleTitle}」を予定にしたいです。日時（例：9月10日 15:00〜16:00）を教えてください。`)
+          : null,
+        onAccept: () => handleExecuteAction(rec.id),
+        onReject: () => handleRejectAction(rec.id),
+      };
+    }),
     ...unifiedActions.slice(0, Math.max(0, 3 - pendingRecommendationActions.length)).map((action) => ({
       id: action.id,
       title: action.title,
       description: action.description,
-      source: action.source,
+      schedule: null,
+      source: "YUIからの提案",
       kind: "unified" as const,
+      requiresScheduleDetails: false,
+      onRequestSchedule: null,
       onAccept: () => handleExecuteUnifiedAction(action),
       onReject: null,
     })),
   ].slice(0, 3);
 
-  const googleStatusLabel =
-    googleHealth?.status === "connected"
-      ? "Google 接続済み"
-      : googleHealth?.status === "refreshing"
-        ? "同期中..."
-        : googleHealth?.status === "needs_reauth"
-          ? "再接続が必要"
-          : googleHealth?.status === "sync_error"
-            ? "同期エラー"
-            : "未接続";
+  const scheduledFocusAction = orderedCalendarActions.find((action) =>
+    action.status === "scheduled" && new Date(action.start_at).getTime() >= Date.now(),
+  ) ?? null;
+  const formatEmailSummary = (summary: string | null | undefined) => summary
+    ?.replace(/未読メールは\s*\d+件/g, `要確認メールは${gmailInsights.length}件`)
+    .replace(/(\d+)件の未読メール/g, `$1件の未読メール（要確認${gmailInsights.length}件）`);
+  const presenceNextAction = nextMilestone?.title
+    ?? (scheduledFocusAction
+      ? `${format(new Date(scheduledFocusAction.start_at), "HH:mm")}から「${scheduledFocusAction.title}」を始める`
+      : null)
+    ?? (currentFocus && !nextMilestone ? "次のタスクを追加するか、できたことを振り返りましょう。" : visibleContextSummary?.nextAction)
+    ?? "YUIに、今日の予定を相談してみましょう。";
+  const presenceState: YuiPresenceState = isRefreshing || googleHealth?.status === "refreshing"
+    ? "syncing"
+    : confirmationItems.length > 0
+      ? "proposal_ready"
+      : scheduledFocusAction
+        ? "focus_time"
+        : nextMilestone
+          ? "thinking"
+          : latestReflection
+          ? "reflection_ready"
+            : "idle";
+  // The health response has a shared Google status in addition to the
+  // individual service flags. Honor it here as the settings screen does.
+  const calendarConnected = googleHealth?.status === "connected" || googleHealth?.calendarConnected === true;
+  const gmailConnected = googleHealth?.status === "connected" || googleHealth?.gmailConnected === true;
+  const connectionStatus = (connected: boolean) => connected
+    ? "connected" as const
+    : sectionErrors.googleHealth
+      ? "unavailable" as const
+      : googleHealth?.status === "refreshing" || googleHealth === null
+        ? "checking" as const
+        : "disconnected" as const;
+  const calendarStatus = connectionStatus(calendarConnected);
+  const gmailStatus = connectionStatus(gmailConnected);
+  const localHour = Number(new Intl.DateTimeFormat("en-US", {
+    timeZone: deliveryStatus?.timezone || "Asia/Tokyo",
+    hour: "2-digit",
+    hour12: false,
+  }).format(new Date()));
+  const storedNotification = localHour >= 18
+    ? deliveryStatus?.todayEveningNotification
+    : deliveryStatus?.todayMorningNotification;
+  const dashboardNotification = storedNotification
+    ?? (notificationPreviews
+      ? (localHour >= 18 ? notificationPreviews.evening : notificationPreviews.morning)
+      : null);
 
   return (
-    <main className="min-h-screen bg-[#f5f5f7] text-slate-900">
-      <div className="relative mx-auto flex w-full max-w-7xl flex-col gap-8 px-6 py-16 sm:px-10 lg:px-16">
-        <header className="flex flex-wrap items-center justify-between gap-3 text-[11px] text-slate-500">
+    <>
+      <LegacyLocalLogMigration />
+    <main
+      className="min-h-screen overflow-x-clip bg-[#f5f5f7] text-slate-900"
+      onFocusCapture={(event) => {
+        const target = event.target;
+        if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement) {
+          setShowFabMenu(false);
+          setIsEditingText(true);
+        }
+      }}
+      onBlurCapture={() => {
+        window.setTimeout(() => {
+          const target = document.activeElement;
+          setIsEditingText(target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement);
+        }, 0);
+      }}
+    >
+      <div className="relative mx-auto flex w-full min-w-0 max-w-7xl flex-col gap-8 px-4 py-8 sm:px-10 sm:py-16 lg:px-16">
+        <header className="flex flex-col items-start gap-3 text-[11px] text-slate-500 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
           <p className="font-medium uppercase tracking-[0.22em] text-slate-500">YOHAKU OS / YUI</p>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
             <span>更新: {formatRelativeTime(cacheUpdatedAt)}</span>
+            <button
+              type="button"
+              onClick={openGoalForm}
+              className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-3 py-1.5 text-white transition hover:bg-slate-700"
+            >
+              <Target className="h-3.5 w-3.5" />
+              <span>目的とマイルストーン</span>
+            </button>
             <div className="relative">
               <button
                 type="button"
@@ -1118,16 +1450,16 @@ export function YuiHome({ displayName }: YuiHomeProps) {
                 className="inline-flex items-center gap-2 rounded-full bg-white/70 px-3 py-1.5 text-slate-600 transition hover:bg-white"
               >
                 <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                <span>Live</span>
+                <span>接続状況</span>
               </button>
               {showHealthMenu ? (
-                <div className="absolute right-0 top-full z-10 mt-2 w-56 rounded-2xl border border-slate-200/80 bg-white/90 p-2 shadow-sm backdrop-blur">
+                <div className="absolute left-0 top-full z-10 mt-2 w-56 max-w-[calc(100vw-2rem)] rounded-2xl border border-slate-200/80 bg-white/90 p-2 shadow-sm backdrop-blur sm:left-auto sm:right-0">
                   <p className="px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-slate-500">システム連携状態</p>
                   <div className="mt-2 space-y-1 text-sm">
-                    <p className="rounded-xl bg-slate-50 px-2 py-1 text-slate-600">Google: {googleHealth?.status === "connected" ? "接続済み" : googleHealth?.status === "needs_reauth" ? "再認証が必要" : "未接続"}</p>
-                    <p className="rounded-xl bg-slate-50 px-2 py-1 text-slate-600">Gmail: {gmailInsights.length > 0 ? "接続済み" : "未接続"}</p>
-                    <p className="rounded-xl bg-slate-50 px-2 py-1 text-slate-600">AI: {morningBrief ? "接続済み" : "未接続"}</p>
-                    <p className="rounded-xl bg-slate-50 px-2 py-1 text-slate-600">Supabase: {error ? "メンテナンス中" : "接続中"}</p>
+                    <p className="rounded-xl bg-slate-50 px-2 py-1 text-slate-600">Google: {(googleHealth?.status === "connected" || googleHealth?.calendarConnected || calendarEvents.length > 0 || calendarActions.some((action) => ["approved", "scheduled"].includes(action.status))) ? "接続済み" : googleHealth?.status === "needs_reauth" ? "再認証が必要" : "未接続"}</p>
+                    <p className="rounded-xl bg-slate-50 px-2 py-1 text-slate-600">Gmail: {googleHealth?.gmailConnected || googleHealth?.status === "connected" ? "接続済み" : "未接続"}</p>
+                    <p className="rounded-xl bg-slate-50 px-2 py-1 text-slate-600">AI相談: {aiConnectionState === "checking" ? "確認中" : aiConnectionState === "configured" ? "設定済み" : aiConnectionState === "missing" ? "未設定・無効" : "確認できません"}</p>
+                    <p className="rounded-xl bg-slate-50 px-2 py-1 text-slate-600">YUIのデータ: {error ? "メンテナンス中" : "利用可能"}</p>
                   </div>
                 </div>
               ) : null}
@@ -1143,6 +1475,7 @@ export function YuiHome({ displayName }: YuiHomeProps) {
             <div className="relative">
               <button
                 type="button"
+                aria-label="設定メニューを開く"
                 onClick={() => {
                   setShowSettingsMenu((current) => !current);
                   setShowHealthMenu(false);
@@ -1152,12 +1485,13 @@ export function YuiHome({ displayName }: YuiHomeProps) {
                 <Settings className="h-3.5 w-3.5" />
               </button>
               {showSettingsMenu ? (
-                <div className="absolute right-0 top-full z-10 mt-2 w-44 rounded-2xl border border-slate-200/80 bg-white/90 p-2 shadow-sm backdrop-blur">
-                  <Link href="/yui/settings" className="block rounded-xl px-2 py-2 text-sm text-slate-600 hover:bg-slate-50">接続</Link>
-                  <Link href="/yui/settings" className="block rounded-xl px-2 py-2 text-sm text-slate-600 hover:bg-slate-50">AI設定</Link>
-                  <Link href="/yui/settings" className="block rounded-xl px-2 py-2 text-sm text-slate-600 hover:bg-slate-50">通知</Link>
-                  <Link href="/yui/settings" className="block rounded-xl px-2 py-2 text-sm text-slate-600 hover:bg-slate-50">テーマ</Link>
-                  <Link href="/yui/settings" className="block rounded-xl px-2 py-2 text-sm text-slate-600 hover:bg-slate-50">ヘルプ</Link>
+                <div className="absolute left-0 top-full z-10 mt-2 w-44 max-w-[calc(100vw-2rem)] rounded-2xl border border-slate-200/80 bg-white/90 p-2 shadow-sm backdrop-blur sm:left-auto sm:right-0">
+                  <Link href="/yui/settings#profile" className="block rounded-xl px-2 py-2 text-sm text-slate-600 hover:bg-slate-50">YUIのプロフィール</Link>
+                  <Link href="/yui/settings#connections" className="block rounded-xl px-2 py-2 text-sm text-slate-600 hover:bg-slate-50">接続</Link>
+                  <Link href="/yui/settings#ai" className="block rounded-xl px-2 py-2 text-sm text-slate-600 hover:bg-slate-50">AI設定</Link>
+                  <Link href="/yui/settings#notifications" className="block rounded-xl px-2 py-2 text-sm text-slate-600 hover:bg-slate-50">通知</Link>
+                  <span className="block cursor-not-allowed rounded-xl px-2 py-2 text-sm text-slate-400" aria-disabled="true">テーマ（準備中）</span>
+                  <Link href="/help" className="block rounded-xl px-2 py-2 text-sm text-slate-600 hover:bg-slate-50">ヘルプ・使い方</Link>
                 </div>
               ) : null}
             </div>
@@ -1173,21 +1507,19 @@ export function YuiHome({ displayName }: YuiHomeProps) {
         {/* First-Use Setup Guide: shown when connections or goals are not yet configured */}
         {!isInitialLoading && profile && profile.has_completed_onboarding !== false && (
           (() => {
-            const googleConnected = googleHealth?.status === "connected";
-            const aiReady = aiConnected === true;
-            const hasGoal = goals.length > 0;
-            const completedCount = [googleConnected, aiReady, hasGoal].filter(Boolean).length;
-            if (completedCount === 3) return null;
+            const googleConnected = googleHealth?.status === "connected" || googleHealth?.calendarConnected === true;
+            const calendarConnected = googleConnected || calendarEvents.length > 0 || calendarActions.some((action) => ["approved", "scheduled"].includes(action.status));
+            // Current Focus is the same goal presented in the dashboard. Use it
+            // as the setup source of truth so lazy-loaded goal data cannot leave
+            // the checklist stuck at 1/2.
+            const hasGoal = goals.length > 0 || Boolean(currentFocus) || Boolean(today?.currentPosition?.purpose);
+            const completedCount = [calendarConnected, hasGoal].filter(Boolean).length;
+            if (completedCount === 2) return null;
             const steps = [
               {
-                done: googleConnected,
-                label: "Google カレンダー・Gmail を接続する",
-                action: <Link href="/yui/settings" className="text-sm text-slate-700 hover:text-slate-900 underline underline-offset-2">Google カレンダー・Gmail を接続する</Link>,
-              },
-              {
-                done: aiReady,
-                label: "AI（Gemini）を接続する",
-                action: <Link href="/yui/settings" className="text-sm text-slate-700 hover:text-slate-900 underline underline-offset-2">AI（Gemini）を接続する</Link>,
+                done: calendarConnected,
+                label: "Google カレンダー・Gmail を接続する（任意）",
+                action: <Link href="/yui/settings" className="text-sm text-slate-700 hover:text-slate-900 underline underline-offset-2">Google カレンダー・Gmail を接続する（任意）</Link>,
               },
               {
                 done: hasGoal,
@@ -1203,9 +1535,9 @@ export function YuiHome({ displayName }: YuiHomeProps) {
               <div className="rounded-2xl border border-slate-200 bg-slate-50/80 px-5 py-4 space-y-3">
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400">セットアップ</span>
-                  <span className="text-[10px] text-slate-400">{completedCount} / 3 完了</span>
+                  <span className="text-[10px] text-slate-400">{completedCount} / 2 完了</span>
                 </div>
-                <p className="text-sm font-medium text-slate-700">YUIを使い始めるための手順</p>
+                <p className="text-sm font-medium text-slate-700">必要に応じて追加できる設定（記録はこのまま使えます）</p>
                 <ul className="space-y-2">
                   {steps.map((step, i) => (
                     <li key={i} className="flex items-center gap-3">
@@ -1228,10 +1560,15 @@ export function YuiHome({ displayName }: YuiHomeProps) {
         {profile && profile.has_completed_onboarding === false ? (
           <YuiFirstMeetingCard
             onComplete={() => {
-              setProfileForm((prev) => ({ ...prev, has_completed_onboarding: true }));
               if (profile) {
                 setProfile({ ...profile, has_completed_onboarding: true });
               }
+            }}
+            onStartWithGoal={() => {
+              if (profile) {
+                setProfile({ ...profile, has_completed_onboarding: true });
+              }
+              setTimeout(openGoalForm, 80);
             }}
           />
         ) : (
@@ -1246,60 +1583,72 @@ export function YuiHome({ displayName }: YuiHomeProps) {
               </section>
             ) : (
               <div className="space-y-8 animate-in fade-in duration-500">
-                {/* 1. Priority 1 — YUI Chat (Conversation Hub) */}
-                <YuiChat
-                  conversations={conversations}
-                  memoryCandidates={memoryCandidates}
-                  onSend={handleSendConversation}
-                  onApproveCandidate={handleApproveCandidate}
-                  onRejectCandidate={handleRejectCandidate}
+                <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-slate-600">
+                  <nav aria-label="基本の使い方" className="flex flex-wrap items-center gap-2">
+                    <button type="button" onClick={() => openChatComposer()} className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">1. 相談する</button>
+                    <button type="button" onClick={openGoalForm} className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">2. 今日やることを決める</button>
+                    <button type="button" onClick={openReflectionComposer} className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">3. 振り返る</button>
+                  </nav>
+                  <Link href="/help" className="text-xs underline">使い方を見る</Link>
+                </div>
+                {/* Conversation Hub */}
+                <div ref={chatCardRef}>
+                  <YuiChat
+                    conversations={conversations}
+                    memoryCandidates={memoryCandidates}
+                    goals={goals}
+                    currentGoalId={currentFocus?.id ?? null}
+                    onSend={handleSendConversation}
+                    onApproveCandidate={handleApproveCandidate}
+                    onRejectCandidate={handleRejectCandidate}
+                    onChangeConversationGoal={handleChangeConversationGoal}
+                    composerRequest={chatDraftRequest}
+                    composerRef={chatComposerRef}
+                  />
+                </div>
+
+                {savedNotice ? <div role="status" className="rounded-xl bg-emerald-50 p-4 text-sm text-emerald-900">{savedNotice} <a href="#recent-records" className="ml-3 underline">記録を見る</a></div> : null}
+                <section id="recent-records" className="scroll-mt-4"><ActivityFeedCard items={activityItems.slice(0, 5)} /></section>
+                {dashboardNotification ? (
+                  <Card className="rounded-2xl border-sky-200 bg-gradient-to-br from-sky-50 to-white p-5 shadow-sm md:p-6">
+                    <div className="flex items-start gap-4">
+                      <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sky-100 text-sky-700">
+                        <Bell className="h-5 w-5" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-sky-700">YUIからの今日のまとめ</p>
+                          <Link href="/yui/settings#notifications" className="text-xs text-slate-500 underline decoration-slate-300 underline-offset-4 hover:text-slate-800">
+                            通知設定
+                          </Link>
+                        </div>
+                        <h2 className="mt-2 text-lg font-semibold text-slate-900">{dashboardNotification.title}</h2>
+                        <BriefAudio key={dashboardNotification.message} type={localHour >= 18 ? "evening" : "morning"} />
+                        <details className="mt-2 text-sm text-slate-600"><summary className="cursor-pointer">今日のまとめを読む</summary><p className="mt-3 whitespace-pre-wrap leading-7">{dashboardNotification.message}</p></details>
+                        <p className="mt-3 text-[11px] text-slate-400">
+                          現在は端末へのプッシュ通知ではなく、このダッシュボード上部に表示しています。
+                          {deliveryStatus?.nextDeliveryTime ? ` 次回の更新目安: ${deliveryStatus.nextDeliveryTime}` : ""}
+                        </p>
+                      </div>
+                    </div>
+                  </Card>
+                ) : null}
+
+                <YuiPresenceDashboard
+                  displayName={displayName}
+                  state={presenceState}
+                  focusTitle={currentFocus?.title ?? "今日の流れを整えましょう"}
+                  nextAction={presenceNextAction}
+                  progress={currentFocus?.progress ?? 0}
+                  hasGoal={Boolean(currentFocus)}
+                  hasNextStep={Boolean(nextMilestone)}
+                  hasScheduledTime={Boolean(scheduledFocusAction)}
+                  hasReflection={Boolean(latestReflection)}
+                  onOpenChat={() => openChatComposer("今日の予定を整理して")}
                 />
 
-                {/* 2. Compact Header (Good morning & Current Status summary) */}
-                <Card className="p-6 relative overflow-hidden border-slate-200 bg-white shadow-sm rounded-3xl">
-                  <div className="absolute top-0 right-0 p-4">
-                    <LiveStatusBadge
-                      status={isRefreshing ? "updating" : "cached"}
-                      text={isRefreshing ? "同期中" : "同期完了"}
-                    />
-                  </div>
-                  <div className="space-y-3">
-                    <div className="space-y-1">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">
-                        {new Date().getHours() < 12 ? "Good morning" : new Date().getHours() < 18 ? "Good afternoon" : "Good evening"}
-                      </p>
-                      <h2 className="text-2xl font-light tracking-tight text-slate-900">
-                        {displayName ? `${displayName}さん` : "今日の一歩"}
-                      </h2>
-                    </div>
-                    <div className="space-y-2 text-sm text-slate-600 leading-relaxed font-light">
-                      <p className="font-medium text-slate-800">
-                        【最重要】{contextSummary?.priority || morningBrief?.priority || "今日の予定と目標をYUIと整理しましょう。"}
-                      </p>
-                      <p>
-                        【次の一歩】{contextSummary?.nextAction || "チャットで「今日の予定は？」と話しかけてみてください。"}
-                      </p>
-                    </div>
-                    {/* Status chips */}
-                    <div className="flex flex-wrap gap-2 pt-2">
-                      {[
-                        calendarEvents.length > 0 ? `予定 ×${calendarEvents.length}` : "予定 ×0",
-                        gmailInsights.length > 0 ? `メール未読 ×${gmailInsights.length}` : "未読 ×0",
-                        goals[0] ? `目標進捗 ${goals[0].progress ?? 0}%` : "目標進捗 0%",
-                      ].map((chip) => (
-                        <span
-                          key={chip}
-                          className="rounded-full bg-slate-50 px-2.5 py-1 text-xs font-light text-slate-600 border border-slate-100"
-                        >
-                          {chip}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </Card>
-
-                {/* 3. Confirmation Layer */}
-                <Card className="space-y-4 rounded-2xl border-slate-200 bg-white p-5 shadow-sm">
+                {/* Confirmation Layer */}
+                {confirmationItems.length > 0 ? <Card className="space-y-4 rounded-2xl border-slate-200 bg-white p-5 shadow-sm">
                   <div className="flex items-center justify-between gap-3">
                     <div>
                       <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">YUIからの確認待ち</p>
@@ -1310,17 +1659,15 @@ export function YuiHome({ displayName }: YuiHomeProps) {
                     </span>
                   </div>
 
-                  {confirmationItems.length === 0 ? (
-                    <p className="text-sm text-slate-500">今すぐ確認が必要な提案はありません。</p>
-                  ) : (
-                    <div className="space-y-3">
+                  <div className="space-y-3">
                       {confirmationItems.map((item) => (
                         <div key={`${item.kind}-${item.id}`} className="rounded-xl border border-slate-200 bg-slate-50/80 p-4">
                           <div className="flex flex-wrap items-start justify-between gap-3">
                             <div className="min-w-0 flex-1 space-y-1">
                               <p className="text-sm font-semibold text-slate-900">{item.title}</p>
                               <p className="line-clamp-2 text-xs leading-5 text-slate-500">{item.description}</p>
-                              <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400">{item.source}</p>
+                              {item.schedule ? <p className="text-xs font-medium text-slate-700">{item.schedule}</p> : null}
+                              <p className="text-[11px] tracking-[0.12em] text-slate-400">{item.source}</p>
                             </div>
                             <div className="flex shrink-0 items-center gap-2">
                               {item.onReject ? (
@@ -1333,69 +1680,216 @@ export function YuiHome({ displayName }: YuiHomeProps) {
                                   見送る
                                 </button>
                               ) : null}
-                              <button
-                                type="button"
-                                onClick={item.onAccept}
-                                disabled={executingActionId === item.id || completedActionIds.has(item.id)}
-                                className="inline-flex items-center gap-1.5 rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-slate-800 disabled:opacity-60"
-                              >
-                                {executingActionId === item.id ? (
-                                  <>
-                                    <Loader2 className="h-3 w-3 animate-spin" />
-                                    実行中
-                                  </>
-                                ) : completedActionIds.has(item.id) ? (
-                                  "完了"
-                                ) : (
-                                  "実行する"
-                                )}
-                              </button>
+                              {item.requiresScheduleDetails ? (
+                                <button
+                                  type="button"
+                                  onClick={item.onRequestSchedule ?? undefined}
+                                  className="inline-flex items-center gap-1.5 rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-slate-800"
+                                >
+                                  日時を指定して相談する
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={item.onAccept}
+                                  disabled={executingActionId === item.id || completedActionIds.has(item.id)}
+                                  className="inline-flex items-center gap-1.5 rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-slate-800 disabled:opacity-60"
+                                >
+                                  {executingActionId === item.id ? (
+                                    <>
+                                      <Loader2 className="h-3 w-3 animate-spin" />
+                                      実行中
+                                    </>
+                                  ) : completedActionIds.has(item.id) ? (
+                                    "完了"
+                                  ) : (
+                                    "実行する"
+                                  )}
+                                </button>
+                              )}
                             </div>
                           </div>
                         </div>
                       ))}
-                    </div>
-                  )}
-                </Card>
+                  </div>
+                </Card> : null}
 
                 {/* 4. Today / Focus / Timeline / Insight */}
                 <div className="grid gap-6 md:grid-cols-2">
                   <TodaySummary
-                    todaySummary={morningBrief?.summary ?? today?.summary ?? null}
-                    eventsCount={morningBrief?.todayEventsCount ?? (calendarEvents?.length ?? 0)}
-                    unreadEmails={gmailInsights?.length ?? 0}
-                    topPriority={contextSummary?.priority ?? morningBrief?.priority ?? null}
+                    calendarStatus={calendarStatus}
+                    gmailStatus={gmailStatus}
+                    todaySummary={formatEmailSummary(visibleMorningBrief?.summary ?? today?.summary ?? null)}
+                    eventsCount={visibleMorningBrief?.todayEventsCount ?? (calendarEvents?.length ?? 0)}
+                    actionableEmails={gmailInsights?.length ?? 0}
+                    topPriority={visibleContextSummary?.priority ?? visibleMorningBrief?.priority ?? currentFocus?.title ?? null}
+                    selectedGoal={currentFocus?.title}
+                    priorityReason={visibleContextSummary?.reason ?? visibleMorningBrief?.reason}
                     updatedAt={cacheUpdatedAt}
-                    changeSummary={morningBrief?.changeSummary ?? null}
+                    changeSummary={formatEmailSummary(visibleMorningBrief?.changeSummary ?? null)}
                   />
 
-                  <Card className="space-y-4 rounded-2xl border-slate-200 bg-white p-5 shadow-sm">
+                  <Card
+                    id="current-focus"
+                    className="space-y-4 rounded-2xl border-slate-200 bg-white p-5 shadow-sm"
+                    onTouchStart={(event) => { focusTouchStartX.current = event.touches[0]?.clientX ?? null; }}
+                    onTouchEnd={(event) => {
+                      const start = focusTouchStartX.current;
+                      const end = event.changedTouches[0]?.clientX;
+                      focusTouchStartX.current = null;
+                      if (start === null || end === undefined || focusGoals.length < 2 || Math.abs(end - start) < 45) return;
+                      setFocusGoalIndex((index) => end < start ? (index + 1) % focusGoals.length : (index - 1 + focusGoals.length) % focusGoals.length);
+                    }}
+                  >
                     <div className="flex items-center justify-between gap-3">
                       <div>
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">Current Focus</p>
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">いま取り組むこと</p>
                         <h3 className="mt-1 text-lg font-semibold text-slate-900">
                           {currentFocus?.title ?? "YUIに目的を話す"}
                         </h3>
+                        {currentFocus ? <p className="mt-1 text-xs text-slate-400">この目的の現在地</p> : null}
                       </div>
-                      <Target className="h-5 w-5 text-slate-400" />
+                      <div className="flex items-center gap-2">
+                        {focusGoals.length > 1 ? (
+                          <>
+                            <button type="button" onClick={() => setFocusGoalIndex((index) => (index - 1 + focusGoals.length) % focusGoals.length)} className="rounded-full border border-slate-200 px-2 py-1 text-xs text-slate-500" aria-label="前の目的">←</button>
+                            <span className="text-[11px] tabular-nums text-slate-400">{focusGoalIndex + 1} / {focusGoals.length}</span>
+                            <button type="button" onClick={() => setFocusGoalIndex((index) => (index + 1) % focusGoals.length)} className="rounded-full border border-slate-200 px-2 py-1 text-xs text-slate-500" aria-label="次の目的">→</button>
+                          </>
+                        ) : null}
+                        <Target className="h-5 w-5 text-slate-400" />
+                      </div>
                     </div>
+                    {focusGoals.length > 1 ? <p className="text-[11px] text-slate-400 md:hidden">左右にスワイプして目的を切り替えられます</p> : null}
                     <div className="space-y-2">
                       <div className="h-2 overflow-hidden rounded-full bg-slate-100">
                         <div
                           className="h-full rounded-full bg-slate-900"
-                          style={{ width: `${Math.min(100, Math.max(0, currentFocus?.progress ?? 0))}%` }}
+                          style={{ width: `${Math.min(100, Math.max(0, currentProgressDraft ?? currentFocus?.progress ?? 0))}%` }}
                         />
                       </div>
                       <div className="flex items-center justify-between text-xs text-slate-500">
-                        <span>{currentFocus ? `${currentFocus.progress ?? 0}%` : "未設定"}</span>
-                        <span>{nextMilestone ? `次: ${nextMilestone.title}` : "「始めたいこと」を送る"}</span>
+                        <span>{currentFocus ? `${currentProgressDraft ?? currentFocus.progress ?? 0}%` : "未設定"}</span>
+                        <span>{nextMilestone ? `次: ${nextMilestone.title}` : currentFocus ? "マイルストーンを追加すると進捗できます" : "「始めたいこと」を送る"}</span>
                       </div>
+                      {currentFocus && focusMilestones.length > 0 ? (
+                        <div className="flex items-end gap-1 pt-2" aria-label="マイルストーン進捗">
+                          {focusMilestones.slice(0, 7).map((milestone, index) => (
+                            <span key={milestone.id} className={`flex-1 rounded-sm ${milestone.status === "completed" ? "bg-emerald-400" : "bg-slate-200"}`} style={{ height: `${10 + Math.min(18, (index + 1) * 3)}px` }} title={milestone.title} />
+                          ))}
+                        </div>
+                      ) : null}
+                      {currentFocus ? (
+                        <>
+                          <input
+                            type="range"
+                            min={0}
+                            max={100}
+                            step={1}
+                            value={currentProgressDraft ?? currentFocus.progress ?? 0}
+                            onChange={(event) => {
+                              const value = Number(event.target.value);
+                              setProgressDrafts((current) => ({ ...current, [currentFocus.id]: value }));
+                            }}
+                            className="w-full accent-slate-900"
+                            aria-label="目的の進捗"
+                          />
+                          <p className="text-[11px] leading-5 text-slate-400">
+                            進捗は手動の値とタスクの完了率のうち、大きい方を表示します。完了したタスクは次の一歩から外れます。
+                          </p>
+                          <div className="flex flex-wrap items-center gap-2 pt-1">
+                            <button
+                              type="button"
+                              disabled={isUpdatingProgress || currentProgressDraft === undefined}
+                              onClick={() => void handleUpdateGoalProgress(currentFocus.id, currentProgressDraft ?? currentFocus.progress ?? 0)}
+                              className="rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40"
+                            >
+                              {isUpdatingProgress ? "更新中..." : "進捗を保存"}
+                            </button>
+                            {nextMilestone && nextMilestone.status !== "completed" ? (
+                              <button
+                                type="button"
+                                disabled={isUpdatingProgress}
+                                onClick={() => void handleCompleteMilestone(nextMilestone.id)}
+                                className="rounded-full border border-emerald-200 px-3 py-1.5 text-xs font-medium text-emerald-700 disabled:opacity-40"
+                              >
+                                次の一歩を完了
+                              </button>
+                            ) : null}
+                            {nextMilestone ? (
+                              deleteConfirmMilestoneId === nextMilestone.id ? (
+                                <>
+                                  <button type="button" disabled={isDeleting} onClick={() => void handleDeleteMilestone(nextMilestone.id)} className="rounded-full border border-rose-200 px-3 py-1.5 text-xs font-medium text-rose-700 disabled:opacity-40">一歩を削除する</button>
+                                  <button type="button" onClick={() => setDeleteConfirmMilestoneId(null)} className="text-xs text-slate-400">キャンセル</button>
+                                </>
+                              ) : (
+                                <button type="button" onClick={() => setDeleteConfirmMilestoneId(nextMilestone.id)} className="text-xs text-slate-400 hover:text-rose-600">一歩を削除</button>
+                              )
+                            ) : null}
+                            {deleteConfirmGoalId === currentFocus.id ? (
+                              <>
+                                <button type="button" disabled={isDeleting} onClick={() => void handleDeleteGoal(currentFocus.id)} className="rounded-full border border-rose-200 px-3 py-1.5 text-xs font-medium text-rose-700 disabled:opacity-40">目的を削除する</button>
+                                <button type="button" onClick={() => setDeleteConfirmGoalId(null)} className="text-xs text-slate-400">キャンセル</button>
+                              </>
+                            ) : (
+                              <button type="button" onClick={() => setDeleteConfirmGoalId(currentFocus.id)} className="text-xs text-slate-400 hover:text-rose-600">目的を削除</button>
+                            )}
+                            <button type="button" onClick={() => setQuickPanel("task")} className="text-xs text-sky-700 hover:text-sky-900">次の一歩を決める</button>
+                            <button type="button" onClick={openReflectionComposer} className="text-xs text-sky-700 hover:text-sky-900">振り返りを記録</button>
+                          </div>
+                          <div className="mt-4 space-y-2 border-t border-slate-100 pt-3">
+                            <div className="flex items-center justify-between gap-2">
+                              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">タスク</p>
+                              <span className="text-[11px] text-slate-400">{focusMilestones.length}件</span>
+                            </div>
+                            {focusMilestones.length === 0 ? (
+                              <button type="button" onClick={() => setQuickPanel("task")} className="text-left text-xs text-sky-700 hover:text-sky-900">＋ 次のタスクを追加</button>
+                            ) : (
+                              <>
+                                {focusMilestones.slice(0, 3).map((milestone) => {
+                                  const isCompleted = milestone.status === "completed";
+                                  const statusLabel = isCompleted ? "完了" : milestone.status === "paused" ? "保留" : "未着手";
+                                  return (
+                                    <div key={milestone.id} className="flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-2">
+                                      <span className={`h-2 w-2 shrink-0 rounded-full ${isCompleted ? "bg-emerald-500" : milestone.status === "paused" ? "bg-amber-400" : "bg-slate-300"}`} />
+                                      <span className={`min-w-0 flex-1 truncate text-xs ${isCompleted ? "text-slate-400 line-through" : "text-slate-700"}`}>{milestone.title}</span>
+                                      <span className="shrink-0 text-[10px] text-slate-400">{statusLabel}</span>
+                                      {!isCompleted ? <button type="button" disabled={isUpdatingProgress} onClick={() => void handleCompleteMilestone(milestone.id)} className="shrink-0 text-[10px] font-medium text-emerald-700 disabled:opacity-40">完了</button> : null}
+                                      {!isCompleted ? <button type="button" disabled={isUpdatingProgress} onClick={() => void handleUpdateMilestoneStatus(milestone.id, milestone.status === "paused" ? "pending" : "paused")} className="shrink-0 text-[10px] font-medium text-slate-500 disabled:opacity-40">{milestone.status === "paused" ? "再開" : "保留"}</button> : null}
+                                    </div>
+                                  );
+                                })}
+                                <button type="button" onClick={() => setQuickPanel("task")} className="text-left text-xs text-sky-700 hover:text-sky-900">＋ 次のタスクを追加</button>
+                              </>
+                            )}
+                            {quickPanel ? (
+                              <div className="rounded-2xl border border-sky-100 bg-sky-50/60 p-3">
+                                {quickPanel === "task" ? (
+                                  <div className="space-y-2">
+                                    <p className="text-xs font-semibold text-slate-700">次のタスクを追加</p>
+                                    <input value={quickTaskDraft} onChange={(event) => setQuickTaskDraft(event.target.value)} placeholder="例: 必要な教材を確認する" className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs outline-none focus:border-sky-300" />
+                                    <div className="flex gap-2"><button type="button" disabled={!quickTaskDraft.trim() || isSavingQuickPanel} onClick={() => void handleQuickTaskSave()} className="rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-40">{isSavingQuickPanel ? "保存中..." : "タスクを追加"}</button><button type="button" onClick={() => setQuickPanel(null)} className="text-xs text-slate-400">キャンセル</button></div>
+                                  </div>
+                                ) : quickPanel === "reflection" ? (
+                                  <div className="space-y-2">
+                                    <p className="text-xs font-semibold text-slate-700">今日の振り返り</p>
+                                    <textarea value={quickReflectionDraft} onChange={(event) => setQuickReflectionDraft(event.target.value)} placeholder="できたこと、気づいたこと、次に試すこと" rows={3} className="w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs outline-none focus:border-sky-300" />
+                                    <input value={quickNextActionDraft} onChange={(event) => setQuickNextActionDraft(event.target.value)} placeholder="次に試すこと（任意）" className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs outline-none focus:border-sky-300" />
+                                    <p className="text-[11px] text-slate-400">入力すると、振り返りの保存と同時に次のタスクへ追加します。</p>
+                                    <div className="flex gap-2"><button type="button" disabled={!quickReflectionDraft.trim() || isSavingQuickPanel} onClick={() => void handleQuickReflectionSave()} className="rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-40">{isSavingQuickPanel ? "保存中..." : "振り返りを保存"}</button><button type="button" onClick={() => setQuickPanel(null)} className="text-xs text-slate-400">キャンセル</button></div>
+                                  </div>
+                                ) : null}
+                              </div>
+                            ) : null}
+                          </div>
+                        </>
+                      ) : null}
                     </div>
                   </Card>
 
                   <Card className="space-y-4 rounded-2xl border-slate-200 bg-white p-5 shadow-sm">
                     <div className="flex items-center justify-between gap-3">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">Life Timeline</p>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">目的の流れ</p>
                       <GitBranch className="h-5 w-5 text-slate-400" />
                     </div>
                     <div className="space-y-3">
@@ -1418,7 +1912,7 @@ export function YuiHome({ displayName }: YuiHomeProps) {
 
                   <Card className="space-y-4 rounded-2xl border-slate-200 bg-white p-5 shadow-sm">
                     <div className="flex items-center justify-between gap-3">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">YUI Insight</p>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400">YUIからの気づき</p>
                       <Lightbulb className="h-5 w-5 text-slate-400" />
                     </div>
                     {compactInsights.length === 0 ? (
@@ -1438,7 +1932,7 @@ export function YuiHome({ displayName }: YuiHomeProps) {
             <section className="space-y-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-muted-foreground">More</p>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-muted-foreground">詳細</p>
                   <h3 className="mt-1 text-2xl font-semibold tracking-tight text-slate-900">詳細は必要時に開く</h3>
                 </div>
                 <button
@@ -1465,24 +1959,18 @@ export function YuiHome({ displayName }: YuiHomeProps) {
                       }))}
                     onCreateRecommendation={async () => {
                       try {
-                        await fetch("/api/yui/recommendations", { method: "POST" });
+                        const response = await fetch("/api/yui/recommendations", { method: "POST" });
+                        if (!response.ok) {
+                          const payload = await response.json().catch(() => null);
+                          throw new Error(payload?.error ?? "提案の生成に失敗しました");
+                        }
                         await loadData({ background: true });
-                      } catch (e) {
-                        console.error(e);
+                      } catch (err) {
+                        setError(err instanceof Error ? err.message : "提案の生成に失敗しました");
                       }
                     }}
                   />
 
-                  <TodaySummary
-                    todaySummary={morningBrief?.summary ?? today?.summary ?? null}
-                    eventsCount={morningBrief?.todayEventsCount ?? (calendarEvents?.length ?? 0)}
-                    unreadEmails={gmailInsights?.length ?? 0}
-                    topPriority={contextSummary?.priority ?? morningBrief?.priority ?? null}
-                    updatedAt={cacheUpdatedAt}
-                    changeSummary={morningBrief?.changeSummary ?? null}
-                  />
-
-                  <ActivityFeedCard items={activityItems.slice(0, 5)} />
                 </div>
               ) : null}
             </section>
@@ -1491,11 +1979,11 @@ export function YuiHome({ displayName }: YuiHomeProps) {
               <>
                 <YuiDailyContextCard data={dailyContext} isLoading={!dailyContext} />
 
-                <InfoAccordion title={memoryState.loaded ? `Memory (${memoryState.data?.length ?? 0})` : memoryState.loading ? "Memory (...)" : memoryState.error ? "Memory (Offline)" : "Memory"} onOpen={fetchMemories}>
+                <InfoAccordion title={memoryState.loaded ? `YUIが覚えていること（${memoryState.data?.length ?? 0}）` : memoryState.loading ? "YUIが覚えていること（確認中…）" : memoryState.error ? "YUIが覚えていること（オフライン）" : "YUIが覚えていること"} onOpen={fetchMemories}>
                   {memoryState.loading ? (
                     <YuiCardSkeleton lines={3} />
                   ) : memoryState.error ? (
-                    <p className="text-sm text-muted-foreground">メモリの取得に失敗しました。オフラインの可能性があります。</p>
+                    <p className="text-sm text-muted-foreground">記憶の取得に失敗しました。オフラインの可能性があります。</p>
                   ) : memoryState.loaded ? (
                     <div className="space-y-2">
                       {(memoryState.data ?? []).slice(0, 5).map((m: any) => (
@@ -1506,19 +1994,19 @@ export function YuiHome({ displayName }: YuiHomeProps) {
                       ))}
                     </div>
                   ) : (
-                    <p className="text-sm text-muted-foreground">まだメモリの取得を行っていません。開いて取得してください。</p>
+                    <p className="text-sm text-muted-foreground">まだ記憶を読み込んでいません。開いて確認できます。</p>
                   )}
                 </InfoAccordion>
 
-                <InfoAccordion title={insightsState.loaded ? `Insights (${insightsState.data?.length ?? 0})` : insightsState.loading ? "Insights (...)" : insightsState.error ? "Insights (Offline)" : "Insights"} onOpen={fetchInsights}>
+                <InfoAccordion title={insightsState.loaded ? `気づき（${insightsState.data?.length ?? 0}）` : insightsState.loading ? "気づき（確認中…）" : insightsState.error ? "気づき（取得できません）" : "気づき"} onOpen={fetchInsights}>
                   {insightsState.loading ? (
                     <YuiCardSkeleton lines={3} />
                   ) : insightsState.error ? (
-                    <p className="text-sm text-muted-foreground">インサイトの取得に失敗しました。オフラインの可能性があります。</p>
+                    <p className="text-sm text-muted-foreground">気づきの取得に失敗しました。オフラインの可能性があります。</p>
                   ) : insightsState.loaded ? (
                     <YuiThreadInsightsCard threads={insightsState.data ?? []} isLoading={false} />
                   ) : (
-                    <p className="text-sm text-muted-foreground">まだインサイトを取得していません。開いて取得してください。</p>
+                    <p className="text-sm text-muted-foreground">まだ気づきを読み込んでいません。開いて確認できます。</p>
                   )}
                 </InfoAccordion>
 
@@ -1530,28 +2018,28 @@ export function YuiHome({ displayName }: YuiHomeProps) {
 
                 <YuiWeeklyReviewCard review={weeklyReview} isLoading={weeklyReview === null} />
 
-                {contextSummary && (
+                {visibleContextSummary && (
                   <Card className="relative overflow-hidden border-primary/20 bg-gradient-to-r from-primary/5 via-background to-background p-6 shadow-sm">
                     <div className="flex flex-col gap-4">
                       <div className="flex items-center justify-between">
-                        <p className="text-xs font-semibold uppercase tracking-[0.25em] text-primary">YUI Focus</p>
-                        <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">スコア: {contextSummary.priorityScore}</span>
+                        <p className="text-xs font-semibold uppercase tracking-[0.25em] text-primary">YUIの今日の優先事項</p>
+                        <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">スコア: {visibleContextSummary.priorityScore}</span>
                       </div>
 
                       <div className="space-y-4">
                         <div>
                           <h2 className="text-xs uppercase tracking-[0.2em] text-muted-foreground">今日の優先事項</h2>
-                          <p className="mt-1 text-xl font-bold tracking-tight text-foreground md:text-2xl">{contextSummary.priority}</p>
+                          <p className="mt-1 text-xl font-bold tracking-tight text-foreground md:text-2xl">{visibleContextSummary.priority}</p>
                         </div>
 
                         <div className="grid gap-4 md:grid-cols-2">
                           <div className="rounded-2xl border border-border/60 bg-background/80 p-4">
                             <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">理由</h3>
-                            <p className="mt-2 text-sm leading-6 text-foreground/90">{contextSummary.reason}</p>
+                            <p className="mt-2 text-sm leading-6 text-foreground/90">{visibleContextSummary.reason}</p>
                           </div>
                           <div className="rounded-2xl border border-primary/30 bg-primary/5 p-4">
                             <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">次の一歩</h3>
-                            <p className="mt-2 text-sm font-medium leading-6 text-foreground">{contextSummary.nextAction}</p>
+                            <p className="mt-2 text-sm font-medium leading-6 text-foreground">{visibleContextSummary.nextAction}</p>
                           </div>
                         </div>
                       </div>
@@ -1568,7 +2056,7 @@ export function YuiHome({ displayName }: YuiHomeProps) {
           <div className="space-y-6">
             <Card className="space-y-5 p-6">
               <div className="space-y-2">
-                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">YUI Today</p>
+                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">今日のYUI</p>
                 <h2 className="text-2xl font-semibold">今日の状況</h2>
               </div>
 
@@ -1633,7 +2121,7 @@ export function YuiHome({ displayName }: YuiHomeProps) {
                         <div key={event.id} className="rounded-2xl border border-border bg-background px-3 py-2">
                           <p className="text-sm font-medium">{event.title}</p>
                           <p className="mt-1 text-xs text-muted-foreground">
-                            {event.event_type} / {event.source} / {format(new Date(event.occurred_at), "yyyy/MM/dd HH:mm")}
+                            記録日時: {format(new Date(event.occurred_at), "yyyy/MM/dd HH:mm")}
                           </p>
                         </div>
                       ))}
@@ -1646,12 +2134,12 @@ export function YuiHome({ displayName }: YuiHomeProps) {
                 <InfoAccordion
                   title={
                     calendarState.loaded
-                      ? `Calendar (${calendarState.data?.length ?? 0})`
+                      ? `予定（${calendarState.data?.length ?? 0}）`
                       : calendarState.loading
-                        ? "Calendar (...)"
+                        ? "予定（確認中…）"
                         : calendarState.error
-                          ? "Calendar (Offline)"
-                          : "Calendar"
+                          ? "予定（オフライン）"
+                          : "予定"
                   }
                   onOpen={fetchCalendar}
                 >
@@ -1695,8 +2183,8 @@ export function YuiHome({ displayName }: YuiHomeProps) {
 
             <Card className="space-y-4 p-6">
               <div className="space-y-2">
-                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Unified Action Layer</p>
-                <h2 className="text-xl font-semibold">YUI Priorities</h2>
+                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">YUIの整理</p>
+                <h2 className="text-xl font-semibold">いま優先すること</h2>
               </div>
               {sectionErrors.unifiedActions ? (
                 <p className="rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
@@ -1715,7 +2203,19 @@ export function YuiHome({ displayName }: YuiHomeProps) {
                       </div>
                       <h3 className="mt-2 text-sm font-semibold">{action.title}</h3>
                       <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{action.description}</p>
-                      <div className="mt-3 flex justify-end">
+                      <div className="mt-3 flex flex-wrap items-center justify-end gap-2">
+                        {addedTaskActionIds.has(action.id) ? (
+                          <span className="text-xs font-semibold text-emerald-600">✓ タスクに追加済み</span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => void handleAddSuggestedTask(action)}
+                            disabled={!currentFocus || addingTaskActionId === action.id}
+                            className="rounded-full border border-primary/30 px-3 py-1.5 text-xs font-semibold text-primary transition hover:bg-primary/10 disabled:opacity-50"
+                          >
+                            {addingTaskActionId === action.id ? "追加中..." : "タスクに追加"}
+                          </button>
+                        )}
                         {completedActionIds.has(action.id) ? (
                           <span className="text-xs font-semibold text-emerald-600 flex items-center gap-1">
                             ✓ Completed
@@ -1745,7 +2245,7 @@ export function YuiHome({ displayName }: YuiHomeProps) {
                   : gmailState.loading
                   ? "Gmail (...)"
                   : gmailState.error
-                  ? "Gmail (Offline)"
+                  ? "Gmail（取得できません）"
                   : "Gmail"
               }
               onOpen={fetchGmail}
@@ -1800,15 +2300,26 @@ export function YuiHome({ displayName }: YuiHomeProps) {
             <InfoAccordion
               title={
                 memoryState.loaded
-                  ? `Memory (${memoryState.data?.length ?? 0})`
+                  ? `YUIが覚えていること（${memoryState.data?.length ?? 0}）`
                   : memoryState.loading
-                    ? "Memory (...)"
+                    ? "YUIが覚えていること（確認中…）"
                     : memoryState.error
-                      ? "Memory (Offline)"
-                      : "Memory"
+                      ? "YUIが覚えていること（取得できません）"
+                      : "YUIが覚えていること"
               }
               onOpen={fetchMemories}
             >
+              <div className="mb-3 rounded-2xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
+                <p className="font-semibold text-slate-800">記憶の管理</p>
+                <p className="mt-1">会話からの記憶候補: {profile?.preferences?.memory_collection_enabled === false ? "停止中" : "有効"}</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button type="button" className="rounded-full border border-slate-200 bg-white px-3 py-1.5 hover:bg-slate-100" onClick={() => void handleMemoryCollectionToggle()}>
+                    {profile?.preferences?.memory_collection_enabled === false ? "記憶候補を再開" : "今後の記憶候補を停止"}
+                  </button>
+                  <button type="button" className="rounded-full border border-slate-200 bg-white px-3 py-1.5 hover:bg-slate-100" onClick={() => void handleExportMemories()}>JSONで出力</button>
+                  <button type="button" className="rounded-full border border-rose-200 bg-white px-3 py-1.5 text-rose-700 hover:bg-rose-50" onClick={() => void handleDeleteAllMemories()}>すべて削除</button>
+                </div>
+              </div>
               {memoryState.loading ? (
                 <YuiCardSkeleton lines={3} />
               ) : memoryState.error ? (
@@ -1826,7 +2337,7 @@ export function YuiHome({ displayName }: YuiHomeProps) {
                 <div className="space-y-2">
                   {memoryState.data.slice(0, 5).map((memory: any) => (
                     <div key={memory.id} className="rounded-2xl border border-border bg-card p-3">
-                      <p className="text-sm font-medium">{memory.title}</p>
+                      <div className="flex items-start justify-between gap-3"><p className="text-sm font-medium">{memory.title}</p><button type="button" onClick={() => void handleDeleteMemory(memory.id)} className="shrink-0 text-xs text-rose-600 hover:underline">削除</button></div>
                       <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{memory.excerpt ?? memory.content ?? "内容はありません"}</p>
                     </div>
                   ))}
@@ -1839,12 +2350,12 @@ export function YuiHome({ displayName }: YuiHomeProps) {
             <InfoAccordion
               title={
                 insightsState.loaded
-                  ? `Insights (${insightsState.data?.length ?? 0})`
+                  ? `気づき（${insightsState.data?.length ?? 0}）`
                   : insightsState.loading
-                    ? "Insights (...)"
+                    ? "気づき（確認中…）"
                     : insightsState.error
-                      ? "Insights (Offline)"
-                      : "Insights"
+                      ? "気づき（取得できません）"
+                      : "気づき"
               }
               onOpen={fetchInsights}
             >
@@ -1852,7 +2363,7 @@ export function YuiHome({ displayName }: YuiHomeProps) {
                 <YuiCardSkeleton lines={3} />
               ) : insightsState.error ? (
                 <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground">インサイトの取得に失敗しました。オフラインの可能性があります。</p>
+                  <p className="text-sm text-muted-foreground">気づきを取得できませんでした。通信状態を確認して、もう一度お試しください。</p>
                   <button
                     type="button"
                     onClick={() => void fetchInsights(true)}
@@ -1865,8 +2376,8 @@ export function YuiHome({ displayName }: YuiHomeProps) {
                 <div className="space-y-2">
                   {insightsState.data.slice(0, 5).map((insight: any) => (
                     <div key={insight.id} className="rounded-2xl border border-border bg-card p-3">
-                      <p className="text-sm font-medium">{insight.title ?? insight.summary ?? "Insight"}</p>
-                      <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{insight.reason ?? insight.summary ?? "インサイトはありません"}</p>
+                      <p className="text-sm font-medium">{insight.title ?? insight.summary ?? "気づき"}</p>
+                      <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{insight.reason ?? insight.summary ?? "表示できる気づきはありません"}</p>
                     </div>
                   ))}
                 </div>
@@ -1879,12 +2390,12 @@ export function YuiHome({ displayName }: YuiHomeProps) {
               <InfoAccordion
                 title={
                   goalsState.loaded
-                    ? `Goals (${goalsState.data?.length ?? 0})`
+                    ? `目的（${goalsState.data?.length ?? 0}）`
                     : goalsState.loading
-                      ? "Goals (...)"
+                      ? "目的（確認中…）"
                       : goalsState.error
-                        ? "Goals (Offline)"
-                        : "Goals"
+                        ? "目的（取得できません）"
+                        : "目的"
                 }
                 onOpen={fetchGoals}
               >
@@ -1892,7 +2403,7 @@ export function YuiHome({ displayName }: YuiHomeProps) {
                   <YuiCardSkeleton lines={3} />
                 ) : goalsState.error ? (
                   <div className="space-y-2">
-                    <p className="text-sm text-muted-foreground">Goals の取得に失敗しました。</p>
+                    <p className="text-sm text-muted-foreground">目的を取得できませんでした。</p>
                     <button
                       type="button"
                       onClick={() => void fetchGoals(true)}
@@ -1922,7 +2433,7 @@ export function YuiHome({ displayName }: YuiHomeProps) {
                                       • {m.title}
                                     </span>
                                     <div className="flex items-center gap-1.5">
-                                      <span className="text-[9px] bg-slate-100 px-1 py-0.5 rounded text-slate-500">{m.status}</span>
+                                      <span className="text-[9px] bg-slate-100 px-1 py-0.5 rounded text-slate-500">{m.status === "completed" ? "完了" : m.status === "paused" ? "保留" : "未着手"}</span>
                                       {deleteConfirmMilestoneId === m.id ? (
                                         <div className="flex items-center gap-1">
                                           <button
@@ -1977,6 +2488,10 @@ export function YuiHome({ displayName }: YuiHomeProps) {
                                     if (!response.ok) {
                                       const payload = await response.json().catch(() => null);
                                       throw new Error(payload?.error ?? "マイルストーンの保存に失敗しました");
+                                    }
+                                    const payload = await response.json();
+                                    if (payload.milestone) {
+                                      setMilestones((current) => [payload.milestone, ...current.filter((milestone) => milestone.id !== payload.milestone.id)]);
                                     }
                                     input.value = "";
                                     await loadData();
@@ -2042,8 +2557,8 @@ export function YuiHome({ displayName }: YuiHomeProps) {
 
             <Card className="space-y-5 p-6">
               <div className="space-y-2">
-                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Time Intelligence</p>
-                <h2 className="text-2xl font-semibold">YUI Time Suggestion</h2>
+                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">時間の提案</p>
+                <h2 className="text-2xl font-semibold">YUIの時間提案</h2>
                 <p className="text-sm text-muted-foreground">
                   予定・目標・判断をまたいで、今日の使い方をYUIが提案します。
                 </p>
@@ -2069,7 +2584,7 @@ export function YuiHome({ displayName }: YuiHomeProps) {
 
                         {relatedGoal ? (
                           <div className="mt-3 rounded-2xl border border-border bg-background px-4 py-3 text-sm">
-                            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">関連Goal</p>
+                            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">関連する目的</p>
                             <p className="mt-2 leading-6">{relatedGoal.title}</p>
                           </div>
                         ) : null}
@@ -2084,7 +2599,7 @@ export function YuiHome({ displayName }: YuiHomeProps) {
                             <>
                               <button
                                 type="button"
-                                onClick={() => void handleUpdateTimeBlockStatus(block.id, "approved")}
+                                onClick={() => void handleScheduleSuggestedTimeBlock(block)}
                                 className="yohaku-btn"
                               >
                                 予定として登録
@@ -2101,10 +2616,10 @@ export function YuiHome({ displayName }: YuiHomeProps) {
                             <>
                               <button
                                 type="button"
-                                onClick={() => void handleUpdateTimeBlockStatus(block.id, "created")}
+                                onClick={() => void handleScheduleSuggestedTimeBlock(block)}
                                 className="yohaku-btn"
                               >
-                                作成済みにする
+                                Google Calendarに登録する
                               </button>
                               <button
                                 type="button"
@@ -2130,7 +2645,7 @@ export function YuiHome({ displayName }: YuiHomeProps) {
             <Card className="space-y-5 p-6">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="space-y-2">
-                  <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Recommendation</p>
+                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">提案</p>
                   <h2 className="text-2xl font-semibold">YUIから提案</h2>
                   <p className="text-sm text-muted-foreground">
                     相談内容と現在の文脈をもとに、時間を作る提案を保存します。
@@ -2162,14 +2677,14 @@ export function YuiHome({ displayName }: YuiHomeProps) {
 
                         {relatedGoal ? (
                           <div className="mt-3 rounded-2xl border border-border bg-background px-4 py-3 text-sm">
-                            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">関連Goal</p>
+                            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">関連する目的</p>
                             <p className="mt-2 leading-6">{relatedGoal.title}</p>
                           </div>
                         ) : null}
 
                         <div className="mt-3 rounded-2xl border border-border bg-background px-4 py-3 text-sm leading-6">
                           <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">理由</p>
-                          <p className="mt-2">{recommendation.reason}</p>
+                          <p className="mt-2">{formatRecommendationReason(recommendation.reason)}</p>
                         </div>
 
                         {parsed?.summary ? (
@@ -2187,7 +2702,7 @@ export function YuiHome({ displayName }: YuiHomeProps) {
                                 className="yohaku-btn"
                                 onClick={() => void handleUpdateRecommendationStatus(recommendation.id, "accepted")}
                               >
-                                時間を作る
+                                登録候補を作る
                               </button>
                               <button
                                 type="button"
@@ -2199,7 +2714,7 @@ export function YuiHome({ displayName }: YuiHomeProps) {
                             </>
                           ) : recommendation.status === "accepted" ? (
                             <p className="text-sm text-muted-foreground">
-                              時間提案を作成し、登録候補を準備しました。
+                              登録候補を作成しました。下の「予定登録候補」で内容を確認してから、Google Calendarに登録できます。
                             </p>
                           ) : recommendation.status === "rejected" ? (
                             <p className="text-sm text-muted-foreground">この提案は見送られました。</p>
@@ -2220,17 +2735,21 @@ export function YuiHome({ displayName }: YuiHomeProps) {
 
             <Card className="space-y-5 p-6">
               <div className="space-y-2">
-                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Action Layer</p>
+                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">予定の登録</p>
                 <h2 className="text-2xl font-semibold">予定登録候補</h2>
                 <p className="text-sm text-muted-foreground">
-                  Time Block を、まだ外部登録しない「予定登録候補」として保持します。
+                  時間の提案を、まだ外部登録しない「予定登録候補」として保持します。
                 </p>
               </div>
 
               {calendarActions.length > 0 ? (
                 <div className="space-y-3">
-                  {calendarActions.slice(0, 3).map((action) => {
+                  {orderedCalendarActions.slice(0, 3).map((action) => {
                     const relatedTimeBlock = [...timeBlocks, ...suggestedTimeBlocks].find((block) => block.id === action.time_block_id) ?? null;
+                    const linkedCalendarEvent = calendarEvents.find((event) => event.external_id === action.external_event_id);
+                    const googleCalendarLink = typeof linkedCalendarEvent?.metadata?.googleHtmlLink === "string"
+                      ? linkedCalendarEvent.metadata.googleHtmlLink
+                      : null;
                     return (
                       <div key={action.id} className="rounded-3xl border border-border bg-muted/20 p-5">
                         <div className="flex flex-wrap items-start justify-between gap-3">
@@ -2250,10 +2769,10 @@ export function YuiHome({ displayName }: YuiHomeProps) {
                             <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">登録先</p>
                             <p className="mt-2">
                               {action.provider === "google_calendar"
-                                ? "Google Calendar"
+                              ? "Google カレンダー"
                                 : action.provider === "apple_calendar"
-                                  ? "Apple Calendar"
-                                  : "Manual"}
+                                  ? "Apple カレンダー"
+                                  : "手動"}
                             </p>
                           </div>
                           <div className="rounded-2xl border border-border bg-background px-4 py-3 text-sm leading-6">
@@ -2281,7 +2800,7 @@ export function YuiHome({ displayName }: YuiHomeProps) {
                           <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">メッセージ</p>
                           <p className="mt-2">
                             {action.status === "pending"
-                              ? "この時間を確保すると、今のGoalに近づけます。Google Calendarへの登録候補として保持しています。"
+                              ? "この時間を確保すると、今の目的に近づけます。Google カレンダーへの登録候補として保持しています。"
                               : action.status === "approved"
                                 ? "Google Calendarへの登録候補を保持しています。登録実行ボタンで外部に作成できます。"
                                 : action.status === "scheduled"
@@ -2316,8 +2835,18 @@ export function YuiHome({ displayName }: YuiHomeProps) {
                               </button>
                             </>
                           ) : action.status === "scheduled" ? (
-                            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-sm font-medium text-emerald-600 dark:text-emerald-400">
-                              ✓ Google Calendar登録済み
+                            <div className="flex flex-wrap items-center gap-2">
+                              <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-sm font-medium text-emerald-600 dark:text-emerald-400">✓ Google Calendar登録済み</div>
+                              {googleCalendarLink ? <a href={googleCalendarLink} target="_blank" rel="noreferrer" className="rounded-full border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-muted">Google Calendarで変更</a> : null}
+                              {cancelCalendarActionId === action.id ? (
+                                <>
+                                  <span className="text-xs text-rose-700">Google Calendarからこの予定を取り消します。</span>
+                                  <button type="button" onClick={() => void handleCancelCalendarAction(action.id)} className="rounded-full border border-rose-300 bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700">取り消しを確定</button>
+                                  <button type="button" onClick={() => setCancelCalendarActionId(null)} className="rounded-full border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-muted">やめる</button>
+                                </>
+                              ) : (
+                                <button type="button" onClick={() => setCancelCalendarActionId(action.id)} className="rounded-full border border-rose-200 bg-background px-4 py-2 text-sm font-medium text-rose-700 hover:bg-rose-50">取り消す</button>
+                              )}
                             </div>
                           ) : (
                             <p className="text-sm text-muted-foreground">この候補は見送られました。</p>
@@ -2336,13 +2865,13 @@ export function YuiHome({ displayName }: YuiHomeProps) {
 
             <Card className="space-y-5 p-6">
               <div className="space-y-2">
-                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Next Action</p>
+                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">次の一歩</p>
                 <h2 className="text-2xl font-semibold">次にやること</h2>
               </div>
 
               <div className="rounded-3xl border border-border bg-background p-5">
                 <p className="text-sm leading-7 text-foreground/90">
-                  {today?.dailyBrief?.summary ?? "Daily Brief を読み込んでいます。"}
+                  {today?.dailyBrief?.summary ?? "今日のまとめを読み込んでいます。"}
                 </p>
               </div>
 
@@ -2363,7 +2892,7 @@ export function YuiHome({ displayName }: YuiHomeProps) {
                 <div className="rounded-2xl border border-border bg-muted/20 p-4">
                   <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">今考えるべきこと</p>
                   <p className="mt-2 text-sm text-muted-foreground">
-                    YUI が今の状況から判断の入口を整理します。選択した内容は decisions に保存されます。
+                    YUI が今の状況から判断の入口を整理します。選択した内容は判断の記録として保存されます。
                   </p>
                 </div>
 
@@ -2376,9 +2905,6 @@ export function YuiHome({ displayName }: YuiHomeProps) {
                           <div className="space-y-2">
                             <p className="text-sm font-semibold leading-6">{card.question}</p>
                             <p className="text-sm leading-6 text-muted-foreground">{card.background}</p>
-                          </div>
-                          <div className="rounded-full border border-border bg-background px-3 py-1 text-xs text-muted-foreground">
-                            confidence {card.confidence}
                           </div>
                         </div>
 
@@ -2422,7 +2948,7 @@ export function YuiHome({ displayName }: YuiHomeProps) {
 
             <Card className="space-y-4 p-6">
               <div className="space-y-2">
-                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Memory Timeline</p>
+                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">記録のタイムライン</p>
                 <h2 className="text-lg font-semibold">記憶・判断・振り返りの流れ</h2>
                 <p className="text-sm text-muted-foreground">
                   何が、いつ、どう残ったかをひとつの流れで見返せます。
@@ -2450,8 +2976,8 @@ export function YuiHome({ displayName }: YuiHomeProps) {
 
             <Card className="space-y-4 p-6">
               <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Reflection</p>
-                <h2 className="mt-1 text-lg font-semibold">今日の Reflection</h2>
+                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">振り返り</p>
+                <h2 className="mt-1 text-lg font-semibold">今日の振り返り</h2>
               </div>
 
               {latestReflection ? (
@@ -2459,7 +2985,7 @@ export function YuiHome({ displayName }: YuiHomeProps) {
                   <p>{latestReflection.summary}</p>
                   {latestReflection.insights.length > 0 && (
                     <div className="space-y-2">
-                      <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Insights</p>
+                      <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">気づき</p>
                       <ul className="space-y-2">
                         {latestReflection.insights.map((insight) => (
                           <li key={insight} className="rounded-xl border border-border bg-muted/30 px-3 py-2">
@@ -2471,7 +2997,7 @@ export function YuiHome({ displayName }: YuiHomeProps) {
                   )}
                   {latestReflection.next_actions.length > 0 && (
                     <div className="space-y-2">
-                      <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Next actions</p>
+                      <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">次にすること</p>
                       <ul className="space-y-2">
                         {latestReflection.next_actions.map((action) => (
                           <li key={action} className="rounded-xl border border-border bg-muted/30 px-3 py-2">
@@ -2487,14 +3013,14 @@ export function YuiHome({ displayName }: YuiHomeProps) {
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground">
-                  まだ振り返りはありません。Sprint 3 では参照表示のみを用意しています。
+                  まだ振り返りはありません。「振り返りを記録」から残せます。
                 </p>
               )}
             </Card>
           </div>
 
           <div className="space-y-6">
-            <Card className="space-y-4 p-6">
+            <Card className="hidden space-y-4 p-6" aria-hidden="true">
               <div>
                 <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Profile</p>
                 <h2 className="mt-1 text-lg font-semibold">YUI プロフィール</h2>
@@ -2525,18 +3051,18 @@ export function YuiHome({ displayName }: YuiHomeProps) {
                   </label>
                   <label className="space-y-2">
                     <span className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
-                      tone
+                      YUIの話し方
                     </span>
                     <input
                       value={profileForm.tone}
                       onChange={(event) => setProfileForm((current) => ({ ...current, tone: event.target.value }))}
-                      placeholder="gentle"
+                      placeholder="やさしく簡潔に"
                       className="yohaku-input"
                     />
                   </label>
                   <label className="space-y-2">
                     <span className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
-                      life theme
+                      今の大切にしたいこと
                     </span>
                     <input
                       value={profileForm.life_theme}
@@ -2549,7 +3075,7 @@ export function YuiHome({ displayName }: YuiHomeProps) {
                   </label>
                   <label className="space-y-2">
                     <span className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
-                      focus area
+                      今、力を入れたいこと
                     </span>
                     <input
                       value={profileForm.focus_area}
@@ -2571,9 +3097,9 @@ export function YuiHome({ displayName }: YuiHomeProps) {
                       }
                       className="yohaku-input"
                     >
-                      <option value="low">low</option>
-                      <option value="normal">normal</option>
-                      <option value="high">high</option>
+                      <option value="low">控えめ</option>
+                      <option value="normal">標準</option>
+                      <option value="high">しっかり知らせる</option>
                     </select>
                   </label>
                   <label className="space-y-2">
@@ -2587,9 +3113,9 @@ export function YuiHome({ displayName }: YuiHomeProps) {
                       }
                       className="yohaku-input"
                     >
-                      <option value="daily">daily</option>
-                      <option value="weekly">weekly</option>
-                      <option value="monthly">monthly</option>
+                      <option value="daily">毎日</option>
+                      <option value="weekly">毎週</option>
+                      <option value="monthly">毎月</option>
                     </select>
                   </label>
                   <label className="space-y-2">
@@ -2612,10 +3138,9 @@ export function YuiHome({ displayName }: YuiHomeProps) {
               </form>
 
               <div className="rounded-2xl border border-border bg-muted/20 p-4 text-sm text-muted-foreground">
-                <p className="font-medium text-foreground/90">現在の保存先</p>
+                <p className="font-medium text-foreground/90">プロフィールの保存について</p>
                 <p className="mt-2 leading-7">
-                  表示名と新しいプロフィール項目は `yui_profiles` の列、通知強度と要約頻度は
-                  `notification_settings`、タイムゾーンは `preferences.timezone` に保存します。
+                  ここで変更した名前、YUIの話し方、通知、要約の設定は、次回以降のYUIの提案と表示に反映されます。
                 </p>
                 {profile && (
                   <p className="mt-3 text-xs">
@@ -2627,10 +3152,10 @@ export function YuiHome({ displayName }: YuiHomeProps) {
 
             <Card ref={goalCardRef} id="goal-form-card" className="space-y-4 p-6">
               <div className="space-y-2">
-                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Goals</p>
+                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">目的</p>
                 <h2 className="mt-1 text-lg font-semibold">目的とマイルストーン</h2>
                 <p className="text-sm text-muted-foreground">
-                  目的を置くと、YUI Today の現在地と次の一歩が安定して見えるようになります。
+                  目的を置くと、現在地と次にすることが分かりやすくなります。
                 </p>
               </div>
 
@@ -2645,7 +3170,7 @@ export function YuiHome({ displayName }: YuiHomeProps) {
                 <textarea
                   value={goalForm.description}
                   onChange={(event) => setGoalForm((current) => ({ ...current, description: event.target.value }))}
-                  placeholder="背景・説明"
+                  placeholder="背景・説明（任意）"
                   className="yohaku-input min-h-24"
                 />
                 <div className="grid gap-3 md:grid-cols-2">
@@ -2653,10 +3178,11 @@ export function YuiHome({ displayName }: YuiHomeProps) {
                     value={goalForm.status}
                     onChange={(event) => setGoalForm((current) => ({ ...current, status: event.target.value }))}
                     className="yohaku-input"
+                    aria-label="目的の状態"
                   >
-                    <option value="active">active</option>
-                    <option value="paused">paused</option>
-                    <option value="completed">completed</option>
+                    <option value="active">進行中</option>
+                    <option value="paused">いったん保留</option>
+                    <option value="completed">完了</option>
                   </select>
                   <input
                     type="number"
@@ -2668,6 +3194,7 @@ export function YuiHome({ displayName }: YuiHomeProps) {
                     }
                     placeholder="進捗"
                     className="yohaku-input"
+                    aria-label="目的の進捗（パーセント）"
                   />
                 </div>
                 <button type="submit" disabled={isSavingGoal} className="yohaku-btn">
@@ -2722,7 +3249,7 @@ export function YuiHome({ displayName }: YuiHomeProps) {
                             <div>
                               <p className="text-sm font-medium">{goal.title}</p>
                               <p className="mt-1 text-xs text-muted-foreground">
-                                {goal.status} / {goal.progress}%
+                                {goal.status === "active" ? "進行中" : goal.status === "paused" ? "いったん保留" : goal.status === "completed" ? "完了" : "状態を確認中"} / {goal.progress}%
                               </p>
                             </div>
                             <button
@@ -2746,19 +3273,42 @@ export function YuiHome({ displayName }: YuiHomeProps) {
         </section>
         ) : null}
       </div>
-      <div className="fixed bottom-5 right-5 z-20 flex flex-col items-end gap-2">
+      {quickPanel === "memo" || (quickPanel === "reflection" && !currentFocus) ? (
+        <div className="fixed bottom-[calc(6rem+env(safe-area-inset-bottom))] right-5 z-30 w-[min(22rem,calc(100vw-2.5rem))] rounded-2xl border border-sky-100 bg-white p-4 shadow-xl">
+          {quickPanel === "memo" ? (
+            <div className="space-y-3">
+              <div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">直接記録</p><p className="mt-1 text-sm font-semibold text-slate-700">メモを保存</p></div>
+              <textarea value={quickMemoDraft} onChange={(event) => setQuickMemoDraft(event.target.value)} placeholder="あとで思い出したいことを入力" rows={4} autoFocus className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-sky-300" />
+              <div className="flex gap-2"><button type="button" disabled={!quickMemoDraft.trim() || isSavingQuickPanel} onClick={() => void handleQuickMemoSave()} className="rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-40">{isSavingQuickPanel ? "保存中..." : "メモを保存"}</button><button type="button" onClick={() => setQuickPanel(null)} className="text-xs text-slate-400">キャンセル</button></div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">直接記録</p><p className="mt-1 text-sm font-semibold text-slate-700">振り返りを記録</p></div>
+              <textarea value={quickReflectionDraft} onChange={(event) => setQuickReflectionDraft(event.target.value)} placeholder="できたこと、気づいたこと、次に試すこと" rows={4} autoFocus className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-sky-300" />
+              <input value={quickNextActionDraft} onChange={(event) => setQuickNextActionDraft(event.target.value)} placeholder="次に試すこと（任意）" className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs outline-none focus:border-sky-300" />
+              <div className="flex gap-2"><button type="button" disabled={!quickReflectionDraft.trim() || isSavingQuickPanel} onClick={() => void handleQuickReflectionSave()} className="rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-40">{isSavingQuickPanel ? "保存中..." : "振り返りを保存"}</button><button type="button" onClick={() => setQuickPanel(null)} className="text-xs text-slate-400">キャンセル</button></div>
+            </div>
+          )}
+        </div>
+      ) : null}
+      <div className={`fixed bottom-[calc(1.25rem+env(safe-area-inset-bottom))] right-5 z-20 flex flex-col items-end gap-2 transition-opacity ${isEditingText ? "pointer-events-none opacity-0" : "opacity-100"}`}>
         {showFabMenu ? (
-          <div className="rounded-2xl border border-border bg-background p-2 shadow-xl">
-            <button type="button" className="block w-full rounded-xl px-3 py-2 text-left text-sm hover:bg-muted">予定追加</button>
-            <button type="button" className="block w-full rounded-xl px-3 py-2 text-left text-sm hover:bg-muted">メモ</button>
-            <button type="button" className="block w-full rounded-xl px-3 py-2 text-left text-sm hover:bg-muted">Reflection</button>
-            <button type="button" className="block w-full rounded-xl px-3 py-2 text-left text-sm hover:bg-muted">Goal</button>
-            <button type="button" className="block w-full rounded-xl px-3 py-2 text-left text-sm hover:bg-muted">AI相談</button>
+          <div id="yui-quick-actions" className="rounded-2xl border border-border bg-background p-2 shadow-xl">
+            <p className="px-3 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">直接記録</p>
+            <button type="button" onClick={() => { setShowFabMenu(false); setQuickPanel("memo"); }} className="block w-full rounded-xl px-3 py-2 text-left text-sm hover:bg-muted">メモを保存</button>
+            <button type="button" onClick={() => { setShowFabMenu(false); setQuickPanel("reflection"); }} className="block w-full rounded-xl px-3 py-2 text-left text-sm hover:bg-muted">振り返りを記録</button>
+            <p className="px-3 pb-1 pt-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">YUIに相談</p>
+            <button type="button" onClick={() => openChatComposer("予定を追加したい。日時と内容を整理して")} className="block w-full rounded-xl px-3 py-2 text-left text-sm hover:bg-muted">予定を相談 <span className="ml-1 text-[11px] text-slate-400">日時を伝える</span></button>
+            <button type="button" onClick={() => { setShowFabMenu(false); openGoalForm(); }} className="block w-full rounded-xl px-3 py-2 text-left text-sm hover:bg-muted">目的を追加</button>
+            <button type="button" onClick={() => { setShowFabMenu(false); openCapture(); }} className="block w-full rounded-xl px-3 py-2 text-left text-sm hover:bg-muted">写真を記録</button>
+            <button type="button" onClick={() => openChatComposer()} className="block w-full rounded-xl px-3 py-2 text-left text-sm hover:bg-muted">AI相談</button>
           </div>
         ) : null}
         <button
           type="button"
-          aria-label="quick actions"
+          aria-label="クイック操作"
+          aria-expanded={showFabMenu}
+          aria-controls="yui-quick-actions"
           onClick={() => setShowFabMenu((current) => !current)}
           className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-primary text-2xl font-semibold text-primary-foreground shadow-lg transition hover:scale-105"
         >
@@ -2766,6 +3316,7 @@ export function YuiHome({ displayName }: YuiHomeProps) {
         </button>
       </div>
     </main>
+    </>
   );
 }
 
@@ -2804,21 +3355,21 @@ function buildTimelineEntries(
   const entries = [
     ...memories.slice(0, 10).map((memory) => ({
       id: `memory-${memory.id}`,
-      kindLabel: "Memory",
+      kindLabel: "記憶",
       title: memory.title,
       detail: memory.summary,
       createdAt: memory.created_at,
     })),
     ...decisions.slice(0, 10).map((decision) => ({
       id: `decision-${decision.id}`,
-      kindLabel: "Decision",
+      kindLabel: "判断",
       title: decision.question,
       detail: `${decision.decision} / ${decision.rationale}`,
       createdAt: decision.created_at,
     })),
     ...reflections.slice(0, 10).map((reflection) => ({
       id: `reflection-${reflection.id}`,
-      kindLabel: "Reflection",
+      kindLabel: "振り返り",
       title: reflection.summary,
       detail: reflection.insights[0] ?? reflection.next_actions[0] ?? "振り返りの記録",
       createdAt: reflection.created_at,

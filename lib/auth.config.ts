@@ -8,6 +8,7 @@ import {
 import { LEGACY_ROLE_MAP } from "@/lib/permissions/constants";
 import type { Permission, SystemRole } from "@/lib/permissions/types";
 import { authLog, maskEmail, startTimer } from "@/lib/auth-diagnostics";
+import { isAdminAccessEmail } from "@/lib/auth/admin-access";
 
 const getSiteUrl = () => {
   return process.env.NEXTAUTH_URL
@@ -87,6 +88,7 @@ export const authConfig: NextAuthConfig = {
         }
         const extracted = extractPermissionsFromSession(auth as any);
         if (!extracted) return false;
+        if (!isAdminAccessEmail((auth.user as any).email)) return false;
         if (isOnModeration) {
           return hasMinRoleLevel(extracted.roles, "moderator");
         }
@@ -112,7 +114,7 @@ export const authConfig: NextAuthConfig = {
       if (user) {
         token.id = user.id;
         const email = user.email || "";
-        const isAdminEmail = email === "manabi.mini@gmail.com" || email === "manabi.mini@gmaail.com";
+        const isAdminEmail = isAdminAccessEmail(email);
         token.role = isAdminEmail ? ROLE.ADMIN : ((user as any).role || ROLE.FREE_MEMBER);
         token.plan = (user as any).plan || PLAN.FREE;
 

@@ -37,7 +37,7 @@ export async function getWeeklyReview(userId: string): Promise<YuiWeeklyReview> 
       return updMs >= sevenDaysAgoMs;
     })
     .slice(0, 3)
-    .forEach((g) => achievements.push(`Goal完了: ${g.title}`));
+    .forEach((g) => achievements.push(`目的を完了: ${g.title}`));
 
   // Completed progress threads
   progressResult.threads

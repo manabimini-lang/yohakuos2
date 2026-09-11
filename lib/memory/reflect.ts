@@ -67,7 +67,10 @@ async function generateReflection(userId: string): Promise<void> {
 
     // 5. AI generation
     try {
-        const { data } = await generateJSON<ReflectionResult>(prompt);
+        const { data } = await generateJSON<ReflectionResult>(prompt, undefined, {
+            userId,
+            taskClass: 'standard',
+        });
 
         // 6. Save reflection
         const triggeredBy = recentMemories.map((m) => m.id);

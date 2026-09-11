@@ -22,6 +22,7 @@ export function SignUpForm({ isGoogleEnabled }: { isGoogleEnabled: boolean }) {
       const displayName = formData.get("displayName") as string;
       const email = formData.get("email") as string;
       const password = formData.get("password") as string;
+      const newsletterOptIn = formData.get("newsletterOptIn") === "on";
 
       if (!email || !password || !displayName) {
         setError("すべての項目を入力してください。");
@@ -41,7 +42,7 @@ export function SignUpForm({ isGoogleEnabled }: { isGoogleEnabled: boolean }) {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email, password, displayName }),
+        body: JSON.stringify({ email, password, displayName, newsletterOptIn }),
       });
 
       const result = await response.json();
@@ -55,7 +56,10 @@ export function SignUpForm({ isGoogleEnabled }: { isGoogleEnabled: boolean }) {
       // Show success message and redirect to login
       setMessage("アカウントを作成しました。ログインしてください。");
       setTimeout(() => {
-        router.push("/login");
+        // Keep the address only in this browser tab. It is not placed in a URL,
+        // cookie, analytics event, or server log.
+        sessionStorage.setItem("yohaku_signup_email", email);
+        router.push("/login?message=signup-success&callbackUrl=/onboarding");
         router.refresh();
       }, 1500);
     } catch (err) {
@@ -82,6 +86,11 @@ export function SignUpForm({ isGoogleEnabled }: { isGoogleEnabled: boolean }) {
             placeholder="あなたの名前"
           />
         </div>
+
+        <label className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50/70 p-3 text-sm text-slate-600">
+          <input type="checkbox" name="newsletterOptIn" className="mt-0.5 h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500" disabled={isLoading} />
+          <span><span className="font-medium text-slate-700">YOHAKUの情報を受け取りますか？</span><br /><span className="text-xs text-slate-500">製品の更新、学びのヒント、活動のお知らせをメールでお届けします。いつでも設定から停止できます。</span></span>
+        </label>
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-1">
             メールアドレス
@@ -125,7 +134,7 @@ export function SignUpForm({ isGoogleEnabled }: { isGoogleEnabled: boolean }) {
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full rounded-xl bg-slate-900 px-4 py-3 text-sm font-medium text-foreground transition-opacity hover:opacity-90 shadow-sm disabled:opacity-50"
+          className="w-full rounded-xl bg-slate-900 px-4 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90 shadow-sm disabled:opacity-50"
         >
           {isLoading ? "作成中..." : "アカウントを作成"}
         </button>

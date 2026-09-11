@@ -317,6 +317,9 @@ export function ExternalContentsManager() {
         <p className="text-sm text-muted-foreground">
           リンクを追加して、各ロードに note・YouTube・記事などを紐付けられます。
         </p>
+        <p className="max-w-3xl text-xs leading-5 text-slate-500">
+          ここはYOHAKU内の記事を編集する場所ではなく、学びの入口になる外部素材を収集・分類する場所です。登録したリンクはロードとタグで整理され、ユーザーへの学習提案や活動の啓発に活用できます。
+        </p>
       </div>
 
       <div className="grid items-start gap-8 lg:grid-cols-12">

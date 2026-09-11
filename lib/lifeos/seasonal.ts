@@ -95,7 +95,7 @@ ${dataForPrompt}
 - 「良かった/悪かった」の評価ではなく、事実と兆しを記述する
 - 静かな問いは、答えを要求する質問ではない`;
 
-    const { text } = await generateText(prompt, SEASONAL_SYSTEM_PROMPT);
+    const { text } = await generateText(prompt, SEASONAL_SYSTEM_PROMPT, { userId, allowEnvFallback: true, taskClass: "standard" });
 
     try {
         const jsonMatch = text.match(/\{[\s\S]*\}/);
@@ -234,7 +234,7 @@ ${dataForPrompt}
 alignmentは「最近の行動と大切にしたい方向の一致度」を0.0-1.0で表します。
 データが少ない場合は低めに設定してください。`;
 
-    const { text } = await generateText(prompt, DIRECTION_SYSTEM_PROMPT);
+    const { text } = await generateText(prompt, DIRECTION_SYSTEM_PROMPT, { userId, allowEnvFallback: true, taskClass: "standard" });
 
     try {
         const jsonMatch = text.match(/\{[\s\S]*\}/);

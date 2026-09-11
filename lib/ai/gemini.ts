@@ -1,24 +1,49 @@
-import { GoogleGenerativeAI, GenerativeModel } from '@google/generative-ai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { prisma } from '@/lib/prisma';
 import { decryptKey } from '@/lib/encryption';
 import { normalizeGeminiApiKey } from './gemini-key';
-
-const FALLBACK_GEMINI_MODEL = 'gemini-2.5-flash';
+import { normalizeGroqApiKey } from './groq-key';
+import {
+    AI_USAGE_GUARDRAILS,
+    getAiMonthlyRequestLimit,
+    hasPremiumAccess,
+} from '@/lib/constants/plan';
+import { Prisma } from '@prisma/client';
+import {
+    ECONOMY_GEMINI_MODEL,
+    resolveGeminiModelName,
+    STANDARD_GEMINI_MODEL,
+    type AITaskClass,
+} from './gemini-model-routing';
+import { resolveGroqModelName } from './groq-model-routing';
+import { providerFromStoredSetting, readUserApiKey } from './user-api-keys';
 export { normalizeGeminiApiKey } from './gemini-key';
+export { normalizeGroqApiKey } from './groq-key';
+
+export type AICredentialSource = 'managed' | 'byok' | 'direct';
+export type AIProviderName = 'gemini' | 'groq';
+export type AICredentials = {
+  apiKey: string;
+  modelName: string;
+  source: AICredentialSource;
+  provider: AIProviderName;
+};
 
 export type AIRequestOptions = string | {
     userId?: string;
     apiKey?: string;
+    provider?: AIProviderName;
     modelName?: string;
+    useManaged?: boolean;
+    /** @deprecated Retained for call-site compatibility; shared-key fallback is disabled. */
     allowEnvFallback?: boolean;
+    taskClass?: AITaskClass;
 };
 
-const STARTER_GEMINI_API_KEY = process.env.STARTER_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
-
-function resolveGeminiModelName(modelName?: string | null): string {
-    const normalized = modelName?.trim();
-    return normalized || FALLBACK_GEMINI_MODEL;
-}
+// GEMINI_API_KEY is retained as a production compatibility name, but this
+// value is resolved exclusively inside the Premium managed-credential path.
+// Free users never receive or fall back to either server-owned key.
+const MANAGED_GEMINI_API_KEY = process.env.MANAGED_GEMINI_API_KEY ?? process.env.GEMINI_API_KEY;
 
 async function incrementTokenUsage(userId: string, tokenCount: number) {
     try {
@@ -29,44 +54,222 @@ async function incrementTokenUsage(userId: string, tokenCount: number) {
                 monthlyTokenUsage: { increment: tokenCount },
             },
         });
-    } catch (e) {
-        // ignore errors if settings don't exist
+    } catch (error) {
+        console.error("[GEMINI] CRITICAL: failed to persist token usage", {
+            userId,
+            tokenCount,
+            error: error instanceof Error ? error.message : error,
+        });
     }
 }
 
-function getFallbackApiCredentials(): { apiKey: string; modelName: string } {
-    if (!STARTER_GEMINI_API_KEY) {
+export async function reserveMonthlyRequest(userId?: string, modelName = ECONOMY_GEMINI_MODEL): Promise<string | undefined> {
+    if (!userId) return undefined;
+    if (process.env.NODE_ENV !== "production" && userId.startsWith("dev-")) return undefined;
+    const monthStart = new Date();
+    monthStart.setUTCDate(1);
+    monthStart.setUTCHours(0, 0, 0, 0);
+    const minuteStart = new Date(Date.now() - 60_000);
+
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+        try {
+            return await prisma.$transaction(async (tx) => {
+                const user = await tx.user.findUnique({
+                    where: { id: userId },
+                    select: { plan: true, role: true },
+                });
+                if (!user) throw new Error("ユーザーが見つかりません。");
+
+                let settings = await tx.userAISettings.findUnique({ where: { userId } });
+                if (!settings) {
+                    settings = await tx.userAISettings.create({
+                        data: {
+                            userId,
+                            provider: "gemini",
+                            model: STANDARD_GEMINI_MODEL,
+                            isEnabled: false,
+                        },
+                    });
+                }
+
+                const now = new Date();
+                const lastReset = settings.lastUsageReset;
+                const isDifferentDay = !lastReset
+                    || now.getUTCDate() !== lastReset.getUTCDate()
+                    || now.getUTCMonth() !== lastReset.getUTCMonth()
+                    || now.getUTCFullYear() !== lastReset.getUTCFullYear();
+                const isDifferentMonth = !lastReset
+                    || now.getUTCMonth() !== lastReset.getUTCMonth()
+                    || now.getUTCFullYear() !== lastReset.getUTCFullYear();
+                const dailyTokenUsage = isDifferentDay ? 0 : settings.dailyTokenUsage;
+                const monthlyTokenUsage = isDifferentMonth ? 0 : settings.monthlyTokenUsage;
+
+                if (isDifferentDay || isDifferentMonth) {
+                    await tx.userAISettings.update({
+                        where: { userId },
+                        data: {
+                            dailyTokenUsage,
+                            monthlyTokenUsage,
+                            lastUsageReset: now,
+                        },
+                    });
+                }
+
+                if (dailyTokenUsage >= AI_USAGE_GUARDRAILS.DAILY_TOKEN_LIMIT) {
+                    throw new Error(`本日のAI利用量上限（${AI_USAGE_GUARDRAILS.DAILY_TOKEN_LIMIT.toLocaleString()}トークン）に達しました。`);
+                }
+                if (monthlyTokenUsage >= AI_USAGE_GUARDRAILS.MONTHLY_TOKEN_LIMIT) {
+                    throw new Error(`今月のAI利用量上限（${AI_USAGE_GUARDRAILS.MONTHLY_TOKEN_LIMIT.toLocaleString()}トークン）に達しました。`);
+                }
+
+                const monthlyRequestLimit = getAiMonthlyRequestLimit(user?.plan, user?.role);
+                const [usage, recentUsage] = await Promise.all([
+                    tx.yuiEvent.count({
+                        where: { userId, eventType: "ai_request", occurredAt: { gte: monthStart } },
+                    }),
+                    tx.yuiEvent.count({
+                        where: { userId, eventType: "ai_request", occurredAt: { gte: minuteStart } },
+                    }),
+                ]);
+                if (usage >= monthlyRequestLimit) {
+                    throw new Error(`今月のAI利用上限（${monthlyRequestLimit}回）に達しました。翌月までお待ちください。`);
+                }
+                if (recentUsage >= AI_USAGE_GUARDRAILS.MAX_REQUESTS_PER_MINUTE) {
+                    throw new Error("AIへの送信が続いています。1分ほど待ってから、もう一度お試しください。");
+                }
+
+                // Reserve before sending the request. Serializable isolation makes
+                // concurrent requests retry instead of both passing the same count.
+                const reservation = await tx.yuiEvent.create({
+                    data: {
+                        userId,
+                        eventType: "ai_request",
+                        source: "gemini",
+                        title: "AI request",
+                        content: "",
+                        metadata: { model: modelName, status: "reserved" },
+                    },
+                });
+                return reservation.id;
+            }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+        } catch (error) {
+            const isWriteConflict = error instanceof Prisma.PrismaClientKnownRequestError
+                && error.code === "P2034";
+            if (!isWriteConflict || attempt === 2) throw error;
+        }
+    }
+}
+
+export async function releaseMonthlyRequest(reservationId?: string) {
+    if (!reservationId) return;
+    await prisma.yuiEvent.delete({ where: { id: reservationId } }).catch((error) => {
+        console.error("[GEMINI] Failed to release request reservation", {
+            reservationId,
+            error: error instanceof Error ? error.message : error,
+        });
+    });
+}
+
+export async function completeMonthlyRequest(
+    reservationId: string | undefined,
+    userId: string | undefined,
+    usage: {
+        inputTokens: number;
+        outputTokens: number;
+        totalTokens: number;
+        model: string;
+        credentialSource: AICredentialSource;
+    },
+) {
+    if (userId) await incrementTokenUsage(userId, usage.totalTokens);
+    if (!reservationId) return;
+    await prisma.yuiEvent.update({
+        where: { id: reservationId },
+        data: { metadata: { status: "completed", ...usage } },
+    }).catch((error) => console.error("[GEMINI] Failed to finalize request metadata", error));
+}
+
+function assertInputWithinLimit(prompt: string, systemInstruction?: string) {
+    const inputCharacters = prompt.length + (systemInstruction?.length ?? 0);
+    if (inputCharacters > AI_USAGE_GUARDRAILS.MAX_INPUT_CHARACTERS) {
         throw new Error(
-            'GEMINI APIキーが設定されていません。設定画面からAPIキーを入力するか、環境変数を設定してください。'
+            `AIに送る内容が長すぎます。合計${AI_USAGE_GUARDRAILS.MAX_INPUT_CHARACTERS.toLocaleString()}文字以内に短くしてください。`,
+        );
+    }
+}
+
+type ProviderGeneration = {
+    text: string;
+    usage?: { totalTokenCount?: number; promptTokenCount?: number; candidatesTokenCount?: number };
+};
+
+function tokenUsageFromResponse(
+    response: ProviderGeneration,
+    prompt: string,
+    output: string,
+    systemInstruction?: string,
+): { inputTokens: number; outputTokens: number; totalTokens: number } {
+    const usageMetadata = response.usage;
+    const fallbackInput = Math.ceil((prompt.length + (systemInstruction?.length || 0)) / 4);
+    const fallbackOutput = Math.ceil(output.length / 4);
+    const inputTokens = usageMetadata?.promptTokenCount ?? fallbackInput;
+    const outputTokens = usageMetadata?.candidatesTokenCount
+        ?? (usageMetadata?.totalTokenCount !== undefined
+            ? Math.max(usageMetadata.totalTokenCount - inputTokens, 0)
+            : fallbackOutput);
+    const totalTokens = usageMetadata?.totalTokenCount ?? inputTokens + outputTokens;
+    return { inputTokens, outputTokens, totalTokens };
+}
+
+function getManagedApiCredentials(taskClass: AITaskClass = 'economy'): AICredentials {
+    if (!MANAGED_GEMINI_API_KEY) {
+        throw new Error(
+            'Premium用のAI接続が設定されていません。管理者へお問い合わせください。'
         );
     }
 
     return {
-        apiKey: normalizeGeminiApiKey(STARTER_GEMINI_API_KEY),
-        modelName: FALLBACK_GEMINI_MODEL,
+        apiKey: normalizeGeminiApiKey(MANAGED_GEMINI_API_KEY),
+        modelName: resolveGeminiModelName(undefined, taskClass),
+        source: 'managed',
+        provider: 'gemini',
     };
 }
 
 export async function getApiCredentials(
     options?: AIRequestOptions
-): Promise<{ apiKey: string; modelName: string }> {
+): Promise<AICredentials> {
     if (typeof options === 'string') {
         return getApiCredentialsFromUserId(options);
     }
 
-    if (options && (options.apiKey || options.modelName)) {
+    if (options?.useManaged) {
+        return getManagedApiCredentials(options.taskClass);
+    }
+
+    if (options?.apiKey) {
+        const provider = options.provider ?? 'gemini';
         return {
-            apiKey: normalizeGeminiApiKey(options.apiKey || STARTER_GEMINI_API_KEY || ''),
-            modelName: resolveGeminiModelName(options.modelName),
+            apiKey: provider === 'groq' ? normalizeGroqApiKey(options.apiKey) : normalizeGeminiApiKey(options.apiKey),
+            modelName: provider === 'groq'
+                ? resolveGroqModelName(options.modelName, options.taskClass)
+                : resolveGeminiModelName(options.modelName, options.taskClass),
+            source: 'direct',
+            provider,
         };
     }
 
-    return getApiCredentialsFromUserId(options?.userId, options?.allowEnvFallback ?? false);
+    return getApiCredentialsFromUserId(
+        options?.userId,
+        options?.allowEnvFallback ?? false,
+        options?.taskClass,
+    );
 }
 
 export async function getUserOwnedApiCredentials(
-    userId?: string
-): Promise<{ apiKey: string; modelName: string } | null> {
+    userId?: string,
+    taskClass: AITaskClass = 'economy',
+): Promise<AICredentials | null> {
     if (!userId) {
         return null;
     }
@@ -84,13 +287,13 @@ export async function getUserOwnedApiCredentials(
         let needsUpdate = false;
 
         const isDifferentDay = !lastReset ||
-            now.getDate() !== lastReset.getDate() ||
-            now.getMonth() !== lastReset.getMonth() ||
-            now.getFullYear() !== lastReset.getFullYear();
+            now.getUTCDate() !== lastReset.getUTCDate() ||
+            now.getUTCMonth() !== lastReset.getUTCMonth() ||
+            now.getUTCFullYear() !== lastReset.getUTCFullYear();
 
         const isDifferentMonth = !lastReset ||
-            now.getMonth() !== lastReset.getMonth() ||
-            now.getFullYear() !== lastReset.getFullYear();
+            now.getUTCMonth() !== lastReset.getUTCMonth() ||
+            now.getUTCFullYear() !== lastReset.getUTCFullYear();
 
         if (isDifferentDay) {
             dailyUsage = 0;
@@ -113,23 +316,35 @@ export async function getUserOwnedApiCredentials(
         }
 
         if (settings.isEnabled) {
-            if (dailyUsage >= 100000) {
-                throw new Error("本日の一日利用量制限（100,000トークン）に達しました。");
+            if (dailyUsage >= AI_USAGE_GUARDRAILS.DAILY_TOKEN_LIMIT) {
+                throw new Error(`本日のAI利用量上限（${AI_USAGE_GUARDRAILS.DAILY_TOKEN_LIMIT.toLocaleString()}トークン）に達しました。`);
             }
-            if (monthlyUsage >= 2000000) {
-                throw new Error("当月の月間利用量制限（2,000,000トークン）に達しました。");
+            if (monthlyUsage >= AI_USAGE_GUARDRAILS.MONTHLY_TOKEN_LIMIT) {
+                throw new Error(`今月のAI利用量上限（${AI_USAGE_GUARDRAILS.MONTHLY_TOKEN_LIMIT.toLocaleString()}トークン）に達しました。`);
             }
 
-            if (settings.encryptedApiKey) {
-                const decrypted = normalizeGeminiApiKey(decryptKey(settings.encryptedApiKey));
-                const modelName = resolveGeminiModelName(settings.model);
-                console.log("FOUND USER GEMINI KEY FROM SETTINGS", {
+            const provider: AIProviderName = providerFromStoredSetting(settings.provider);
+            const providerKey = await readUserApiKey(userId, provider).catch(() => null);
+            const legacyKey = !providerKey && settings.encryptedApiKey
+                ? provider === 'groq'
+                    ? normalizeGroqApiKey(decryptKey(settings.encryptedApiKey))
+                    : normalizeGeminiApiKey(decryptKey(settings.encryptedApiKey))
+                : null;
+            const decrypted = providerKey ?? legacyKey;
+            if (decrypted) {
+                const modelName = provider === 'groq'
+                    ? resolveGroqModelName(settings.model, taskClass)
+                    : resolveGeminiModelName(settings.model, taskClass);
+                console.log("FOUND USER AI KEY FROM SETTINGS", {
                     userId,
+                    provider,
                     model: modelName,
                 });
                 return {
                     apiKey: decrypted,
                     modelName,
+                    source: 'byok',
+                    provider,
                 };
             }
         }
@@ -139,38 +354,124 @@ export async function getUserOwnedApiCredentials(
     return null;
 }
 
-async function getApiCredentialsFromUserId(userId?: string, allowEnvFallback = false): Promise<{ apiKey: string; modelName: string }> {
+async function getApiCredentialsFromUserId(
+    userId?: string,
+    _allowEnvFallback = false,
+    taskClass: AITaskClass = 'economy',
+): Promise<AICredentials> {
     if (userId) {
-        const credentials = await getUserOwnedApiCredentials(userId);
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { plan: true, role: true },
+        });
+        if (hasPremiumAccess(user?.plan, user?.role)) {
+            const settings = await prisma.userAISettings.findUnique({ where: { userId } });
+            if (settings?.provider?.startsWith('byok_')) {
+                const credentials = await getUserOwnedApiCredentials(userId, taskClass);
+                if (credentials) return credentials;
+            }
+            return getManagedApiCredentials(taskClass);
+        }
+
+        const credentials = await getUserOwnedApiCredentials(userId, taskClass);
         if (credentials) {
             return credentials;
         }
 
-        if (allowEnvFallback) {
-            return getFallbackApiCredentials();
-        }
-
         throw new Error(
-            "Gemini APIキーが設定されていません。設定画面からユーザー固有のAPIキーを入力してください。"
+            "AI APIキーが設定されていません。設定画面からGeminiまたはGroqのユーザー固有キーを入力してください。"
         );
     }
 
-    return getFallbackApiCredentials();
+    throw new Error("AI利用者を確認できません。ユーザーIDを指定してください。");
 }
 
 /**
  * AIクライアントを取得する。
  */
-async function getClient(options?: AIRequestOptions): Promise<{ client: GenerativeModel; modelName: string }> {
-    const { apiKey, modelName } = await getApiCredentials(options);
-    console.log("CREATE GEMINI CLIENT", {
+type TextClient = {
+    generate: (prompt: string, systemInstruction: string | undefined, config: { temperature: number; maxOutputTokens: number }) => Promise<ProviderGeneration>;
+};
+
+async function getClient(
+    options: AIRequestOptions | undefined,
+    defaultTaskClass: AITaskClass,
+): Promise<{ client: TextClient; modelName: string; source: AICredentialSource; provider: AIProviderName }> {
+    const resolvedOptions = typeof options === 'string'
+        ? { userId: options, taskClass: defaultTaskClass }
+        : { ...options, taskClass: options?.taskClass ?? defaultTaskClass };
+    const { apiKey, modelName, source, provider } = await getApiCredentials(resolvedOptions);
+    console.log("CREATE AI CLIENT", {
+        provider,
         modelName,
         hasApiKey: !!apiKey,
         source: typeof options === 'string' ? 'userId' : options?.apiKey ? 'direct' : 'env/user-settings',
     });
+    if (provider === 'groq') {
+        return {
+            modelName, source, provider,
+            client: {
+                async generate(prompt, systemInstruction, config) {
+                    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                        method: "POST",
+                        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            model: modelName,
+                            messages: [
+                                ...(systemInstruction ? [{ role: "system", content: systemInstruction }] : []),
+                                { role: "user", content: prompt },
+                            ],
+                            temperature: config.temperature,
+                            // GPT-OSS consumes completion tokens for reasoning as well as
+                            // visible text. Keep a small floor so connection checks still
+                            // have enough room to return their visible "OK" response.
+                            max_completion_tokens: Math.max(config.maxOutputTokens, 64),
+                            reasoning_effort: "low",
+                            include_reasoning: false,
+                        }),
+                    });
+                    if (!response.ok) {
+                        const payload = await response.json().catch(() => null) as {
+                            error?: { code?: string; type?: string };
+                        } | null;
+                        const providerCode = payload?.error?.code ?? payload?.error?.type ?? "unknown";
+                        console.warn("[GROQ] API request failed", { status: response.status, code: providerCode, model: modelName });
+                        throw new Error(`Groq API request failed (${response.status}, ${providerCode})`);
+                    }
+                    const data = await response.json() as {
+                        choices?: Array<{ message?: { content?: string | null } }>;
+                        usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number };
+                    };
+                    const text = data.choices?.[0]?.message?.content?.trim();
+                    if (!text) throw new Error("Groq API returned an empty response");
+                    return {
+                        text,
+                        usage: {
+                            promptTokenCount: data.usage?.prompt_tokens,
+                            candidatesTokenCount: data.usage?.completion_tokens,
+                            totalTokenCount: data.usage?.total_tokens,
+                        },
+                    };
+                },
+            },
+        };
+    }
     const genAI = new GoogleGenerativeAI(apiKey);
-    const client = genAI.getGenerativeModel({ model: modelName });
-    return { client, modelName };
+    const model = genAI.getGenerativeModel({ model: modelName });
+    return {
+        modelName, source, provider,
+        client: {
+            async generate(prompt, systemInstruction, config) {
+                const result = await model.generateContent({
+                    contents: [{ role: 'user', parts: [{ text: prompt }] }],
+                    systemInstruction: systemInstruction ? { role: 'user', parts: [{ text: systemInstruction }] } : undefined,
+                    generationConfig: { temperature: config.temperature, maxOutputTokens: config.maxOutputTokens, topK: 32, topP: 0.95 },
+                });
+                const response = result.response;
+                return { text: response.text(), usage: response.usageMetadata };
+            },
+        },
+    };
 }
 
 export interface AIResponse {
@@ -184,48 +485,52 @@ export async function generateJSON<T>(
     systemInstruction?: string,
     options?: AIRequestOptions
 ): Promise<{ data: T; usage: AIResponse }> {
-    const { client, modelName } = await getClient(options);
-
-    const result = await client.generateContent({
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        systemInstruction: systemInstruction
-            ? { role: 'user', parts: [{ text: systemInstruction }] }
-            : undefined,
-        generationConfig: {
-            temperature: 0.3,
-            topK: 32,
-            topP: 0.95,
-            maxOutputTokens: 2048,
-        },
-    });
-
-    const response = result.response;
-    const text = response.text();
-
-    // Extract JSON from response (handle markdown code blocks)
-    const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/) || text.match(/[\[{][\s\S]*[\]}]/);
-    const jsonStr = jsonMatch ? jsonMatch[1] || jsonMatch[0] : text;
-    const data = JSON.parse(jsonStr.trim()) as T;
-
-    // Token estimation (approximate)
-    const tokenUsed = Math.ceil((prompt.length + text.length) / 4);
-
-    // Track usage
+    assertInputWithinLimit(prompt, systemInstruction);
+    const { client, modelName, source, provider } = await getClient(options, 'economy');
     const userId = typeof options === 'string' ? options : options?.userId;
-    if (userId) {
-        incrementTokenUsage(userId, tokenUsed).catch(err => {
-            console.error("[GEMINI] Failed to increment token usage:", err);
-        });
-    }
+    const reservationId = await reserveMonthlyRequest(userId, modelName);
 
-    return {
-        data,
-        usage: {
-            text,
-            tokenUsed,
-            model: modelName,
-        },
-    };
+    try {
+        const response = await client.generate(prompt, systemInstruction, { temperature: 0.3, maxOutputTokens: AI_USAGE_GUARDRAILS.MAX_OUTPUT_TOKENS });
+        const generatedText = response.text;
+        const tokenUsage = tokenUsageFromResponse(response, prompt, generatedText, systemInstruction);
+        if (userId) await incrementTokenUsage(userId, tokenUsage.totalTokens);
+        if (reservationId) {
+            await prisma.yuiEvent.update({
+                where: { id: reservationId },
+                data: {
+                    metadata: {
+                        status: "completed",
+                        model: modelName,
+                        provider,
+                        credentialSource: source,
+                        inputTokens: tokenUsage.inputTokens,
+                        outputTokens: tokenUsage.outputTokens,
+                        totalTokens: tokenUsage.totalTokens,
+                    },
+                },
+            }).catch((error) => console.error("[GEMINI] Failed to finalize request metadata", error));
+        }
+
+        // Extract JSON from response (handle markdown code blocks)
+        const jsonMatch = generatedText.match(/```(?:json)?\s*([\s\S]*?)```/) || generatedText.match(/[\[{][\s\S]*[\]}]/);
+        const jsonStr = jsonMatch ? jsonMatch[1] || jsonMatch[0] : generatedText;
+        const data = JSON.parse(jsonStr.trim()) as T;
+
+        return {
+            data,
+            usage: {
+                text: generatedText,
+                tokenUsed: tokenUsage.totalTokens,
+                model: modelName,
+            },
+        };
+    } catch (error) {
+        // A failed user-facing operation does not consume the monthly request
+        // allowance. Actual token usage is still retained for cost protection.
+        await releaseMonthlyRequest(reservationId);
+        throw error;
+    }
 }
 
 export async function generateText(
@@ -233,32 +538,37 @@ export async function generateText(
     systemInstruction?: string,
     options?: AIRequestOptions
 ): Promise<AIResponse> {
-    const { client, modelName } = await getClient(options);
-
-    const result = await client.generateContent({
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        systemInstruction: systemInstruction
-            ? { role: 'user', parts: [{ text: systemInstruction }] }
-            : undefined,
-        generationConfig: {
-            temperature: 0.5,
-            maxOutputTokens: 1024,
-        },
-    });
-
-    const response = result.response;
-    const text = response.text();
-    const tokenUsed = Math.ceil((prompt.length + text.length) / 4);
-
-    // Track usage
+    assertInputWithinLimit(prompt, systemInstruction);
+    const { client, modelName, source, provider } = await getClient(options, 'economy');
     const userId = typeof options === 'string' ? options : options?.userId;
-    if (userId) {
-        incrementTokenUsage(userId, tokenUsed).catch(err => {
-            console.error("[GEMINI] Failed to increment token usage:", err);
-        });
-    }
+    const reservationId = await reserveMonthlyRequest(userId, modelName);
 
-    return { text, tokenUsed, model: modelName };
+    try {
+        const response = await client.generate(prompt, systemInstruction, { temperature: 0.5, maxOutputTokens: AI_USAGE_GUARDRAILS.MAX_OUTPUT_TOKENS });
+        const generatedText = response.text;
+        const tokenUsage = tokenUsageFromResponse(response, prompt, generatedText, systemInstruction);
+        if (userId) await incrementTokenUsage(userId, tokenUsage.totalTokens);
+        if (reservationId) {
+            await prisma.yuiEvent.update({
+                where: { id: reservationId },
+                data: {
+                    metadata: {
+                        status: "completed",
+                        model: modelName,
+                        provider,
+                        credentialSource: source,
+                        inputTokens: tokenUsage.inputTokens,
+                        outputTokens: tokenUsage.outputTokens,
+                        totalTokens: tokenUsage.totalTokens,
+                    },
+                },
+            }).catch((error) => console.error("[GEMINI] Failed to finalize request metadata", error));
+        }
+        return { text: generatedText, tokenUsed: tokenUsage.totalTokens, model: modelName };
+    } catch (error) {
+        await releaseMonthlyRequest(reservationId);
+        throw error;
+    }
 }
 
 /**
@@ -267,25 +577,22 @@ export async function generateText(
  */
 export async function validateApiKey(options?: AIRequestOptions): Promise<{
     connected: boolean;
-    method: 'env' | 'apikey' | 'oauth' | null;
+    method: 'managed' | 'apikey' | 'oauth' | null;
     error?: string;
 }> {
     try {
-        const { apiKey, modelName } = await getApiCredentials(options);
-        const testClient = new GoogleGenerativeAI(apiKey);
-        const testModel = testClient.getGenerativeModel({ model: modelName });
+        const { client, source } = await getClient(options, 'economy');
 
-        // 軽量なテスト呼び出し
-        await testModel.generateContent({
-            contents: [{ role: 'user', parts: [{ text: 'test' }] }],
-            generationConfig: { maxOutputTokens: 1 },
-        });
+        // A minimal real request verifies both the key and the selected provider.
+        await client.generate('Reply with exactly OK.', undefined, { temperature: 0, maxOutputTokens: 16 });
 
         // 使用されたキーの種類を特定
-        let method: 'env' | 'apikey' | 'oauth' | null = null;
+        let method: 'managed' | 'apikey' | 'oauth' | null = null;
         const userId = typeof options === 'string' ? options : options?.userId;
 
-        if (typeof options === 'object' && options !== null && options.apiKey) {
+        if (source === 'managed') {
+            method = 'managed';
+        } else if (typeof options === 'object' && options !== null && options.apiKey) {
             method = 'apikey';
         } else if (userId) {
             try {
@@ -298,8 +605,6 @@ export async function validateApiKey(options?: AIRequestOptions): Promise<{
             } catch {
                 method = 'apikey';
             }
-        } else if (process.env.GEMINI_API_KEY) {
-            method = 'env';
         }
 
         return { connected: true, method };
@@ -313,10 +618,9 @@ export async function validateApiKey(options?: AIRequestOptions): Promise<{
 }
 
 export type AIAvailabilitySource =
+    | "managed"
     | "user_ai_settings"
     | "gemini_oauth"
-    | "legacy_api_key"
-    | "starter"
     | null;
 
 export interface AIAvailabilityResult {
@@ -330,20 +634,47 @@ export interface AIAvailabilityResult {
  * Gemini APIへの実際の通信は行わない。
  */
 export async function checkAIAvailability(userId: string): Promise<AIAvailabilityResult> {
-    const settings = await prisma.userAISettings.findUnique({
-        where: { userId },
-    });
-    if (settings?.isEnabled && settings.encryptedApiKey) {
+    const [user, settings] = await Promise.all([
+        prisma.user.findUnique({
+            where: { id: userId },
+            select: { plan: true, role: true },
+        }),
+        prisma.userAISettings.findUnique({ where: { userId } }),
+    ]);
+
+    if (hasPremiumAccess(user?.plan, user?.role)) {
+        if (settings?.provider?.startsWith('byok_') && settings.isEnabled) {
+            try {
+                const provider = providerFromStoredSetting(settings.provider);
+                const providerKey = await readUserApiKey(userId, provider);
+                const legacyKey = !providerKey && settings.encryptedApiKey
+                    ? provider === 'groq'
+                        ? normalizeGroqApiKey(decryptKey(settings.encryptedApiKey))
+                        : normalizeGeminiApiKey(decryptKey(settings.encryptedApiKey))
+                    : null;
+                if (!providerKey && !legacyKey) return { available: false, source: null };
+                return { available: true, source: "user_ai_settings" };
+            } catch {
+                return { available: false, source: null };
+            }
+        }
+        return { available: Boolean(MANAGED_GEMINI_API_KEY), source: MANAGED_GEMINI_API_KEY ? "managed" : null };
+    }
+
+    if (settings?.isEnabled) {
         try {
-            normalizeGeminiApiKey(decryptKey(settings.encryptedApiKey));
-            return { available: true, source: (settings.provider as AIAvailabilitySource) || "user_ai_settings" };
+            const provider = providerFromStoredSetting(settings.provider);
+            const providerKey = await readUserApiKey(userId, provider);
+            const legacyKey = !providerKey && settings.encryptedApiKey
+                ? provider === 'groq'
+                    ? normalizeGroqApiKey(decryptKey(settings.encryptedApiKey))
+                    : normalizeGeminiApiKey(decryptKey(settings.encryptedApiKey))
+                : null;
+            if (!providerKey && !legacyKey) return { available: false, source: null };
+            return { available: true, source: settings.provider === "gemini_oauth" ? "gemini_oauth" : "user_ai_settings" };
         } catch {
             return { available: false, source: null };
         }
-    }
-
-    if (process.env.STARTER_GEMINI_API_KEY || process.env.GEMINI_API_KEY) {
-        return { available: true, source: "legacy_api_key" };
     }
 
     return { available: false, source: null };

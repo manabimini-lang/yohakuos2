@@ -51,7 +51,10 @@ async function extractMemories(cardId: string, userId: string): Promise<void> {
         .replace('{{cardContent}}', trimmedContent)
         .replace('{{existingMemories}}', existingSummary || '（まだありません）');
 
-    const { data, usage } = await generateJSON<MemoryExtractionResult>(prompt);
+    const { data, usage } = await generateJSON<MemoryExtractionResult>(prompt, undefined, {
+        userId,
+        taskClass: 'economy',
+    });
 
     // 4. Cost tracking
     const inputTokens = estimateTokenCount(prompt);

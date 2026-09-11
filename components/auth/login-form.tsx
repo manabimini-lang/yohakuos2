@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState, useCallback } from "react";
+import { FormEvent, useState, useCallback, useEffect } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -40,6 +40,7 @@ interface LoginFormProps {
 export function LoginForm({ isGoogleEnabled, turnstileSiteKey }: LoginFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [emailValue, setEmailValue] = useState("");
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -47,6 +48,13 @@ export function LoginForm({ isGoogleEnabled, turnstileSiteKey }: LoginFormProps)
   const redirectTo = rawRedirectTo.startsWith("/") && !rawRedirectTo.startsWith("//") ? rawRedirectTo : "/yui";
 
   const isTurnstileRequired = !!turnstileSiteKey;
+
+  useEffect(() => {
+    const signupEmail = sessionStorage.getItem("yohaku_signup_email");
+    if (!signupEmail) return;
+    setEmailValue(signupEmail);
+    sessionStorage.removeItem("yohaku_signup_email");
+  }, []);
 
   const handleTurnstileSuccess = useCallback((token: string) => {
     setTurnstileToken(token);
@@ -140,6 +148,8 @@ export function LoginForm({ isGoogleEnabled, turnstileSiteKey }: LoginFormProps)
             name="email"
             required
             disabled={isLoading}
+            value={emailValue}
+            onChange={(event) => setEmailValue(event.target.value)}
             className="yohaku-input disabled:opacity-50"
             placeholder="you@example.com"
           />

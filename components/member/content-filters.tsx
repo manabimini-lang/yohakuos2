@@ -75,7 +75,7 @@ export function ContentFilters({ search, tag, layer, contentType, tags }: Conten
       <div className="flex items-end gap-2 lg:col-span-5 pt-2">
         <button
           type="submit"
-          className="rounded-lg bg-slate-900 px-5 py-2 text-sm font-medium text-foreground transition-opacity hover:opacity-90"
+          className="rounded-lg bg-slate-900 px-5 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"
         >
           絞り込む
         </button>

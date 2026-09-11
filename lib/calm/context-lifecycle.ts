@@ -95,7 +95,7 @@ ${memoryText}
 
 圧縮結果:`;
 
-        const { text } = await generateText(prompt);
+        const { text } = await generateText(prompt, undefined, { userId, allowEnvFallback: true });
 
         const expiresAt = await getExpiresAt(userId);
 
@@ -148,7 +148,7 @@ ${reflectionText}
 
 要約:`;
 
-    const { text } = await generateText(prompt);
+    const { text } = await generateText(prompt, undefined, { userId, allowEnvFallback: true });
 
     await prisma.lifeReflection.create({
         data: {

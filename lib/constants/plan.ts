@@ -7,6 +7,21 @@ export const PLAN = {
   PREMIUM: "premium" as Plan,
 } as const;
 
+/** Monthly AI request limits exposed to YUI users. */
+export const AI_MONTHLY_REQUEST_LIMIT = {
+  FREE: 50,
+  PREMIUM: 500,
+} as const;
+
+/** Cost guardrails for every Gemini request, including automated reports. */
+export const AI_USAGE_GUARDRAILS = {
+  MAX_REQUESTS_PER_MINUTE: 5,
+  MAX_INPUT_CHARACTERS: 12_000,
+  MAX_OUTPUT_TOKENS: 1_024,
+  DAILY_TOKEN_LIMIT: 100_000,
+  MONTHLY_TOKEN_LIMIT: 2_000_000,
+} as const;
+
 export const ROLE = {
   FREE_MEMBER: "FREE_MEMBER" as Role,
   PAID_MEMBER: "PAID_MEMBER" as Role,
@@ -39,6 +54,12 @@ export function hasPremiumAccess(plan?: string | null, role?: string | null): bo
     role === ROLE.ADMIN ||
     role === ROLE.SUPER_ADMIN
   );
+}
+
+export function getAiMonthlyRequestLimit(plan?: string | null, role?: string | null): number {
+  return hasPremiumAccess(plan, role)
+    ? AI_MONTHLY_REQUEST_LIMIT.PREMIUM
+    : AI_MONTHLY_REQUEST_LIMIT.FREE;
 }
 
 /**

@@ -45,6 +45,12 @@ type Member = {
     suggestionRate: number;
     isDiscordConnected: boolean;
   };
+  yuiUsage: {
+    count: number;
+    lastActiveAt: Date | null;
+    goalsCount: number;
+    milestonesCount: number;
+  };
 };
 
 export default function MembersPage() {
@@ -135,7 +141,7 @@ export default function MembersPage() {
     <section className="space-y-6 max-w-5xl mx-auto">
       {/* Toast Notification */}
       {toast && (
-        <div className="fixed bottom-6 right-6 z-50 rounded-xl bg-slate-900 px-4 py-3 text-sm font-medium text-foreground shadow-lg animate-in slide-in-from-bottom-4 fade-in duration-300">
+        <div className="fixed bottom-6 right-6 z-50 rounded-xl bg-slate-900 px-4 py-3 text-sm font-medium text-white shadow-lg animate-in slide-in-from-bottom-4 fade-in duration-300">
           {toast}
         </div>
       )}
@@ -295,6 +301,18 @@ export default function MembersPage() {
                                     <span className="text-[10px] text-muted-foreground font-medium block">保存数</span>
                                     <span className="text-sm font-semibold text-slate-700">
                                       {member.stats.savedCount} 件
+                                    </span>
+                                  </div>
+                                  <div className="bg-white border border-slate-200 rounded-xl p-3.5 shadow-sm space-y-1">
+                                    <span className="text-[10px] text-muted-foreground font-medium block">YUI利用回数</span>
+                                    <span className="text-sm font-semibold text-slate-700">
+                                      {member.yuiUsage?.count ?? 0} 回
+                                    </span>
+                                  </div>
+                                  <div className="bg-white border border-slate-200 rounded-xl p-3.5 shadow-sm space-y-1">
+                                    <span className="text-[10px] text-muted-foreground font-medium block">目的 / マイルストーン</span>
+                                    <span className="text-sm font-semibold text-slate-700">
+                                      {member.yuiUsage?.goalsCount ?? 0} / {member.yuiUsage?.milestonesCount ?? 0}
                                     </span>
                                   </div>
                                   <div className="bg-white border border-slate-200 rounded-xl p-3.5 shadow-sm space-y-1">

@@ -757,7 +757,7 @@ CREATE TABLE IF NOT EXISTS public.yui_recommendations (
   status               TEXT NOT NULL DEFAULT 'pending',
   created_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
   CONSTRAINT yui_recommendations_status_check CHECK (status IN ('pending', 'accepted', 'rejected', 'completed')),
-  CONSTRAINT yui_recommendations_type_check CHECK (type IN ('time_block', 'decision', 'task', 'reflection')),
+  CONSTRAINT yui_recommendations_type_check CHECK (type IN ('time_block', 'decision', 'task', 'reflection', 'action')),
   CONSTRAINT yui_recommendations_score_check CHECK (score >= 0 AND score <= 100)
 );
 
@@ -861,11 +861,12 @@ CREATE POLICY "milestones_delete_own"
 CREATE TABLE IF NOT EXISTS public.yui_notification_settings (
   id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id          TEXT NOT NULL UNIQUE,
-  enabled          BOOLEAN NOT NULL DEFAULT true,
-  morning_enabled  BOOLEAN NOT NULL DEFAULT true,
+  enabled          BOOLEAN NOT NULL DEFAULT false,
+  morning_enabled  BOOLEAN NOT NULL DEFAULT false,
   morning_time     TEXT NOT NULL DEFAULT '07:00',
   evening_enabled  BOOLEAN NOT NULL DEFAULT false,
   evening_time     TEXT NOT NULL DEFAULT '20:00',
+  notification_level TEXT NOT NULL DEFAULT 'standard' CHECK (notification_level IN ('light', 'standard')),
   timezone         TEXT NOT NULL DEFAULT 'Asia/Tokyo',
   created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at       TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -948,3 +949,40 @@ CREATE TABLE IF NOT EXISTS public.yui_memory_profiles (
 
 CREATE INDEX IF NOT EXISTS idx_yui_memory_profiles_user_id
   ON public.yui_memory_profiles (user_id);
+
+-- ==============================================================================
+-- 12. YUI unified action feedback
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS public.yui_unified_action_feedback (
+  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id      TEXT NOT NULL,
+  action_id    TEXT NOT NULL,
+  feedback     TEXT NOT NULL CHECK (feedback IN ('helpful', 'dismissed')),
+  dismiss_reason TEXT CHECK (dismiss_reason IN ('busy', 'not_relevant', 'later')),
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE(user_id, action_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_yui_unified_action_feedback_user_feedback
+  ON public.yui_unified_action_feedback (user_id, feedback);
+
+ALTER TABLE public.yui_unified_action_feedback ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "yui_unified_action_feedback_select_own" ON public.yui_unified_action_feedback;
+CREATE POLICY "yui_unified_action_feedback_select_own"
+  ON public.yui_unified_action_feedback FOR SELECT
+  USING (auth.uid()::text = user_id);
+
+DROP POLICY IF EXISTS "yui_unified_action_feedback_insert_own" ON public.yui_unified_action_feedback;
+CREATE POLICY "yui_unified_action_feedback_insert_own"
+  ON public.yui_unified_action_feedback FOR INSERT
+  WITH CHECK (auth.uid()::text = user_id);
+
+DROP POLICY IF EXISTS "yui_unified_action_feedback_update_own" ON public.yui_unified_action_feedback;
+CREATE POLICY "yui_unified_action_feedback_update_own"
+  ON public.yui_unified_action_feedback FOR UPDATE
+  USING (auth.uid()::text = user_id)
+  WITH CHECK (auth.uid()::text = user_id);
+
+GRANT SELECT, INSERT, UPDATE ON TABLE public.yui_unified_action_feedback TO authenticated, service_role;

@@ -58,6 +58,30 @@ export const PERMISSIONS: Record<Permission, PermissionMeta> = {
     description: "システム全体の管理操作",
     category: "system",
   },
+  manage_content: {
+    id: "manage_content",
+    label: "知識編集",
+    description: "コンテンツ・知識アセットの編集",
+    category: "content",
+  },
+  manage_comms: {
+    id: "manage_comms",
+    label: "コミュニケーション",
+    description: "メルマガ企画・配信の管理",
+    category: "communications",
+  },
+  manage_product_learning: {
+    id: "manage_product_learning",
+    label: "製品学習",
+    description: "製品仮説・実験・インサイトの管理",
+    category: "product",
+  },
+  publish_reports: {
+    id: "publish_reports",
+    label: "活動発信",
+    description: "匿名レポート・活動成果の公開",
+    category: "communications",
+  },
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -83,6 +107,9 @@ export const ROLE_PERMISSION_MAP: Record<SystemRole, Permission[]> = {
     "manage_users",
     "manage_billing",
     "view_analytics",
+    "manage_content",
+    "manage_comms",
+    "manage_product_learning",
   ],
   owner: ALL_PERMISSIONS,
 };

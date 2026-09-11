@@ -1,4 +1,4 @@
-import { generateJSON, generateText, getApiCredentials } from "./gemini";
+import { completeMonthlyRequest, generateJSON, generateText, getApiCredentials, releaseMonthlyRequest, reserveMonthlyRequest } from "./gemini";
 import type {
   AIProvider,
   ContentItemType,
@@ -70,14 +70,16 @@ export class GeminiProvider implements AIProvider {
   private userId?: string;
   private apiKey?: string;
   private customModel?: string;
+  private allowEnvFallback = false;
 
-  constructor(options?: string | { userId?: string; apiKey?: string; model?: string }) {
+  constructor(options?: string | { userId?: string; apiKey?: string; model?: string; allowEnvFallback?: boolean }) {
     if (typeof options === "string") {
       this.userId = options;
     } else if (options) {
       this.userId = options.userId;
       this.apiKey = options.apiKey;
       this.customModel = options.model;
+      this.allowEnvFallback = options.allowEnvFallback ?? false;
     }
   }
 
@@ -86,6 +88,7 @@ export class GeminiProvider implements AIProvider {
       userId: this.userId,
       apiKey: this.apiKey,
       modelName: this.customModel,
+      allowEnvFallback: this.allowEnvFallback,
     };
   }
 
@@ -163,13 +166,21 @@ export class GeminiProvider implements AIProvider {
     // Get credentials using the unified utility
     const creds = await getApiCredentials(this.getRequestOptions());
     const apiKey = creds.apiKey;
+    let reservationId: string | undefined;
 
     if (!apiKey) {
       console.warn("[GeminiProvider.embed] No API key, skipping embedding");
       return [];
     }
+    if (creds.provider !== "gemini") {
+      // Groq supplies the chat-completions API used for text generation, but not
+      // the Gemini embedding endpoint. Never send a Groq BYOK key to Google.
+      console.info("[GeminiProvider.embed] Groq does not provide YOHAKU embeddings; skipping embedding");
+      return [];
+    }
 
     try {
+      reservationId = await reserveMonthlyRequest(this.userId, EMBEDDING_MODEL);
       const response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${EMBEDDING_MODEL}:embedContent?key=${apiKey}`,
         {
@@ -189,8 +200,18 @@ export class GeminiProvider implements AIProvider {
       }
 
       const data = await response.json();
+      const estimatedInputTokens = Math.max(1, Math.ceil(text.slice(0, 2048).length / 4));
+      await completeMonthlyRequest(reservationId, this.userId, {
+        inputTokens: estimatedInputTokens,
+        outputTokens: 0,
+        totalTokens: estimatedInputTokens,
+        model: EMBEDDING_MODEL,
+        credentialSource: creds.source,
+      });
+      reservationId = undefined;
       return data.embedding?.values ?? [];
     } catch (error) {
+      await releaseMonthlyRequest(reservationId);
       console.error("[GeminiProvider.embed] error:", error);
       return [];
     }
@@ -198,7 +219,10 @@ export class GeminiProvider implements AIProvider {
 
   async generateInsight(systemPrompt: string, userPrompt: string): Promise<string> {
     try {
-      const result = await generateText(userPrompt, systemPrompt, this.getRequestOptions());
+      const result = await generateText(userPrompt, systemPrompt, {
+        ...this.getRequestOptions(),
+        taskClass: "standard",
+      });
       return result.text.trim();
     } catch (error) {
       console.error("[GeminiProvider.generateInsight] error:", error);

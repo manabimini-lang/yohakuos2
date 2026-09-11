@@ -19,7 +19,7 @@ const STATUS_LABELS: Record<LiveStatus, string> = {
   loading: "Loading",
   updating: "Updating",
   cached: "Cached",
-  offline: "Offline",
+  offline: "オフライン",
   error: "Error",
 };
 

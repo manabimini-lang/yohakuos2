@@ -44,7 +44,7 @@ export function AdminHeader({ user }: AdminHeaderProps) {
               className="h-9 w-9 rounded-full border border-slate-200 object-cover"
             />
           ) : (
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-900 text-sm font-semibold text-foreground">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-900 text-sm font-semibold text-white">
               {initial}
             </div>
           )}

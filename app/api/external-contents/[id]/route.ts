@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
+import { isAdminAccessEmail } from "@/lib/auth/admin-access";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
@@ -21,7 +22,7 @@ export async function DELETE(
       where: { id: session.user.id },
     });
 
-    const isAdmin = user?.role === "ADMIN" || user?.role === "SUPER_ADMIN";
+    const isAdmin = isAdminAccessEmail(user?.email);
     if (!isAdmin) {
       return NextResponse.json({ error: "Forbidden: Admin only" }, { status: 403 });
     }
@@ -55,7 +56,7 @@ export async function PATCH(
       where: { id: session.user.id },
     });
 
-    const isAdmin = user?.role === "ADMIN" || user?.role === "SUPER_ADMIN";
+    const isAdmin = isAdminAccessEmail(user?.email);
     if (!isAdmin) {
       return NextResponse.json({ error: "Forbidden: Admin only" }, { status: 403 });
     }

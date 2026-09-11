@@ -10,8 +10,9 @@ import { getGmailInsights } from "./gmail_service";
 import { getUnifiedActions } from "./unified_action_service";
 import { buildPriorityContext, type YuiPriorityItem } from "./priority_engine";
 import { getYuiGreeting } from "./notification_copy";
+import { getZonedDateKey, getZonedDayWindow } from "./timezone";
 
-const BRIEF_COPY_VERSION = 2;
+const BRIEF_COPY_VERSION = 5;
 
 const supabaseAdmin = new Proxy({} as SupabaseClient, {
   get(_, prop: keyof SupabaseClient) {
@@ -95,17 +96,17 @@ export async function refreshMorningBriefCache(userId: string): Promise<YuiMorni
   return getMorningBrief(userId);
 }
 
-export async function getMorningBrief(userId: string): Promise<YuiMorningBrief> {
+export async function getMorningBrief(
+  userId: string,
+  options: { useAi?: boolean; timeZone?: string } = {},
+): Promise<YuiMorningBrief> {
   const now = new Date();
-
-  const startOfDay = new Date(now);
-  startOfDay.setHours(0, 0, 0, 0);
-  const endOfDay = new Date(now);
-  endOfDay.setHours(23, 59, 59, 999);
+  const timeZone = options.timeZone || "Asia/Tokyo";
+  const { start: startOfDay, end: endOfDay } = getZonedDayWindow(now, timeZone);
 
   const [context, continuity, calendarEvents, recommendations, gmailInsights, unifiedActions, priorityItems, goals, reflections, conversations] = await Promise.all([
-    computeYuiContext(userId),
-    computeYuiContinuity(userId),
+    computeYuiContext(userId, { timeZone }),
+    computeYuiContinuity(userId, { timeZone }),
     listYuiCalendarEvents(userId, { start: startOfDay, end: endOfDay, limit: 50 }),
     listYuiRecommendations(userId, { status: "pending", limit: 50 }),
     getGmailInsights(userId).catch(() => []),
@@ -116,13 +117,15 @@ export async function getMorningBrief(userId: string): Promise<YuiMorningBrief> 
     listYuiConversations(userId, 20),
   ]);
 
-  const greeting = getYuiGreeting(now);
+  const greeting = getYuiGreeting(now, timeZone);
   const unreadEmailCount = gmailInsights.length;
   const actionCount = unifiedActions.length;
   const contextHash = buildContextHash({
     copyVersion: BRIEF_COPY_VERSION,
-    calendarEventIds: calendarEvents.map((event) => event.id).sort(),
-    gmailInsightIds: gmailInsights.map((email) => email.id).sort(),
+    date: getZonedDateKey(now, timeZone),
+    timeZone,
+    calendarEvents: calendarEvents.map((event) => ({ id: event.id, title: event.title, start_at: event.start_at, end_at: event.end_at, status: event.status, updated_at: event.updated_at })).sort((a, b) => a.id.localeCompare(b.id)),
+    gmailInsights: gmailInsights.map((email) => ({ id: email.id, subject: email.subject, reason: email.reason, receivedAt: email.receivedAt })).sort((a, b) => a.id.localeCompare(b.id)),
     goals: goals.map((goal) => ({ id: goal.id, title: goal.title, description: goal.description ?? null, status: goal.status, updated_at: goal.updated_at ?? null })).sort((a, b) => a.id.localeCompare(b.id)),
     reflections: reflections.map((reflection) => ({ id: reflection.id, summary: reflection.summary, insights: reflection.insights, next_actions: reflection.next_actions, created_at: reflection.created_at })).sort((a, b) => a.id.localeCompare(b.id)),
     conversations: conversations.map((conversation) => ({ id: conversation.id, content: conversation.content, created_at: conversation.created_at })).sort((a, b) => a.id.localeCompare(b.id)),
@@ -130,13 +133,17 @@ export async function getMorningBrief(userId: string): Promise<YuiMorningBrief> 
     priorityItems: priorityItems.map((item) => ({ id: item.id, title: item.title, score: item.score, actionType: item.actionType })).sort((a, b) => a.id.localeCompare(b.id)),
   });
 
-  const cachedBrief = await readCachedBrief(userId, contextHash);
-  if (cachedBrief) {
-    return cachedBrief;
+  const useAi = options.useAi !== false;
+  if (useAi) {
+    const cachedBrief = await readCachedBrief(userId, contextHash);
+    if (cachedBrief) {
+      return cachedBrief;
+    }
   }
 
-  const summary = `${greeting}。今日は${calendarEvents.length}件の予定があり、未読メールは${unreadEmailCount}件です。${context.priority}を軸に、${context.nextAction.toLowerCase()}。`;
-  const changeSummary = `新しい情報は${Math.max(0, calendarEvents.length)}件の予定と${Math.max(0, unreadEmailCount)}件の未読メールです。優先事項は${context.priority}に更新されました。`;
+  const nextActionSentence = context.nextAction.trim().replace(/[。．.!！]+$/, "");
+  const summary = `${greeting}。今日は${calendarEvents.length}件の予定があり、未読メールは${unreadEmailCount}件です。${context.priority}を軸に、${nextActionSentence}。`;
+  const changeSummary = `新しい情報は${Math.max(0, calendarEvents.length)}件の予定と${Math.max(0, unreadEmailCount)}件の未読メールです。優先候補は${context.priority}です。`;
 
   const nextBestActions = priorityItems.slice(0, 3);
   const rawBrief: YuiMorningBrief = {
@@ -148,11 +155,15 @@ export async function getMorningBrief(userId: string): Promise<YuiMorningBrief> 
     nextAction: context.nextAction,
     todayEventsCount: calendarEvents.length,
     recommendationCount: recommendations.length,
-    contextSummary: `Goals / Memory / Reflection / Calendar / Gmail / Unified Actions を踏まえ、${context.priority}を今日の中心に据えます。提案件数は${Math.max(0, actionCount)}件です。`,
+    contextSummary: `目的・記憶・振り返り・予定・メール・提案を踏まえ、${context.priority}を今日の中心に据えます。提案件数は${Math.max(0, actionCount)}件です。`,
     changeSummary,
     priorityItems,
     nextBestActions,
   };
+
+  if (!useAi) {
+    return rawBrief;
+  }
 
   const refinedBrief = await refineBriefWithAI(userId, rawBrief);
   await saveCachedBrief(userId, refinedBrief, priorityItems, contextHash);

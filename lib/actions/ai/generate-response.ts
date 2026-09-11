@@ -1,15 +1,12 @@
 "use server";
 
 import { auth } from "@/lib/auth";
-import { decryptKey } from "@/lib/encryption";
 import { revalidatePath } from "next/cache";
 import { generateAiResponseSchema } from "@/lib/validators/ai.validator";
 import { userRepository } from "@/lib/repositories/user.repository";
-import { apiKeyRepository } from "@/lib/repositories/api-key.repository";
-import { aiService } from "@/lib/services/ai.service";
 import { dailyLogRepository } from "@/lib/repositories/daily-log.repository";
-import { buildUserMessage, extractSmallAction } from "@/lib/prompts/yohaku-system-prompt";
-import { prisma } from "@/lib/prisma";
+import { buildUserMessage, extractSmallAction, YOHAKU_SYSTEM_PROMPT } from "@/lib/prompts/yohaku-system-prompt";
+import { checkAIAvailability, generateText } from "@/lib/ai/gemini";
 
 export async function generateAiResponseAction(input: string, moodTag?: string) {
   try {
@@ -33,29 +30,16 @@ export async function generateAiResponseAction(input: string, moodTag?: string) 
       return { ok: false, error: "ユーザーが見つかりません。" };
     }
 
-    // 4. Fetch API Key
-    const [apiKeyRecord, userAiSettings] = await Promise.all([
-      apiKeyRepository.findByUserIdAndProvider(userId, "gemini"),
-      prisma.userAISettings.findUnique({ where: { userId } }),
-    ]);
-
-    const encryptedKey = apiKeyRecord?.encryptedKey || userAiSettings?.encryptedApiKey;
-    if (!encryptedKey) {
-      return { ok: false, error: "APIキーが設定されていません。設定画面からGemini APIキーを登録してください。" };
-    }
-
-    let apiKey = "";
-    try {
-      apiKey = decryptKey(encryptedKey);
-    } catch (e) {
-      return { ok: false, error: "APIキーの復号化に失敗しました。再度設定画面から登録してください。" };
+    // 4. Resolve Premium managed AI or the free user's BYOK connection.
+    if (!(await checkAIAvailability(userId)).available) {
+      return { ok: false, error: "AI接続を利用できません。無料プランの場合は設定画面からGeminiまたはGroq APIキーを登録してください。" };
     }
 
     // 5. Build user message with mood tag context
     const userMessage = buildUserMessage(validatedInput, moodTag);
 
     // 6. Generate Response via AI Service
-    const response = await aiService.createAIResponse("gemini", apiKey, userMessage);
+    const { text: response } = await generateText(userMessage, YOHAKU_SYSTEM_PROMPT, { userId, taskClass: "standard" });
 
     // 7. Extract structured data from response
     const smallAction = extractSmallAction(response);

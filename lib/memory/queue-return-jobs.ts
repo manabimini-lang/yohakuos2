@@ -1,6 +1,5 @@
 import { prisma } from "@/lib/prisma";
 import { CONTENT_ITEM_SAFE_SELECT } from "@/lib/content-item-safe-select";
-import { getStarterJourneyStatus } from "@/lib/ai/starter-journey";
 import { enqueueArchiveRevisitGeneration } from "./archive-revisit";
 import { checkAIAvailability } from "@/lib/ai/gemini";
 
@@ -151,19 +150,17 @@ export async function enqueueResurfacingDetection(
  * Smart enqueueing: only if user has enough data and AI is enabled
  */
 export async function maybeEnqueueReturnJobs(userId: string): Promise<void> {
-  // Check AI availability: user_ai_settings / OAuth / Legacy 統一判定
+  // Premium uses the managed key; free accounts require BYOK.
   const aiResult = await checkAIAvailability(userId);
-  const starterJourney = await getStarterJourneyStatus(userId);
-  const starterJourneyActive = starterJourney.active;
 
   console.log("[AI_AVAILABILITY]", {
     userId,
-    available: aiResult.available || starterJourneyActive,
-    source: aiResult.available ? aiResult.source : starterJourneyActive ? "starter" : null,
+    available: aiResult.available,
+    source: aiResult.source,
   });
 
-  if (!aiResult.available && !starterJourneyActive) {
-    return; // Skip if AI disabled and no starter journey active
+  if (!aiResult.available) {
+    return;
   }
 
   const itemCount = await prisma.contentItem.count({
@@ -173,22 +170,7 @@ export async function maybeEnqueueReturnJobs(userId: string): Promise<void> {
     },
   });
 
-  if (starterJourneyActive) {
-    if (itemCount < 3) {
-      const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
-      const oldItem = await prisma.contentItem.findFirst({
-        where: {
-          userId,
-          createdAt: { lte: twoDaysAgo },
-        },
-        select: CONTENT_ITEM_SAFE_SELECT,
-      });
-
-      if (!oldItem) {
-        return;
-      }
-    }
-  } else if (itemCount < 20) {
+  if (itemCount < 20) {
     return; // Not enough data yet
   }
 

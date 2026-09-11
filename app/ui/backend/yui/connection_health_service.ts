@@ -62,12 +62,16 @@ function buildHealthResponse(input: Partial<ConnectionHealth["google"]>): Connec
 }
 
 export async function getConnectionHealth(userId: string): Promise<ConnectionHealth> {
-  const { data: connection } = await supabaseAdmin
+  const { data: connection, error: connectionError } = await supabaseAdmin
     .from("connections")
     .select("*")
     .eq("user_id", userId)
     .eq("provider", "google_calendar")
     .maybeSingle();
+
+  if (connectionError) {
+    throw new Error("Googleの接続設定を確認できませんでした。");
+  }
 
   if (!connection) {
     return {
@@ -225,7 +229,11 @@ export async function getConnectionHealth(userId: string): Promise<ConnectionHea
     lastError = "サービスの接続状態を確認できませんでした。";
   }
 
-  const calendarConnected = scopes.includes("https://www.googleapis.com/auth/calendar.readonly");
+  // The full calendar scope also grants read access. Accept both it and the
+  // legacy read-only scope so a write-enabled connection is not misclassified
+  // as requiring re-authentication.
+  const calendarConnected = scopes.includes("https://www.googleapis.com/auth/calendar.readonly")
+    || scopes.includes("https://www.googleapis.com/auth/calendar");
   const gmailConnected = scopes.includes("https://www.googleapis.com/auth/gmail.readonly");
 
   if (status === "connected" && (!calendarConnected || !gmailConnected)) {

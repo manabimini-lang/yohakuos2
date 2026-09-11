@@ -109,7 +109,7 @@ export default async function MemberAiHistoryPage({ searchParams }: Props) {
               href="/member/ai/history"
               className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
                 !activeMood
-                  ? "bg-slate-900 border-slate-900 text-foreground"
+                  ? "bg-slate-900 border-slate-900 text-white"
                   : "bg-white border-slate-200 text-muted-foreground hover:border-slate-300"
               }`}
             >

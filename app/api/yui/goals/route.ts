@@ -22,16 +22,16 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    if (!body?.title || !body?.description) {
+    if (!body?.title) {
       return NextResponse.json(
-        { error: "title and description are required" },
+        { error: "title is required" },
         { status: 400 },
       );
     }
 
     const goal = await postYuiGoal({
       title: body.title,
-      description: body.description,
+      description: typeof body.description === "string" ? body.description : "",
       status: body.status,
       progress: body.progress,
     });

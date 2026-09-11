@@ -9,9 +9,45 @@ const supabaseAdmin = new Proxy({} as SupabaseClient, {
   },
 });
 import { getNotificationSettings } from "./notification_service";
-import { generateNotificationPreviews } from "./notification_delivery_service";
+import { generateNotificationPreview } from "./notification_delivery_service";
 import { defaultNotificationProvider, NotificationProvider } from "./notification_provider";
 import type { YuiNotificationLog, YuiNotificationDeliveryStatus } from "./models";
+import { prisma } from "@/lib/prisma";
+import { hasPremiumAccess } from "@/lib/constants/plan";
+import { getMinuteOfDayInZone, getZonedDayWindow } from "./timezone";
+
+async function canUseAutomaticBriefs(userId: string): Promise<boolean> {
+  if (process.env.NODE_ENV !== "production" && userId.startsWith("dev-")) {
+    return true;
+  }
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { plan: true, role: true },
+  });
+  return hasPremiumAccess(user?.plan, user?.role);
+}
+
+async function refreshConnectedSources(userId: string): Promise<void> {
+  try {
+    const { syncGoogleCalendarEvents } = await import("./google_calendar_service");
+    await syncGoogleCalendarEvents(userId);
+  } catch (error) {
+    console.info("[YUI Notification] Calendar sync skipped", {
+      userId,
+      reason: error instanceof Error ? error.message : "unknown",
+    });
+  }
+
+  try {
+    const { syncGmailMessages } = await import("./gmail_service");
+    await syncGmailMessages(userId);
+  } catch (error) {
+    console.info("[YUI Notification] Gmail sync skipped", {
+      userId,
+      reason: error instanceof Error ? error.message : "unknown",
+    });
+  }
+}
 
 export async function logNotificationDelivery(input: {
   userId: string;
@@ -62,15 +98,23 @@ export async function listNotificationLogs(
 export async function deliverNotification(
   userId: string,
   type: "morning" | "evening",
-  provider: NotificationProvider = defaultNotificationProvider
+  provider: NotificationProvider = defaultNotificationProvider,
+  options: { manual?: boolean } = {},
 ): Promise<YuiNotificationLog | null> {
-  const settings = await getNotificationSettings(userId);
-  if (!settings.enabled) {
+  if (!(await canUseAutomaticBriefs(userId))) {
     return null;
   }
 
-  const previews = await generateNotificationPreviews(userId);
-  const preview = type === "morning" ? previews.morning : previews.evening;
+  const settings = await getNotificationSettings(userId);
+  if (!settings.enabled && !options.manual) {
+    return null;
+  }
+  if (settings.notificationLevel === "light" && type === "evening" && !options.manual) {
+    return null;
+  }
+
+  await refreshConnectedSources(userId);
+  const preview = await generateNotificationPreview(userId, type, { timeZone: settings.timezone });
 
   const result = await provider.sendNotification(userId, preview.title, preview.message, type);
 
@@ -93,43 +137,48 @@ export async function getNotificationDeliveryStatus(
 ): Promise<YuiNotificationDeliveryStatus> {
   const settings = await getNotificationSettings(userId);
   const logs = await listNotificationLogs(userId, 20);
+  const automaticBriefsAvailable = await canUseAutomaticBriefs(userId);
 
   const now = new Date();
-  const startOfDay = new Date(now);
-  startOfDay.setHours(0, 0, 0, 0);
-  const endOfDay = new Date(now);
-  endOfDay.setHours(23, 59, 59, 999);
+  const { start: startOfDay, end: endOfDay } = getZonedDayWindow(now, settings.timezone);
 
   const todayMorningLog = logs.find((l) => {
     const t = new Date(l.delivered_at).getTime();
-    return l.type === "morning" && t >= startOfDay.getTime() && t <= endOfDay.getTime();
+    return l.type === "morning" && t >= startOfDay.getTime() && t < endOfDay.getTime();
   });
 
   const todayEveningLog = logs.find((l) => {
     const t = new Date(l.delivered_at).getTime();
-    return l.type === "evening" && t >= startOfDay.getTime() && t <= endOfDay.getTime();
+    return l.type === "evening" && t >= startOfDay.getTime() && t < endOfDay.getTime();
   });
+
+  const toPreview = (log: YuiNotificationLog | undefined) => log
+    ? {
+        type: log.type,
+        title: log.title,
+        message: log.body,
+        generatedAt: log.delivered_at,
+      }
+    : null;
 
   const lastLog = logs[0] || null;
 
   // Calculate next delivery time estimate
   let nextDeliveryTime: string | null = null;
-  if (settings.enabled) {
-    const [morningH, morningM] = settings.morningTime.split(":").map(Number);
-    const [eveningH, eveningM] = settings.eveningTime.split(":").map(Number);
-
-    const morningToday = new Date(now);
-    morningToday.setHours(morningH || 7, morningM || 30, 0, 0);
-
-    const eveningToday = new Date(now);
-    eveningToday.setHours(eveningH || 21, eveningM || 0, 0, 0);
-
-    if (now.getTime() < morningToday.getTime() && !todayMorningLog) {
-      nextDeliveryTime = `本日 ${settings.morningTime}`;
-    } else if (now.getTime() < eveningToday.getTime() && !todayEveningLog) {
-      nextDeliveryTime = `本日 ${settings.eveningTime}`;
-    } else {
-      nextDeliveryTime = `明日 ${settings.morningTime}`;
+  if (automaticBriefsAvailable && settings.enabled) {
+    const configuredMinutes = (value: string) => {
+      const [hour, minute] = value.split(":").map(Number);
+      return (hour || 0) * 60 + (minute || 0);
+    };
+    const nowMinutes = getMinuteOfDayInZone(now, settings.timezone);
+    if (settings.morningEnabled && nowMinutes < configuredMinutes(settings.morningTime) + 60 && !todayMorningLog) {
+      nextDeliveryTime = `本日 ${settings.morningTime}頃`;
+    } else if (settings.eveningEnabled && settings.notificationLevel !== "light" && nowMinutes < configuredMinutes(settings.eveningTime) + 60 && !todayEveningLog) {
+      nextDeliveryTime = `本日 ${settings.eveningTime}頃`;
+    } else if (settings.morningEnabled) {
+      nextDeliveryTime = `明日 ${settings.morningTime}頃`;
+    } else if (settings.eveningEnabled && settings.notificationLevel !== "light") {
+      nextDeliveryTime = `明日 ${settings.eveningTime}頃`;
     }
   }
 
@@ -143,5 +192,8 @@ export async function getNotificationDeliveryStatus(
     nextDeliveryTime,
     isTodayMorningDelivered: Boolean(todayMorningLog),
     isTodayEveningDelivered: Boolean(todayEveningLog),
+    todayMorningNotification: toPreview(todayMorningLog),
+    todayEveningNotification: toPreview(todayEveningLog),
+    automaticBriefsAvailable,
   };
 }

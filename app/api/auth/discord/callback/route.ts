@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { unstable_noStore as noStore } from "next/cache";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -22,6 +23,9 @@ export async function GET(req: NextRequest) {
 
     const cookieStore = cookies();
     const savedState = cookieStore.get("discord_oauth_state")?.value;
+    const returnTo = cookieStore.get("discord_oauth_return_to")?.value === "/yui/settings"
+      ? "/yui/settings?success=discord_connected"
+      : "/settings/account?success=true";
 
     // CSRF Verification
     if (!state || state !== savedState) {
@@ -30,6 +34,7 @@ export async function GET(req: NextRequest) {
 
     // Clean up oauth cookie
     cookieStore.delete("discord_oauth_state");
+    cookieStore.delete("discord_oauth_return_to");
 
     if (!code) {
       return new NextResponse("Authorization code is missing", { status: 400 });
@@ -115,8 +120,28 @@ export async function GET(req: NextRequest) {
       },
     });
 
+    const supabase = getSupabaseAdmin();
+    const { data: existingConnection } = await supabase
+      .from("connections")
+      .select("id")
+      .eq("user_id", session.user.id)
+      .eq("provider", "discord")
+      .maybeSingle();
+    const connectionPayload = {
+      status: "connected",
+      permissions: { identify: true, email: true },
+      metadata: { discordName: discordUser.username, note: "Discord OAuth connected" },
+      connected_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    if (existingConnection) {
+      await supabase.from("connections").update(connectionPayload).eq("id", existingConnection.id);
+    } else {
+      await supabase.from("connections").insert({ user_id: session.user.id, provider: "discord", ...connectionPayload });
+    }
+
     // 4. Redirect user back to account settings
-    return NextResponse.redirect(new URL("/settings/account?success=true", baseUrl));
+    return NextResponse.redirect(new URL(returnTo, baseUrl));
   } catch (error) {
     console.error("[DISCORD_CALLBACK_ERROR]", error);
     return new NextResponse("Internal Server Error", { status: 500 });

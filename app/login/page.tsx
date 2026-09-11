@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: { error?: string; redirect?: string; callbackUrl?: string };
+  searchParams: { error?: string; message?: string; redirect?: string; callbackUrl?: string };
 }) {
   // Redirect if already logged in
   const session = await auth();
@@ -31,8 +31,17 @@ export default async function LoginPage({
       ? "ログインに失敗しました。"
       : null;
 
+  const successMessage = searchParams.message === "signup-success"
+    ? "アカウントを作成しました。登録したメールアドレスとパスワードでログインしてください。最初は、気になることを3行書くところから始められます。"
+    : null;
+
   const isGoogleEnabled = !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
-  const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "";
+  // Preview deployments use an ephemeral Vercel domain that is not registered
+  // with Cloudflare Turnstile. Keep the challenge on production, while allowing
+  // the dedicated Preview environment to be used for acceptance testing.
+  const turnstileSiteKey = process.env.NODE_ENV !== "production" || process.env.VERCEL_ENV === "preview"
+    ? ""
+    : process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "";
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50">
@@ -47,6 +56,12 @@ export default async function LoginPage({
         {errorMessage && (
           <div className="mb-5 rounded-xl border border-rose-100 bg-rose-50 p-4 text-sm text-rose-600 text-center">
             {errorMessage}
+          </div>
+        )}
+
+        {successMessage && (
+          <div className="mb-5 rounded-xl border border-emerald-100 bg-emerald-50 p-4 text-sm leading-6 text-emerald-700 text-center">
+            {successMessage}
           </div>
         )}
 

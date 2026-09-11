@@ -6,11 +6,9 @@ import { MemoryTimeline } from "@/components/memory/MemoryTimeline";
 import { ThemeCluster } from "@/components/memory/ThemeCluster";
 import { WeeklyReflection } from "@/components/memory/WeeklyReflection";
 import { ResurfacedMemory } from "@/components/memory/ResurfacedMemory";
-import { MemoryResonance } from "@/components/memory/MemoryResonance";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
-import { getStarterJourneyStatus } from "@/lib/ai/starter-journey";
-import { StarterJourneyBanner } from "@/components/ai/StarterJourneyBanner";
+import { checkAIAvailability } from "@/lib/ai/gemini";
 
 export const metadata = {
   title: "Memory - YOHAKU",
@@ -48,14 +46,8 @@ export default async function MemoryPage() {
   });
 
   // 5. Check AI connection status
-  const [userSettings, starterJourney] = await Promise.all([
-    prisma.userAISettings.findUnique({
-      where: { userId },
-    }),
-    getStarterJourneyStatus(userId),
-  ]);
-
-  const hasAiAccess = userSettings?.isEnabled || starterJourney.active;
+  const aiAvailability = await checkAIAvailability(userId);
+  const hasAiAccess = aiAvailability.available;
 
   return (
     <div className="max-w-5xl mx-auto py-12 px-6 space-y-24">
@@ -84,25 +76,24 @@ export default async function MemoryPage() {
           <p className="text-xs font-light tracking-widest text-black/40 dark:text-foreground/40 uppercase group-hover:text-black/60 dark:group-hover:text-foreground/60 transition-colors">静かな戻り</p>
           <p className="text-sm font-light text-black/70 dark:text-foreground/70 mt-1 group-hover:text-black/80 dark:group-hover:text-foreground/80 transition-colors">遠い断片が戻ってくる</p>
         </Link>
+        <Link
+          href="/life"
+          className="flex-1 px-6 py-4 rounded-lg border border-black/10 dark:border-border bg-black/[0.02] dark:bg-card hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition-colors text-center group"
+        >
+          <p className="text-xs font-light tracking-widest text-black/40 dark:text-foreground/40 uppercase group-hover:text-black/60 dark:group-hover:text-foreground/60 transition-colors">人生の層</p>
+          <p className="text-sm font-light text-black/70 dark:text-foreground/70 mt-1 group-hover:text-black/80 dark:group-hover:text-foreground/80">長く続くテーマを見る</p>
+        </Link>
       </nav>
 
       {/* AI未接続対応 */}
       {!hasAiAccess && (
         <section className="p-8 rounded-2xl border border-black/10 dark:border-border bg-black/[0.02] dark:bg-card space-y-4">
-          {starterJourney.active ? (
-            <>
-              <StarterJourneyBanner
-                remainingHours={starterJourney.remainingHours}
-                remainingMinutes={starterJourney.remainingMinutes}
-              />
-            </>
-          ) : (
-            <>
+          <>
               <p className="text-sm text-black/80 dark:text-foreground/80 leading-relaxed font-light">
                 AI接続がまだ行われていません。
               </p>
               <p className="text-xs text-black/50 dark:text-foreground/50 leading-relaxed font-light">
-                Gemini APIキーを設定すると、保存した記録が静かに整えられ、パーソナルAIとの対話や、内面の風景の描画が始まります。
+                AIを接続すると、保存した記録が静かに整えられ、パーソナルAIとの対話や、内面の風景の描画が始まります。PremiumはAPIキー不要です。
               </p>
               <Link 
                 href="/yui/settings"
@@ -111,8 +102,7 @@ export default async function MemoryPage() {
                 AI設定へ
                 <ChevronRight className="w-3 h-3 ml-1 group-hover:translate-x-1 transition-transform" />
               </Link>
-            </>
-          )}
+          </>
         </section>
       )}
 
@@ -137,12 +127,9 @@ export default async function MemoryPage() {
         </section>
       )}
 
-      {/* Long-term Themes (Resonance + Theme Cluster) */}
+      {/* Long-term themes */}
       {themes.length > 0 && (
         <>
-          {/* Resonance Section */}
-          <MemoryResonance userId={userId} themes={themes} />
-
           {/* Theme Cluster */}
           <ThemeCluster themes={themes} />
         </>

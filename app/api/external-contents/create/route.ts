@@ -2,12 +2,17 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { isAdminAccessEmail } from "@/lib/auth/admin-access";
 
 export async function POST(req: Request) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    if (!isAdminAccessEmail(session.user.email)) {
+      return NextResponse.json({ error: "Forbidden: Admin only" }, { status: 403 });
     }
 
     const body = await req.json();

@@ -57,9 +57,9 @@ export async function buildCompressedContext(userId: string): Promise<Compressed
     // Generate each compression type
     const [rollingSummary, thematicCompression, emotionalAbstraction, meaningCompression, seasonalSummary] =
         await Promise.all([
-            generateRollingSummary(recentReflections, recentMessages),
-            generateThematicCompression(recentMemories),
-            generateEmotionalAbstraction(energyStates, recentReflections),
+            generateRollingSummary(userId, recentReflections, recentMessages),
+            generateThematicCompression(userId, recentMemories),
+            generateEmotionalAbstraction(userId, energyStates, recentReflections),
             generateMeaningCompression(userId),
             generateSeasonalSummary(userId),
         ]);
@@ -81,6 +81,7 @@ export async function buildCompressedContext(userId: string): Promise<Compressed
 }
 
 async function generateRollingSummary(
+    userId: string,
     reflections: Array<{ title: string | null; content: string | null; sentiment: string | null }>,
     messages: Array<{ role: string; content: string; createdAt: Date }>
 ): Promise<string> {
@@ -106,11 +107,12 @@ ${messageText}
 
 圧縮（3行以内）:`;
 
-    const { text } = await generateText(prompt);
+    const { text } = await generateText(prompt, undefined, { userId, allowEnvFallback: true });
     return text.slice(0, MAX_TOKENS_PER_SECTION * 4);
 }
 
 async function generateThematicCompression(
+    userId: string,
     memories: Array<{ type: string; title: string; content: string; confidence: number }>
 ): Promise<string> {
     if (memories.length === 0) return "テーマ別データはありません。";
@@ -127,11 +129,12 @@ ${memoryText}
 
 テーマ別要約:`;
 
-    const { text } = await generateText(prompt);
+    const { text } = await generateText(prompt, undefined, { userId, allowEnvFallback: true });
     return text.slice(0, MAX_TOKENS_PER_SECTION * 4);
 }
 
 async function generateEmotionalAbstraction(
+    userId: string,
     energies: Array<{ state: string; intensity: number; note: string | null }>,
     reflections: Array<{ title: string | null; content: string | null; sentiment: string | null }>
 ): Promise<string> {
@@ -160,7 +163,7 @@ ${reflectionSentiments}
 
 感情の傾向（2行）:`;
 
-    const { text } = await generateText(prompt);
+    const { text } = await generateText(prompt, undefined, { userId, allowEnvFallback: true });
     return text.slice(0, MAX_TOKENS_PER_SECTION * 4);
 }
 
@@ -185,7 +188,7 @@ ${meaningText}
 
 圧縮:`;
 
-    const { text } = await generateText(prompt, MEANING_SYSTEM_PROMPT);
+    const { text } = await generateText(prompt, MEANING_SYSTEM_PROMPT, { userId, allowEnvFallback: true });
     return text.slice(0, MAX_TOKENS_PER_SECTION * 4);
 }
 

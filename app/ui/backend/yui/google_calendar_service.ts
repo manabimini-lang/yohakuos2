@@ -9,7 +9,6 @@ const supabaseAdmin = new Proxy({} as SupabaseClient, {
   },
 });
 import { upsertYuiCalendarEvent } from "./service";
-import { refreshMorningBriefCache } from "./brief_service";
 import {
   readGoogleTokens,
   withEncryptedGoogleTokens,
@@ -64,7 +63,7 @@ const GOOGLE_OAUTH_SCOPES = [
   "openid",
   "email",
   "profile",
-  "https://www.googleapis.com/auth/calendar.readonly",
+  "https://www.googleapis.com/auth/calendar",
   "https://www.googleapis.com/auth/gmail.readonly",
 ];
 
@@ -125,7 +124,7 @@ export async function getGoogleCalendarStatus(userId: string): Promise<GoogleCal
     });
   }
 
-  if (!scope.includes("calendar.readonly") || !scope.includes("gmail.readonly")) {
+  if (!scope.includes("/auth/calendar") || !scope.includes("gmail.readonly")) {
     return buildGoogleConnectionStatus({
       connected: false,
       status: "needs_reauth",
@@ -275,6 +274,7 @@ export async function handleGoogleCallback(
       .update({
         status: "connected",
         connected_at: new Date().toISOString(),
+        permissions: { calendar_read: true, calendar_write: true },
         metadata: newMetadata,
         updated_at: new Date().toISOString(),
       })
@@ -289,7 +289,7 @@ export async function handleGoogleCallback(
       user_id: userId,
       provider: "google_calendar",
       status: "connected",
-      permissions: { readonly: true },
+      permissions: { calendar_read: true, calendar_write: true },
       metadata: newMetadata,
       connected_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -320,6 +320,51 @@ export async function handleGoogleCallback(
   }
 }
 
+/** Create an event in the connected user's primary Google Calendar. */
+export async function createGoogleCalendarEvent(
+  userId: string,
+  input: { title: string; description?: string; startAt: string; endAt: string },
+): Promise<{ id: string; htmlLink: string | null }> {
+  const { accessToken } = await getValidAccessToken(userId);
+  const response = await fetch("https://www.googleapis.com/calendar/v3/calendars/primary/events", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      summary: input.title,
+      description: input.description ?? "",
+      start: { dateTime: input.startAt },
+      end: { dateTime: input.endAt },
+      // Respect the reminder rules configured on the user's primary Google
+      // Calendar. Without this, an event can be created successfully while no
+      // reminder is attached to it.
+      reminders: { useDefault: true },
+    }),
+  });
+
+  if (!response.ok) {
+    if (response.status === 401 || response.status === 403) {
+      throw new Error("Google Calendarへの書き込み権限が必要です。設定から再連携してください。");
+    }
+    throw new Error(`Google Calendarへの予定登録に失敗しました (${response.status})`);
+  }
+
+  const event = await response.json() as { id?: string; htmlLink?: string };
+  if (!event.id) throw new Error("Google Calendarから予定IDを取得できませんでした");
+  return { id: event.id, htmlLink: event.htmlLink ?? null };
+}
+
+export async function deleteGoogleCalendarEvent(userId: string, eventId: string) {
+  const { accessToken } = await getValidAccessToken(userId);
+  const response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${encodeURIComponent(eventId)}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!response.ok && response.status !== 404) throw new Error("Google Calendarの予定を取り消せませんでした");
+}
+
 export async function getValidAccessToken(userId: string): Promise<{ accessToken: string; connectionId: string }> {
   const { data: connection } = await supabaseAdmin
     .from("connections")
@@ -343,7 +388,7 @@ export async function getValidAccessToken(userId: string): Promise<{ accessToken
     throw new Error("Google Calendar needs re-authentication");
   }
 
-  if (!scope.includes("calendar.readonly") || !scope.includes("gmail.readonly")) {
+  if (!scope.includes("/auth/calendar") || !scope.includes("gmail.readonly")) {
     throw new Error("Google Calendar/Gmail scope is missing. Please reconnect.");
   }
 
@@ -417,7 +462,7 @@ export async function syncGoogleCalendarEvents(userId: string): Promise<{ synced
 
   const url = `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${encodeURIComponent(
     timeMin,
-  )}&timeMax=${encodeURIComponent(timeMax)}&singleEvents=true&orderBy=startTime`;
+  )}&timeMax=${encodeURIComponent(timeMax)}&singleEvents=true&showDeleted=true&orderBy=startTime`;
 
   const response = await fetch(url, {
     headers: { Authorization: `Bearer ${accessToken}` },
@@ -439,7 +484,18 @@ export async function syncGoogleCalendarEvents(userId: string): Promise<{ synced
   let syncedCount = 0;
 
   for (const item of items) {
-    if (!item.id || item.status === "cancelled") continue;
+    if (!item.id) continue;
+
+    if (item.status === "cancelled") {
+      await supabaseAdmin
+        .from("calendar_events")
+        .update({ status: "cancelled", updated_at: new Date().toISOString() })
+        .eq("user_id", userId)
+        .eq("connection_id", connectionId)
+        .eq("provider", "google_calendar")
+        .eq("external_id", item.id);
+      continue;
+    }
 
     const startAt = item.start?.dateTime || item.start?.date;
     const endAt = item.end?.dateTime || item.end?.date;
@@ -480,12 +536,6 @@ export async function syncGoogleCalendarEvents(userId: string): Promise<{ synced
         updated_at: lastSyncAt,
       })
       .eq("id", connectionId);
-  }
-
-  try {
-    await refreshMorningBriefCache(userId);
-  } catch (error) {
-    console.error("Failed to refresh cached morning brief after calendar sync", error);
   }
 
   return { syncedCount, lastSyncAt };

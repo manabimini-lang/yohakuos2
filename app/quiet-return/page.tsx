@@ -4,8 +4,7 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getStarterJourneyStatus } from "@/lib/ai/starter-journey";
-import { StarterJourneyBanner } from "@/components/ai/StarterJourneyBanner";
+import { checkAIAvailability } from "@/lib/ai/gemini";
 import {
   detectReturningFragments,
   detectTemporalEchoes,
@@ -21,7 +20,7 @@ import { ReturnDriftTimeline } from "@/components/memory/ReturnDriftTimeline";
 
 export const metadata: Metadata = {
   title: "Quiet Return | YOHAKU",
-  description: "静かに戻ってくる断片を感じる。",
+  description: "過去の記録から、今に役立つ気づきを見つけます。",
 };
 
 export default async function QuietReturnPage() {
@@ -32,18 +31,15 @@ export default async function QuietReturnPage() {
 
   const userId = session.user.id;
 
-  // In parallel: fetch AI settings, starter journey state and return patterns
-  const [userAiSettings, starterJourney, fragments, echoes, resurfacings] = await Promise.all([
-    prisma.userAISettings.findUnique({
-      where: { userId },
-    }),
-    getStarterJourneyStatus(userId),
+  // In parallel: fetch plan-aware AI access and return patterns.
+  const [aiAvailability, fragments, echoes, resurfacings] = await Promise.all([
+    checkAIAvailability(userId),
     detectReturningFragments(userId),
     detectTemporalEchoes(userId),
     detectCalmResurfacing(userId),
   ]);
 
-  const hasAiAccess = userAiSettings?.isEnabled || starterJourney.active;
+  const hasAiAccess = aiAvailability.available;
 
   // Filter to only significant returns
   const significantFragments = fragments.filter(isSignificantReturn).slice(0, 4);
@@ -88,37 +84,30 @@ export default async function QuietReturnPage() {
               className="flex-1 px-4 py-3 rounded-lg border border-black/10 dark:border-border bg-black/[0.04] dark:bg-white/[0.04] text-center"
             >
               <p className="text-xs font-light tracking-widest text-black/50 dark:text-foreground/50 uppercase">現在地</p>
-              <p className="text-xs font-light text-black/70 dark:text-foreground/70 mt-0.5">静かな戻り</p>
+              <p className="text-xs font-light text-black/70 dark:text-foreground/70 mt-0.5">過去の記録を見返す</p>
             </Link>
           </nav>
 
-          {/* Philosophy introduction */}
+          {/* What this page does */}
           <div className="max-w-2xl space-y-4">
             <p className="text-base sm:text-lg font-light text-black/70 dark:text-foreground/70 leading-relaxed">
-              存在は、ただ前へ進み続けるだけではない。
+              以前に書いた記録を、今の自分に関係がありそうなタイミングで表示します。
             </p>
             <p className="text-base sm:text-lg font-light text-black/60 dark:text-foreground/60 leading-relaxed">
-              以前の断片や、遠い沈黙や、薄れていた余白は、
+              繰り返し出てくるテーマや、まだ考え中のことを見つけて、
               <br />
-              少し違う静けさで、また戻ってくることがある。
+              必要なら今日の行動に反映できます。
             </p>
           </div>
 
           {/* AI status */}
-          {starterJourney.active && !userAiSettings?.isEnabled ? (
-            <div className="mt-8 px-6">
-              <StarterJourneyBanner
-                remainingHours={starterJourney.remainingHours}
-                remainingMinutes={starterJourney.remainingMinutes}
-              />
-            </div>
-          ) : !userAiSettings?.isEnabled ? (
+          {!hasAiAccess ? (
             <div className="mt-8 p-8 rounded-2xl border border-black/10 dark:border-border bg-black/[0.02] dark:bg-card space-y-4">
               <p className="text-sm text-black/80 dark:text-foreground/80 leading-relaxed font-light">
                 AI接続がまだ行われていません。
               </p>
               <p className="text-xs text-black/50 dark:text-foreground/50 leading-relaxed font-light">
-                Gemini APIキーを設定すると、保存した記録が静かに整えられ、パーソナルAIとの対話や、内面の風景の描画が始まります。
+                AIを接続すると、保存した記録が静かに整えられ、パーソナルAIとの対話や、内面の風景の描画が始まります。PremiumはAPIキー不要です。
               </p>
               <Link 
                 href="/yui/settings"
@@ -168,7 +157,7 @@ export default async function QuietReturnPage() {
                     穏やかな再浮上
                   </h2>
                   <p className="text-sm font-light text-black/50 dark:text-foreground/50">
-                    長い沈黙のあと、小さな余白が戻ってきている
+                    しばらく見ていなかった記録の中から、今に関係しそうなもの
                   </p>
                 </div>
 
@@ -188,7 +177,7 @@ export default async function QuietReturnPage() {
                     時間の響き
                   </h2>
                   <p className="text-sm font-light text-black/50 dark:text-foreground/50">
-                    遠く離れた時間で、似た言葉が静かに現れている
+                    時期が違っても、似た言葉やテーマが出てきた記録
                   </p>
                 </div>
 
@@ -212,17 +201,15 @@ export default async function QuietReturnPage() {
           /* Empty state */
           <div className="py-24 sm:py-32 text-center space-y-6">
             <p className="text-lg sm:text-xl font-light text-black/50 dark:text-foreground/50">
-              遠い断片が戻ってくるのを待っています。
+              まだ見返せる記録がありません。
             </p>
             <p className="text-sm font-light text-black/40 dark:text-foreground/40 max-w-md mx-auto leading-relaxed">
-              YOHAKUで、十分な記録が積み重なると、
+              記録が増えると、過去の内容から
               <br />
-              静かな戻りの流れが感じられるようになります。
+              今に役立ちそうなものをここに表示します。
             </p>
             <p className="text-xs font-light text-black/25 dark:text-foreground/25 pt-8">
-              存在は、単なる積み重ねではなく、
-              <br />
-              静かな往来を繰り返しています。
+              まずは5件以上の記録を残してみてください。
             </p>
           </div>
         )}
@@ -237,11 +224,9 @@ export default async function QuietReturnPage() {
             Quiet Return Philosophy
           </p>
           <p className="text-sm font-light text-black/40 dark:text-foreground/40 leading-relaxed">
-            戻ることにも、静かな流れがある。
+            YOHAKUは、過去の記録を今の気づきに活かすための機能を提供します。
             <br />
-            YOHAKUは、記録を積み重ねるだけでなく、
-            <br />
-            存在の非直線性を映す余白でもある。
+            表示された内容は、いつでも非表示にできます。
           </p>
         </div>
       </div>

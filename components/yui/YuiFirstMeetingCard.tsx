@@ -6,9 +6,10 @@ import { Sparkles, Calendar, ArrowRight } from "lucide-react";
 
 interface YuiFirstMeetingCardProps {
   onComplete: () => void;
+  onStartWithGoal: () => void;
 }
 
-export function YuiFirstMeetingCard({ onComplete }: YuiFirstMeetingCardProps) {
+export function YuiFirstMeetingCard({ onComplete, onStartWithGoal }: YuiFirstMeetingCardProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleConnectCalendar = () => {
@@ -31,6 +32,18 @@ export function YuiFirstMeetingCard({ onComplete }: YuiFirstMeetingCardProps) {
       console.error("Failed to skip onboarding", e);
       onComplete();
     } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleStartWithGoal = async () => {
+    setIsSubmitting(true);
+    try {
+      await fetch("/api/yui/onboarding/complete", { method: "POST" });
+    } catch (e) {
+      console.error("Failed to complete onboarding", e);
+    } finally {
+      onStartWithGoal();
       setIsSubmitting(false);
     }
   };
@@ -77,52 +90,47 @@ export function YuiFirstMeetingCard({ onComplete }: YuiFirstMeetingCardProps) {
           </div>
         </div>
 
-        {/* Second Card: Proposal for Google Calendar */}
+        {/* First value: a goal can be saved without AI or Google setup. */}
         <div className="rounded-3xl border border-primary/20 bg-background/90 p-6 space-y-4 shadow-sm">
           <div className="flex items-center gap-2 text-primary">
             <Sparkles className="h-5 w-5" />
             <h2 className="text-lg font-semibold tracking-tight text-foreground">
-              より正確な提案を行うために
+              最初は、今日の目的を一つだけ
             </h2>
           </div>
           <p className="text-sm leading-6 text-muted-foreground">
-            Google Calendarを連携すると、あなたの予定を把握し、空き時間や集中時間を自動で発見・提案できるようになります。
+            AI設定やGoogle連携はあとから追加できます。まず、今週進めたいことや今日気になっていることを一つ保存してみましょう。
           </p>
-          <ul className="space-y-2 text-xs font-medium text-foreground/80">
-            <li className="flex items-center gap-2">
-              <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-              本日の予定とタイムブロックの把握
-            </li>
-            <li className="flex items-center gap-2">
-              <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-              集中時間の自動発見とスロット提案
-            </li>
-            <li className="flex items-center gap-2">
-              <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-              朝礼（Morning Brief）の最適化
-            </li>
-          </ul>
 
           <div className="pt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
             <button
               type="button"
-              onClick={handleConnectCalendar}
+              disabled={isSubmitting}
+              onClick={() => void handleStartWithGoal()}
               className="yohaku-btn w-full sm:w-auto inline-flex items-center justify-center gap-2 py-3 px-6 text-sm font-semibold shadow-md"
             >
-              <Calendar className="h-4 w-4" />
-              <span>Google Calendarを連携する</span>
+              <Sparkles className="h-4 w-4" />
+              <span>{isSubmitting ? "準備中..." : "目的を一つ登録する"}</span>
               <ArrowRight className="h-4 w-4" />
             </button>
 
             <button
               type="button"
               disabled={isSubmitting}
-              onClick={() => void handleSkipOnboarding()}
+              onClick={handleConnectCalendar}
               className="w-full sm:w-auto text-xs text-muted-foreground hover:text-foreground underline underline-offset-4 py-2 px-4 transition text-center"
             >
-              {isSubmitting ? "設定中..." : "あとで設定する"}
+              Google Calendarを連携する（任意）
             </button>
           </div>
+          <button
+            type="button"
+            disabled={isSubmitting}
+            onClick={() => void handleSkipOnboarding()}
+            className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-4"
+          >
+            {isSubmitting ? "設定中..." : "あとで設定する"}
+          </button>
         </div>
       </Card>
     </div>

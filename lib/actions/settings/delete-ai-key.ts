@@ -12,11 +12,13 @@ export async function deleteAiKeyAction() {
     }
     const userId = session.user.id;
 
-    // Remove encrypted key and disable AI in user_ai_settings (source of truth)
-    await prisma.userAISettings.updateMany({
-      where: { userId },
-      data: { encryptedApiKey: null, isEnabled: false },
-    });
+    await prisma.$transaction([
+      prisma.userApiKey.deleteMany({ where: { userId } }),
+      prisma.userAISettings.updateMany({
+        where: { userId },
+        data: { encryptedApiKey: null, isEnabled: false },
+      }),
+    ]);
 
     revalidatePath("/member/settings");
     return { ok: true };

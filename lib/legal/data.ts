@@ -23,7 +23,7 @@ export const legalDocs: Record<string, LegalDoc> = {
     id: "terms",
     title: "利用規約",
     description: "YOHAKUのサービスをご利用いただくにあたっての条件を定めています。本サービスをご利用になる前に必ずお読みください。",
-    lastUpdated: "2026年5月18日",
+    lastUpdated: "2026年9月9日",
     sections: [
       {
         id: "agreement",
@@ -185,7 +185,7 @@ export const legalDocs: Record<string, LegalDoc> = {
             type: "list",
             items: [
               "個人ログの端末保存：ユーザーが日々入力する日記、思考整理等の「個人ログ」データは、すべてユーザーのローカル端末内（ブラウザのIndexedDB領域）に保存されます。当事務局のサーバーへ自動的に送信・収集されることはありません。",
-              "AI機能と外部API連携：AIによる振り返り機能や整理機能の実行時には、ユーザーがその時点で入力した内容がAPI（Google Gemini API）を介して一時的に送信・処理されます。このデータはAIモデル의追加学習や開発目的で無断に再利用されることはありません。",
+              "AI機能と外部API連携：AIによる振り返り機能や整理機能の実行時には、ユーザーがその時点で入力した内容が、選択したGoogle Gemini APIまたはGroq APIへ一時的に送信・処理されます。Premiumでは当事務局が管理するGoogle Geminiの有料接続を使用します。無料プランでユーザー自身のAPIキーを使用する場合のデータ取り扱い・料金・利用条件は、そのキーに適用される各提供者の契約に従います。",
               "Discord共有時のみの通信：ユーザーが自分の意志で明示的に「Discordへ共有する」等のボタンを操作し送信を完了させた場合に限り、該当データがDiscordのWebhook等を介して外部サーバーへ送信されます。操作を行わない限り、データが自動的にサーバーへ送信されることはありません。"
             ]
           }
@@ -197,8 +197,16 @@ export const legalDocs: Record<string, LegalDoc> = {
     id: "privacy",
     title: "プライバシーポリシー",
     description: "本サービスにおけるユーザーの個人情報の取り扱いおよびデータセキュリティ方針について詳しく定めています。",
-    lastUpdated: "2026年5月18日",
+    lastUpdated: "2026年9月9日",
     sections: [
+      {
+        id: "product-attribution",
+        title: "記事からの利用状況の計測",
+        blocks: [
+          { type: "paragraph", text: "メディアの記事から登録画面へ移動した場合、記事を識別する情報を最大30分間Cookieに保存し、登録完了時にアカウントと関連付けます。登録、提案を採用して目標やタスクを保存した初回の操作、決済成功を確認し、記事や利用開始の案内を改善するために利用します。" },
+          { type: "paragraph", text: "これらの計測情報はサービスの管理者向けログに保存します。記事識別情報、アカウント識別情報、イベントの種類・日時、決済の金額・通貨等を含みます。メモや相談の本文、AI APIキーはこの計測ログに含めません。" },
+        ],
+      },
       {
         id: "information-collection",
         title: "1. 取得する情報",
@@ -256,7 +264,7 @@ export const legalDocs: Record<string, LegalDoc> = {
           {
             type: "list",
             items: [
-              "入力データは安全に送信され、AIモデルの改善や学習データとして無断で再利用されることはありません。",
+              "Premiumでは当事務局が管理するGoogle Gemini APIの有料接続を使用します。無料プランでGeminiまたはGroqのユーザー自身のAPIキーを使用する場合は、選択した提供者の契約とデータ取り扱い条件が適用されます。",
               "個人を特定できる情報（氏名、住所、決済情報等）をAIの対話プロンプトに直接入力しないようご注意ください。"
             ]
           }
@@ -332,7 +340,7 @@ export const legalDocs: Record<string, LegalDoc> = {
     id: "legal",
     title: "特定商取引法に基づく表示",
     description: "特定商取引法に基づき、本サービスを有料で提供する事業者および販売条件についての情報を公開しています。",
-    lastUpdated: "2026年5月18日",
+    lastUpdated: "2026年9月9日",
     sections: [
       {
         id: "operator",
@@ -358,6 +366,10 @@ export const legalDocs: Record<string, LegalDoc> = {
           {
             type: "paragraph",
             text: "有料プラン（PAID_MEMBER）：月額 980円（税込）"
+          },
+          {
+            type: "paragraph",
+            text: "Premiumの料金には、表示する利用上限内のAI利用料が含まれます。無料プランでユーザー自身のGeminiまたはGroq APIキーを使用する場合、選択した提供者に対する料金が発生することがあり、その費用はユーザーの負担となります。"
           },
           {
             type: "paragraph",
@@ -414,7 +426,7 @@ export const legalDocs: Record<string, LegalDoc> = {
     id: "guidelines",
     title: "コミュニティガイドライン",
     description: "YOHAKUの公式コミュニティ（Discord等）に参加するすべての皆様が、安心して自分を語り、振り返ることができる「静かな居場所」を守るためのガイドラインです。",
-    lastUpdated: "2026年5月18日",
+    lastUpdated: "2026年9月9日",
     sections: [
       {
         id: "philosophy",
@@ -578,9 +590,23 @@ export const legalDocs: Record<string, LegalDoc> = {
           {
             type: "list",
             items: [
-              "API経由で送信されたユーザーの入力ログやテキストデータは、外部AIモデルのトレーニング（追加学習）のために利用されることはありません。",
+              "Premiumでは当事務局が管理する有料接続を使用します。無料プランでユーザー自身のAPIキーを使用する場合は、Google側の契約とデータ取り扱い条件をご確認ください。",
               "ユーザーのログデータはデータベース内に厳重に暗号化されて保存され、本人の同意なしに第三者へ提供されることもありません。"
             ]
+          }
+        ]
+      },
+      {
+        id: "usage-limits",
+        title: "6. AI利用枠と安全上の制限",
+        blocks: [
+          {
+            type: "paragraph",
+            text: "無料プランのAI利用枠は月50回、Premiumは月500回です。AI相談、提案、要約、自動レポートなど、YOHAKU上で実行されるAI処理の合計回数として数えます。正常に完了しなかった処理は月間回数に含めません。"
+          },
+          {
+            type: "paragraph",
+            text: "安定運用と不正利用防止のため、入力・出力の長さ、一定時間内の送信回数、日次・月次の処理量に別途上限を設けます。このため、著しく大きな入力や集中的な利用では月間回数に達する前でも一時的に利用を制限する場合があります。"
           }
         ]
       }

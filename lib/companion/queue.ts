@@ -104,7 +104,10 @@ ${conversationText}
 
 要約:`;
 
-    const { text } = await generateText(summaryPrompt);
+    const { text } = await generateText(summaryPrompt, undefined, {
+        userId: job.userId,
+        allowEnvFallback: true,
+    });
 
     // Save summary as system message
     await prisma.companionMessage.create({
@@ -162,7 +165,10 @@ ${memoryText}
 
 圧縮結果:`;
 
-    const { text } = await generateText(compressionPrompt);
+    const { text } = await generateText(compressionPrompt, undefined, {
+        userId,
+        allowEnvFallback: true,
+    });
 
     const expiresAt = await getExpiresAt(userId);
 

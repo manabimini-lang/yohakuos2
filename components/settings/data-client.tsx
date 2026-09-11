@@ -201,7 +201,7 @@ export function DataSettingsClient() {
             <button
               onClick={handleExport}
               disabled={exporting}
-              className="inline-flex items-center justify-center space-x-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-foreground font-medium px-4 py-2.5 transition-colors text-xs shadow-sm disabled:opacity-50"
+              className="inline-flex items-center justify-center space-x-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-medium px-4 py-2.5 transition-colors text-xs shadow-sm disabled:opacity-50"
             >
               {exporting ? (
                 <>

@@ -232,7 +232,7 @@ export function ProfileClient() {
               onClick={() => handleRoadChange(r.id)}
               className={`flex-1 text-left px-4 py-3 rounded-xl border text-xs transition-all duration-300 ${
                 currentRoadId === r.id
-                  ? "border-slate-800 bg-slate-900 text-foreground font-medium shadow-sm"
+                  ? "border-slate-800 bg-slate-900 text-white font-medium shadow-sm"
                   : "border-slate-100 bg-white text-slate-600 hover:border-slate-200"
               }`}
             >
@@ -258,7 +258,7 @@ export function ProfileClient() {
           >
             <div className="flex items-center space-x-2.5">
               <Key className="w-4 h-4 text-muted-foreground stroke-[1.5]" />
-              <span>AI（Gemini API）の接続設定</span>
+              <span>AI（Gemini / Groq API）の接続設定</span>
             </div>
             <ChevronLeft className="w-3.5 h-3.5 rotate-180 text-slate-350" />
           </Link>

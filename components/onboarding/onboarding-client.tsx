@@ -2,17 +2,41 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { setCurrentRoad, addPersonalLog } from "@/lib/utils/log-db";
-import { updateAiKeyAction } from "@/lib/actions/settings/update-ai-key";
-import { saveSecureApiKey } from "@/lib/utils/secure-storage";
-import { Sparkles, Route, PenLine, Key, ArrowRight, Loader2 } from "lucide-react";
+import { setCurrentRoad } from "@/lib/utils/log-db";
+import { Sparkles, Route, PenLine, Key, ArrowRight, Loader2, Eye, EyeOff } from "lucide-react";
+
+const starterPrompts = [
+  {
+    title: "今、気になっていることは？",
+    description: "仕事でも生活でも、頭に残っていることを1つ書いてください。",
+    placeholder: "例：今週は会議が多くて、集中する時間が足りない",
+    tag: "今の関心",
+  },
+  {
+    title: "最近、うまくいったことは？",
+    description: "小さなことで構いません。続けたいことを1つ書いてください。",
+    placeholder: "例：朝に30分だけ作業すると、落ち着いて始められた",
+    tag: "うまくいったこと",
+  },
+  {
+    title: "次に進めたいことは？",
+    description: "今日か今週にできそうなことを1つ書いてください。",
+    placeholder: "例：明日の午前中に企画書の見出しだけ作る",
+    tag: "次に進めたいこと",
+  },
+] as const;
 
 export function OnboardingClient() {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [selectedRoad, setSelectedRoad] = useState("");
   const [firstLogText, setFirstLogText] = useState("");
+  const [starterLogIndex, setStarterLogIndex] = useState(0);
+  const [savingLog, setSavingLog] = useState(false);
+  const [logError, setLogError] = useState("");
   const [apiKey, setApiKey] = useState("");
+  const [provider, setProvider] = useState<"gemini" | "groq">("gemini");
+  const [isApiKeyVisible, setIsApiKeyVisible] = useState(false);
   const [testingKey, setTestingKey] = useState(false);
   const [keyError, setKeyError] = useState("");
 
@@ -23,14 +47,50 @@ export function OnboardingClient() {
   };
 
   const handleSaveFirstLog = async () => {
-    if (firstLogText.trim()) {
-      await addPersonalLog({
-        road: selectedRoad || "beginner",
-        content: firstLogText.trim(),
-        mood: 3,
-        tags: ["はじめの一歩"],
+    if (!firstLogText.trim() || savingLog) return;
+    setSavingLog(true);
+    setLogError("");
+    try {
+      const content = firstLogText.trim();
+      const response = await fetch("/api/yui/memories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: starterPrompts[starterLogIndex].title,
+          summary: content.slice(0, 180),
+          body: content,
+          importance: 3,
+          tags: ["はじめの一歩", starterPrompts[starterLogIndex].tag, selectedRoad || "beginner"],
+          source_type: "onboarding",
+        }),
       });
+      if (!response.ok) throw new Error("Failed to save onboarding memory");
+      if (starterLogIndex < starterPrompts.length - 1) {
+        setStarterLogIndex((current) => current + 1);
+        setFirstLogText("");
+      } else {
+        setStep(4);
+      }
+    } catch {
+      setLogError("記録を保存できませんでした。もう一度お試しください。");
+    } finally {
+      setSavingLog(false);
     }
+  };
+
+  const handleSkipStarterLog = () => {
+    setFirstLogText("");
+    setLogError("");
+    if (starterLogIndex < starterPrompts.length - 1) {
+      setStarterLogIndex((current) => current + 1);
+    } else {
+      setStep(4);
+    }
+  };
+
+  const handleSkipRemainingStarterLogs = () => {
+    setFirstLogText("");
+    setLogError("");
     setStep(4);
   };
 
@@ -45,32 +105,31 @@ export function OnboardingClient() {
 
     try {
       const trimmedKey = apiKey.trim();
-      const result = await updateAiKeyAction(trimmedKey);
-      if (!result.ok) {
-        setKeyError(result.error ?? "APIキーが無効、または接続に失敗しました。");
-        setTestingKey(false);
-        return;
-      }
-
-      // API Key validation
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${trimmedKey}`, {
+      const testResponse = await fetch("/api/ai/test-connection", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: "Hello" }] }]
-        })
+        body: JSON.stringify({ apiKey: trimmedKey, provider }),
       });
-
-      if (!response.ok) {
-        setKeyError("Gemini APIキーのテスト接続に失敗しました。キーの権限等をご確認ください。");
+      const test = await testResponse.json().catch(() => null);
+      if (!testResponse.ok || !test?.connected) {
+        setKeyError(test?.error ?? `${provider === "groq" ? "Groq" : "Gemini"} APIキーのテスト接続に失敗しました。キーの権限等をご確認ください。`);
         setTestingKey(false);
         return;
       }
-
-      await saveSecureApiKey("gemini", trimmedKey);
+      const saveResponse = await fetch("/api/ai/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ provider, apiKey: trimmedKey, isEnabled: true }),
+      });
+      const result = await saveResponse.json().catch(() => null);
+      if (!saveResponse.ok || !result?.success) {
+        setKeyError(result?.error ?? "APIキーの保存に失敗しました。");
+        setTestingKey(false);
+        return;
+      }
       window.dispatchEvent(new Event("yohaku_ai_connection_changed"));
       
-      handleComplete();
+      await handleComplete();
     } catch (err) {
       setKeyError("エラーが発生しました。");
       setTestingKey(false);
@@ -78,12 +137,17 @@ export function OnboardingClient() {
   };
 
   const handleSkip = () => {
-    handleComplete();
+    void handleComplete();
   };
 
-  const handleComplete = () => {
+  const handleComplete = async () => {
     localStorage.setItem("yohaku_onboarding_completed", "true");
     setStep(5);
+    try {
+      await fetch("/api/yui/onboarding/complete", { method: "POST" });
+    } catch {
+      // The YUI welcome card remains available as a fallback if this request fails.
+    }
     setTimeout(() => {
       router.push("/yui");
     }, 1500);
@@ -107,23 +171,23 @@ export function OnboardingClient() {
         ))}
       </div>
 
-      {/* Step 1: Road Selection */}
+      {/* Step 1: Starting purpose */}
       {step === 1 && (
         <div className="space-y-10 animate-in fade-in slide-in-from-bottom-3 duration-700">
           <div className="space-y-3 text-center">
             <h1 className="text-2xl md:text-3xl font-serif text-foreground tracking-wide">
-              どの道を歩んでいますか？
+              今日は何を整理したいですか？
             </h1>
             <p className="text-sm text-muted-foreground">
-              今のあなたに最も近い状態を選択してください
+              近いものを選んでください。あとから変更できます。
             </p>
           </div>
 
           <div className="space-y-3.5">
             {[
-              { id: "beginner", label: "初任者ロード", desc: "仕事に慣れる、基本を習得する段階", icon: "🌱" },
-              { id: "side-hustle", label: "副業ロード", desc: "本業とバランスをとりながら新しい軸を作る段階", icon: "💻" },
-              { id: "resignation", label: "退職ロード", desc: "次のステップへ進むため、今を整え引き継ぐ段階", icon: "🚪" },
+              { id: "beginner", label: "日々のことを整理したい", desc: "仕事・生活・学びなど、気になっていることを記録する", icon: "📝" },
+              { id: "side-hustle", label: "新しい挑戦を進めたい", desc: "副業や個人プロジェクトなど、進め方を整える", icon: "💡" },
+              { id: "resignation", label: "環境の変化を整えたい", desc: "転職・退職・引っ越しなど、次の準備をする", icon: "🌿" },
             ].map((road) => (
               <button
                 key={road.id}
@@ -143,6 +207,7 @@ export function OnboardingClient() {
               </button>
             ))}
           </div>
+          <p className="text-center text-xs leading-6 text-muted-foreground">ここで選ぶのは、記録を見返すための分類です。利用できる機能は変わりません。</p>
         </div>
       )}
 
@@ -155,17 +220,17 @@ export function OnboardingClient() {
 
           <div className="space-y-4 max-w-md mx-auto">
             <h1 className="text-lg md:text-xl font-medium text-foreground leading-relaxed font-serif">
-              YOHAKUは、毎日の記録を整理し、小さく積み重ねる場所です。
+              YOHAKUは、気になったことを記録して、あとから振り返るアプリです。
             </h1>
             <p className="text-xs md:text-sm text-muted-foreground leading-relaxed">
-              ここに他のSNSのような競争や数字はありません。ただあなたが立ち止まり、余白を作り、次の一歩を踏み出すのを優しく見守るツールです。
+              きれいな文章にしなくて大丈夫です。最初に3つの短いメモを残すと、YOHAKUがあなたの関心や次に進めたいことを理解しやすくなります。
             </p>
           </div>
 
           <div className="pt-4">
             <button
               onClick={() => setStep(3)}
-              className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-6 py-2.5 text-sm font-medium text-foreground hover:bg-slate-800 transition-colors"
+              className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-6 py-2.5 text-sm font-medium text-white hover:bg-slate-800 transition-colors"
             >
               <span>はじめる</span>
               <ArrowRight className="w-4 h-4" />
@@ -174,36 +239,65 @@ export function OnboardingClient() {
         </div>
       )}
 
-      {/* Step 3: First Log */}
+      {/* Step 3: Three starter logs */}
       {step === 3 && (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-3 duration-700">
           <div className="space-y-3 text-center">
+            <p className="text-xs font-semibold tracking-[0.2em] text-muted-foreground">
+              3分で初期設定 {starterLogIndex + 1} / {starterPrompts.length}
+            </p>
             <h1 className="text-2xl md:text-3xl font-serif text-foreground tracking-wide">
-              いま、どんな気持ちですか？
+              {starterPrompts[starterLogIndex].title}
             </h1>
             <p className="text-sm text-muted-foreground">
-              最初の一歩として、いま心にあることを少しだけ書いてみましょう
+              {starterPrompts[starterLogIndex].description} あとから編集・削除できます。
             </p>
+          </div>
+
+          <div className="flex gap-2" aria-label="初期記録の進捗">
+            {starterPrompts.map((_, index) => (
+              <div
+                key={index}
+                className={`h-1.5 flex-1 rounded-full ${index <= starterLogIndex ? "bg-slate-900" : "bg-slate-200"}`}
+              />
+            ))}
           </div>
 
           <div className="relative rounded-2xl border border-slate-100 bg-white p-6 md:p-8 shadow-sm">
             <textarea
               value={firstLogText}
               onChange={(e) => setFirstLogText(e.target.value)}
-              placeholder="今気になっていることを書いてみる"
+              placeholder={starterPrompts[starterLogIndex].placeholder}
               className="w-full resize-none border-0 bg-transparent p-0 text-foreground placeholder:text-muted-foreground focus:ring-0 text-base leading-relaxed outline-none"
               rows={4}
             />
-            <div className="mt-6 flex justify-end">
+            {logError ? <p className="mt-3 text-xs text-red-500" role="alert">{logError}</p> : null}
+            <div className="mt-6 flex items-center justify-between gap-4">
+              <button
+                type="button"
+                onClick={handleSkipStarterLog}
+                disabled={savingLog}
+                className="text-xs text-muted-foreground hover:text-foreground disabled:opacity-50"
+              >
+                この質問はスキップ
+              </button>
               <button
                 onClick={handleSaveFirstLog}
-                disabled={!firstLogText.trim()}
-                className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-medium text-foreground hover:bg-slate-800 disabled:opacity-30 transition-colors"
+                disabled={!firstLogText.trim() || savingLog}
+                className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-30 transition-colors"
               >
-                <span>記録して進む</span>
+                <span>{savingLog ? "保存中..." : starterLogIndex < starterPrompts.length - 1 ? "記録して次へ" : "3件目を記録して進む"}</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>
+            <button
+              type="button"
+              onClick={handleSkipRemainingStarterLogs}
+              disabled={savingLog}
+              className="mt-4 w-full text-center text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline disabled:opacity-50"
+            >
+              残りの記録はあとで入力する
+            </button>
           </div>
         </div>
       )}
@@ -216,52 +310,88 @@ export function OnboardingClient() {
               <Key className="w-5 h-5 stroke-[1.5]" />
             </div>
             <h1 className="text-2xl md:text-3xl font-serif text-foreground tracking-wide">
-              AI（Gemini）と接続する
+              無料プランのAI相談を設定する（任意）
             </h1>
             <p className="text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed">
-              AIを接続すると、ログの自動整理や気づき・課題の抽出が利用できます
+              無料プランではご自身のGeminiまたはGroq APIキーを設定します。PremiumではAPIキー不要で、AI利用料も月額料金に含まれます。設定は後からでも行えます。
             </p>
           </div>
 
           <div className="space-y-6 max-w-md mx-auto">
             <div className="space-y-2">
               <label className="text-xs font-semibold text-muted-foreground font-mono tracking-wider uppercase">
-                Gemini API Key
+                AIサービス
               </label>
-              <input
-                type="password"
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                placeholder="AI-key..."
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-foreground placeholder:text-slate-350 focus:border-slate-400 focus:outline-none focus:ring-0"
-              />
+              <select
+                value={provider}
+                onChange={(event) => {
+                  setProvider(event.target.value as "gemini" | "groq");
+                  setApiKey("");
+                  setKeyError("");
+                  setIsApiKeyVisible(false);
+                }}
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-foreground focus:border-slate-400 focus:outline-none"
+              >
+                <option value="gemini">Google Gemini（文章・写真・記憶の類似検索）</option>
+                <option value="groq">Groq（高速な文章生成）</option>
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-muted-foreground font-mono tracking-wider uppercase">
+                {provider === "groq" ? "Groq APIキー" : "Gemini APIキー"}
+              </label>
+              <div className="relative">
+                <input
+                  type={isApiKeyVisible ? "text" : "password"}
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                  placeholder={provider === "groq" ? "gsk_..." : "AIza..."}
+                  autoComplete="off"
+                  spellCheck={false}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 pr-12 font-mono text-sm text-foreground placeholder:text-slate-350 focus:border-slate-400 focus:outline-none focus:ring-0"
+                />
+                <button
+                  type="button"
+                  onClick={() => setIsApiKeyVisible((current) => !current)}
+                  disabled={!apiKey}
+                  aria-label={isApiKeyVisible ? "APIキーを隠す" : "APIキーを表示する"}
+                  aria-pressed={isApiKeyVisible}
+                  className="absolute inset-y-0 right-1 inline-flex w-10 items-center justify-center rounded-xl text-muted-foreground transition hover:bg-slate-50 disabled:opacity-40"
+                >
+                  {isApiKeyVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
               {keyError && (
                 <p className="text-xs text-red-500 mt-1">{keyError}</p>
               )}
+              {provider === "groq" ? <p className="text-xs leading-5 text-muted-foreground">Groqは相談・要約などの文章生成に利用できます。写真整理と記憶の類似検索はGemini接続で利用できます。</p> : null}
             </div>
 
             <div className="space-y-3 flex flex-col items-center">
               <button
                 onClick={handleConnectApiKey}
                 disabled={testingKey || !apiKey.trim()}
-                className="w-full flex items-center justify-center space-x-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-foreground font-medium py-3 transition-colors disabled:opacity-50 text-sm shadow-sm"
+                className="w-full flex items-center justify-center space-x-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-medium py-3 transition-colors disabled:opacity-50 text-sm shadow-sm"
               >
                 {testingKey ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>接続テスト中...</span>
+                    <span>接続を確認中...</span>
                   </>
                 ) : (
-                  <span>接続してはじめる</span>
+                  <span>接続を確認してはじめる</span>
                 )}
               </button>
 
               <button
                 onClick={handleSkip}
-                className="text-xs text-muted-foreground hover:text-slate-650 transition-colors py-2 font-mono"
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors py-2"
               >
-                Skip (後で設定する)
+                AI相談は後で設定する
               </button>
+              <p className="text-center text-xs leading-5 text-muted-foreground">
+                後回しにしても、メモ・目的・振り返りは利用できます。
+              </p>
             </div>
           </div>
         </div>
@@ -275,7 +405,7 @@ export function OnboardingClient() {
           </div>
           <div className="space-y-2">
             <h1 className="text-xl font-serif text-foreground">準備が整いました</h1>
-            <p className="text-xs text-muted-foreground">YOHAKUの空間へ移動しています...</p>
+            <p className="text-xs text-muted-foreground">ホーム上部の「相談する・今日やることを決める・振り返る」から始められます。</p>
           </div>
         </div>
       )}

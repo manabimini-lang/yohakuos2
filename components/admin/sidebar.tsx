@@ -12,6 +12,10 @@ import {
   CreditCard,
   Shield,
   Link2,
+  Layers3,
+  Mail,
+  FlaskConical,
+  ScrollText,
   type LucideIcon,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
@@ -30,16 +34,20 @@ type NavEntry = {
 
 const ADMIN_NAV_ITEMS: NavEntry[] = [
   { href: "/admin", label: "ダッシュボード", icon: LayoutDashboard },
-  { href: "/admin/contents", label: "コンテンツ管理", icon: BookOpen },
+  { href: "/admin/contents", label: "外部コンテンツ", icon: BookOpen },
   { href: "/admin/tags", label: "タグ管理", icon: Tags },
-  { href: "/admin/external-resources", label: "外部リソース管理", icon: Link2 },
   { href: "/admin/members", label: "メンバー管理", icon: Users, requiredPermission: "manage_users" },
   { href: "/admin/prompts", label: "AI整理文脈管理", icon: Sparkles, requiredPermission: "manage_ai" },
   { href: "/admin/moderation", label: "モデレーション", icon: Flag, requiredRole: "moderator" },
   { href: "/admin/safety", label: "セーフティ", icon: Shield, requiredRole: "moderator" },
   { href: "/admin/analytics", label: "アナリティクス", icon: BarChart3, requiredPermission: "view_analytics" },
+  { href: "/admin/acquisition", label: "記事からの成果", icon: BarChart3, requiredPermission: "view_analytics" },
   { href: "/admin/billing", label: "課金管理", icon: CreditCard, requiredPermission: "manage_billing" },
   { href: "/admin/settings", label: "サイト設定", icon: Settings, requiredPermission: "manage_system" },
+  { href: "/admin/activity", label: "知識循環ハブ", icon: Layers3, requiredPermission: "view_analytics" },
+  { href: "/admin/newsletter", label: "メルマガ企画", icon: Mail, requiredPermission: "manage_comms" },
+  { href: "/admin/product-learning", label: "製品学習", icon: FlaskConical, requiredPermission: "manage_product_learning" },
+  { href: "/admin/reports", label: "活動レポート", icon: ScrollText, requiredPermission: "publish_reports" },
 ];
 
 export function SidebarNav() {

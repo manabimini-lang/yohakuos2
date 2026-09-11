@@ -207,7 +207,7 @@ ${seasonalData?.summary || "(季節データなし)"}
 - 詩的で静かなトーンを保つ
 - ユーザー自身が気づいていない微妙な流れを見つける`;
 
-    const { text } = await generateText(prompt, LANDSCAPE_SYSTEM_PROMPT);
+    const { text } = await generateText(prompt, LANDSCAPE_SYSTEM_PROMPT, { userId, allowEnvFallback: true, taskClass: "standard" });
 
     let parsed;
     try {
@@ -350,7 +350,7 @@ ${recentFragments.map((f) => `- "${f.fragment}"`).join("\n")}
 「最近、『意味を育てること』への流れが強まっています。」
 「『学び方』から『個人知識空間』へ、静かに関心の場所が移ろいでいるようです。」`;
 
-    const { text } = await generateText(prompt, LANDSCAPE_SYSTEM_PROMPT);
+    const { text } = await generateText(prompt, LANDSCAPE_SYSTEM_PROMPT, { userId, allowEnvFallback: true, taskClass: "standard" });
     return text.slice(0, 250).trim();
   } catch (error) {
     console.error("[generateResonanceWeather] failed:", error);

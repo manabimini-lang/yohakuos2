@@ -12,11 +12,25 @@ interface CheckoutActionParams {
   turnstileToken: string;
 }
 
+function getApplicationUrl(headersList: Headers): string | null {
+  const configuredUrl = process.env.NEXTAUTH_URL?.trim();
+  if (configuredUrl) return configuredUrl.replace(/\/$/, "");
+
+  const origin = headersList.get("origin");
+  if (origin) return origin.replace(/\/$/, "");
+
+  const host = headersList.get("x-forwarded-host") ?? headersList.get("host");
+  if (!host) return null;
+  const protocol = headersList.get("x-forwarded-proto") ?? "https";
+  return `${protocol}://${host}`;
+}
+
 export async function createStripeCheckoutSession({ priceId, turnstileToken }: CheckoutActionParams) {
   try {
     // 1. IP Rate Limiting
     const headersList = headers();
     const ip = headersList.get("x-forwarded-for") || headersList.get("x-real-ip") || "127.0.0.1";
+    const applicationUrl = getApplicationUrl(headersList);
     const isAllowed = await checkActionRateLimit(ip);
 
     if (!isAllowed) {
@@ -88,6 +102,11 @@ export async function createStripeCheckoutSession({ priceId, turnstileToken }: C
       return { success: false, error: "サーバー設定エラーが発生しました。" };
     }
 
+    if (!applicationUrl) {
+      console.error("[STRIPE_CHECKOUT] Application URL could not be resolved");
+      return { success: false, error: "決済ページの戻り先を設定できませんでした。" };
+    }
+
     // 5. Stripe Customer & Session Creation
     const stripe = getStripe();
     let stripeCustomerId = subscription?.stripeCustomerId;
@@ -118,8 +137,9 @@ export async function createStripeCheckoutSession({ priceId, turnstileToken }: C
         },
       ],
       mode: "subscription",
-      success_url: `${process.env.NEXTAUTH_URL}/yui/settings?success=true`,
-      cancel_url: `${process.env.NEXTAUTH_URL}/yui/settings?canceled=true`,
+      subscription_data: { metadata: { userId: user.id } },
+      success_url: `${applicationUrl}/yui/settings?success=true`,
+      cancel_url: `${applicationUrl}/yui/settings?canceled=true`,
       metadata: {
         userId: user.id,
       },

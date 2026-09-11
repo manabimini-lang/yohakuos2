@@ -101,6 +101,23 @@
     overflow-wrap: break-word;
   }
 
+  /* Audio history contains long-form copy. Keep it readable in OS dark mode. */
+  @media (prefers-color-scheme: dark) {
+    .audio-history-page h1,
+    .audio-history-page h2,
+    .audio-history-page h3,
+    .audio-history-page summary {
+      color: rgb(241 245 249) !important;
+    }
+
+    .audio-history-page p,
+    .audio-history-page span,
+    .audio-history-page a,
+    .audio-history-page div {
+      color: rgb(203 213 225) !important;
+    }
+  }
+
   /* 読み疲れしない本文 */
   p, li {
     line-height: 1.85;

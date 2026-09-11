@@ -13,7 +13,7 @@ import { Card } from "@/components/ui/card";
 import { Metadata } from "next";
 import Link from "next/link";
 import { ChevronRight, MessageSquare, ArrowRight } from "lucide-react";
-import { getStarterJourneyStatus } from "@/lib/ai/starter-journey";
+import { checkAIAvailability } from "@/lib/ai/gemini";
 import { CONTENT_ITEM_SAFE_SELECT } from "@/lib/content-item-safe-select";
 
 export const metadata: Metadata = {
@@ -44,11 +44,8 @@ export default async function InboxPage() {
     take: 12,
   }) as any[];
 
-  const [userSettings, starterJourney, user] = await Promise.all([
-    prisma.userAISettings.findUnique({
-      where: { userId },
-    }),
-    getStarterJourneyStatus(userId),
+  const [aiAvailability, user] = await Promise.all([
+    checkAIAvailability(userId),
     prisma.user.findUnique({
       where: { id: userId },
       select: { discordId: true },
@@ -66,7 +63,7 @@ export default async function InboxPage() {
     day: "numeric",
   });
 
-  const hasAiAccess = userSettings?.isEnabled || starterJourney.active;
+  const hasAiAccess = aiAvailability.available;
   const showHiddenFeatures = recentItems.length >= 5 && hasAiAccess;
   const isDiscordConnected = !!user?.discordId;
 
@@ -78,7 +75,7 @@ export default async function InboxPage() {
           <div className="space-y-2">
             <PageTitle>Inbox</PageTitle>
             <Body className="max-w-2xl">
-              ここは静かに戻ってくるための余白です。残したいものをひとつずつ置いて、夜に少しだけ開いてみてください。
+              気になったことを短く記録しておく場所です。記録が増えると、最近のテーマや過去とのつながりを確認できます。
             </Body>
           </div>
         </header>
@@ -102,8 +99,8 @@ export default async function InboxPage() {
               </SectionTitle>
               <Body className="max-w-2xl">
                 {isDiscordConnected 
-                  ? "あなたの記録は静かに同期されています。連携は設定からいつでも解除可能です。"
-                  : "Discordを連携すると、小さな実践の共有やコミュニティの声を静かに受け取れます。"}
+                  ? "Discordの対象チャンネルが同期されています。同期範囲は設定から確認・解除できます。"
+                  : "Discordを連携すると、指定したチャンネルの投稿をYOHAKUで振り返れるようになります。"}
               </Body>
             </div>
             <Link href="/settings/account" tabIndex={-1}>
@@ -131,9 +128,9 @@ export default async function InboxPage() {
                 className="group p-8 rounded-2xl bg-card border border-border/50 hover:bg-white/[0.04] transition-colors flex flex-col justify-between min-h-[160px]"
               >
                 <div className="space-y-2">
-                  <SectionTitle className="text-lg text-foreground/80">静かな戻り</SectionTitle>
+                  <SectionTitle className="text-lg text-foreground/80">過去の記録を見返す</SectionTitle>
                   <Body className="text-foreground/40">
-                    以前の記録に、<br />もう一度出会ってみる。
+                    以前の記録から、<br />今にも役立つ気づきを探します。
                   </Body>
                 </div>
                 <div className="flex justify-end">

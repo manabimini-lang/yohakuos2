@@ -43,7 +43,7 @@ function summarizeReason(action: YuiUnifiedAction, context: {
     return haystack.includes(action.title.toLowerCase()) || haystack.includes(action.description.toLowerCase());
   });
   if (matchingGoal) {
-    reasons.push(`Goal「${matchingGoal.title}」と関連`);
+    reasons.push(`目的「${matchingGoal.title}」と関連`);
   }
 
   const recentConversation = context.conversations.find((conversation) => {
@@ -114,7 +114,7 @@ export async function buildPriorityContext(userId: string): Promise<YuiPriorityI
         id: `goal_${activeGoal.id}`,
         title: `${activeGoal.title} を進める`,
         score: 72,
-        why: `Goal「${activeGoal.title}」が進行中で、今すぐ着手すると効果的です。`,
+        why: `目的「${activeGoal.title}」が進行中で、今すぐ着手すると効果的です。`,
         actionType: "create_goal",
       });
     }

@@ -1,7 +1,7 @@
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getValidAccessToken } from "./google_calendar_service";
-import { refreshMorningBriefCache } from "./brief_service";
+import { isActionableHumanEmail } from "./email_safety";
 
 const supabaseAdmin = new Proxy({} as SupabaseClient, {
   get(_, prop: keyof SupabaseClient) {
@@ -38,6 +38,16 @@ export async function syncGmailMessages(userId: string): Promise<{ fetchedCount:
 
   const data = await response.json();
   const messages = Array.isArray(data.messages) ? data.messages : [];
+  const unreadResponse = await fetch(
+    "https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=50&q=in:inbox%20is:unread",
+    { headers: { Authorization: `Bearer ${accessToken}` } },
+  );
+  const unreadData = unreadResponse.ok ? await unreadResponse.json() : { messages: [] };
+  const unreadIds = new Set<string>(
+    (Array.isArray(unreadData.messages) ? unreadData.messages : [])
+      .map((message: { id?: string }) => message.id)
+      .filter((id: string | undefined): id is string => Boolean(id)),
+  );
   let savedCount = 0;
 
   for (const msg of messages) {
@@ -46,12 +56,22 @@ export async function syncGmailMessages(userId: string): Promise<{ fetchedCount:
     // Check if exists
     const existing = await supabaseAdmin
       .from("gmail_messages")
-      .select("id")
+      .select("id,is_read")
       .eq("user_id", userId)
       .eq("gmail_id", msg.id)
       .maybeSingle();
-      
-    if (existing.data) continue; // Skip if already fetched to save API calls for this demo
+
+    if (existing.data) {
+      const isRead = !unreadIds.has(msg.id);
+      if (existing.data.is_read !== isRead) {
+        await supabaseAdmin
+          .from("gmail_messages")
+          .update({ is_read: isRead, updated_at: new Date().toISOString() })
+          .eq("id", existing.data.id)
+          .eq("user_id", userId);
+      }
+      continue;
+    }
 
     const msgUrl = `https://gmail.googleapis.com/gmail/v1/users/me/messages/${msg.id}`;
     const msgRes = await fetch(msgUrl, {
@@ -84,12 +104,6 @@ export async function syncGmailMessages(userId: string): Promise<{ fetchedCount:
     savedCount++;
   }
 
-  try {
-    await refreshMorningBriefCache(userId);
-  } catch (error) {
-    console.error("Failed to refresh cached morning brief after Gmail sync", error);
-  }
-
   return { fetchedCount: messages.length, savedCount };
 }
 
@@ -107,6 +121,9 @@ export async function getGmailInsights(userId: string): Promise<YuiEmailInsight[
   const now = Date.now();
 
   for (const msg of messages) {
+    if (!isActionableHumanEmail({ fromEmail: msg.from_email, subject: msg.subject, labels: msg.labels })) {
+      continue;
+    }
     const receivedMs = new Date(msg.received_at).getTime();
     const daysAgo = (now - receivedMs) / (1000 * 60 * 60 * 24);
 

@@ -4,6 +4,7 @@ import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 import { isPremiumRoute, hasPremiumAccess } from "@/lib/constants/plan";
 import { updateSession } from "@/lib/supabase/middleware";
+import { ARTICLE_COOKIE, articleFromParams } from '@/lib/analytics/attribution';
 
 // ---------------------------------------------------------------------------
 // Inline diagnostics for Edge runtime (cannot import auth-diagnostics in Edge)
@@ -45,7 +46,7 @@ if (hasRedisConfig) {
 // Cookie Merge Utility
 // ---------------------------------------------------------------------------
 
-function mergeSetCookieHeaders(target: NextResponse, source: NextResponse): void {
+function mergeSetCookieHeaders(target: Response, source: NextResponse): void {
   const sourceCookies = source.headers.getSetCookie();
   for (const cookie of sourceCookies) {
     target.headers.append("Set-Cookie", cookie);
@@ -155,7 +156,7 @@ export async function middleware(request: NextRequest) {
     return response;
   });
 
-  const finalResponse: NextResponse = await (handler as any)(request);
+  const finalResponse: Response = await (handler as any)(request);
 
   // Merge Supabase cookies into the final response
   if (supabaseResponse && finalResponse !== supabaseResponse) {
@@ -163,6 +164,17 @@ export async function middleware(request: NextRequest) {
   }
 
   mwLog("complete", { path, elapsed: Date.now() - start });
+  const article = path === '/signup' ? articleFromParams(request.nextUrl.searchParams) : null;
+  if (article) {
+    // The auth wrapper can return a standard Response, which does not expose
+    // NextResponse.cookies. Add the short-lived, non-personal attribution
+    // cookie through the common Headers API so the signup path never fails.
+    const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
+    finalResponse.headers.append(
+      'Set-Cookie',
+      `${ARTICLE_COOKIE}=${encodeURIComponent(article)}; Path=/; Max-Age=1800; HttpOnly; SameSite=Lax${secure}`,
+    );
+  }
   return finalResponse;
 }
 

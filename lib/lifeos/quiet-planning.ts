@@ -92,7 +92,7 @@ ${dataForPrompt}
 - 小さな提案であること（大きな計画変更を求めない）
 - 生産性プレッシャーを与えない`;
 
-    const { text } = await generateText(prompt, QUIET_PLANNING_SYSTEM_PROMPT);
+    const { text } = await generateText(prompt, QUIET_PLANNING_SYSTEM_PROMPT, { userId, allowEnvFallback: true, taskClass: "standard" });
 
     try {
         const jsonMatch = text.match(/\{[\s\S]*\}/);

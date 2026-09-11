@@ -4,7 +4,6 @@ import { SessionProvider } from "next-auth/react";
 import { CaptureLayer } from "@/components/capture/CaptureLayer";
 import { auth } from "@/lib/auth";
 import { PWAInstallCTA } from "@/components/pwa/pwa-install-cta";
-import { SettingsButton } from "@/components/ui/settings-button";
 import "./globals.css";
 
 export const dynamic = "force-dynamic";
@@ -59,7 +58,6 @@ export default async function RootLayout({
               {children}
               {session && <CaptureLayer />}
               <PWAInstallCTA />
-              {session && <SettingsButton />}
             </div>
           </PWAProvider>
         </SessionProvider>

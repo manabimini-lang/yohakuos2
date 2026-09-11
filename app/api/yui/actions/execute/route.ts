@@ -6,9 +6,7 @@ import type { YuiUnifiedAction } from "@/app/ui/backend/yui/unified_action_servi
 import {
   createYuiGoal,
   createYuiMilestone,
-  createYuiCalendarEvent,
-  listYuiConnections,
-  createYuiConnection,
+  createYuiSuggestedTimeBlock,
   listYuiGoals,
   listYuiMilestones,
   updateYuiGoal,
@@ -17,6 +15,7 @@ import {
   deleteYuiMilestone,
 } from "@/app/ui/backend/yui/service";
 import { updateYuiRecommendationStatus } from "@/app/ui/backend/yui/recommendation_service";
+import { recordFirstValue } from '@/lib/analytics/funnel-server';
 
 export const dynamic = "force-dynamic";
 
@@ -145,33 +144,27 @@ export async function POST(request: Request) {
       await deleteYuiMilestone(session.user, milestoneId);
       executionResult = { id: milestoneId, status: "deleted" };
     } else if (type === "create_calendar_event") {
-      // Find or create connection
-      const connections = await listYuiConnections(session.user.id);
-      let activeConn = connections.find(
-        (c) => (c.provider === "google_calendar" || c.provider === "manual") && c.status === "connected"
-      );
-
-      if (!activeConn) {
-        // Fallback to manual connection
-        activeConn = await createYuiConnection(session.user, {
-          provider: "manual",
-          status: "connected",
-        });
+      if (!params.start_at || !params.end_at) {
+        return NextResponse.json({ error: "予定の開始時刻と終了時刻を確認してください" }, { status: 400 });
       }
-
-      const startAt = params.start_at || new Date().toISOString();
-      const endAt = params.end_at || new Date(Date.now() + 3600000).toISOString(); // 1 hour later
-
-      executionResult = await createYuiCalendarEvent(session.user, {
-        connection_id: activeConn.id,
-        provider: activeConn.provider,
-        external_id: `yui_manual_${Date.now()}`,
+      const startAt = new Date(params.start_at);
+      const endAt = new Date(params.end_at);
+      if (
+        Number.isNaN(startAt.getTime())
+        || Number.isNaN(endAt.getTime())
+        || endAt.getTime() <= startAt.getTime()
+        || startAt.getTime() <= Date.now()
+      ) {
+        return NextResponse.json({ error: "予定の開始時刻と終了時刻を確認してください" }, { status: 400 });
+      }
+      executionResult = await createYuiSuggestedTimeBlock(session.user, {
+        goal_id: recommendation.related_goal_id ?? null,
         title: params.title || "カレンダーの予定",
-        description: params.description || "",
-        start_at: startAt,
-        end_at: endAt,
-        status: "confirmed",
-        source: "yui",
+        reason: params.description || recommendation.reason || "YUI Chatで確認した予定です。",
+        start_at: params.start_at,
+        end_at: params.end_at,
+        source: "yui_chat",
+        status: "approved",
       });
     } else {
       return NextResponse.json({ error: `Unsupported action type: ${type}` }, { status: 400 });
@@ -179,6 +172,9 @@ export async function POST(request: Request) {
 
     // 4. Update status to accepted
     await updateYuiRecommendationStatus(session.user, recommendationId, "accepted");
+    if (type === 'create_goal' || type === 'create_milestone') {
+      await recordFirstValue(session.user.id);
+    }
 
     return NextResponse.json({
       success: true,

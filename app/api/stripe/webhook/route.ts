@@ -5,6 +5,8 @@ import { getStripe } from "@/lib/stripe";
 import { subscriptionService } from "@/lib/services/subscription.service";
 import { subscriptionRepository } from "@/lib/repositories/subscription.repository";
 import { prisma } from "@/lib/prisma";
+import { invoiceSubscriptionId } from '@/lib/analytics/funnel-events';
+import { recordPayment } from '@/lib/analytics/funnel-server';
 export async function POST(req: Request) {
   const stripe = getStripe();
   const body = await req.text();
@@ -61,7 +63,7 @@ export async function POST(req: Request) {
 
   if (event.type === "invoice.payment_succeeded") {
     const invoice = eventObject as any;
-    const subscriptionId = invoice.subscription as string;
+    const subscriptionId = invoiceSubscriptionId(invoice);
     
     if (subscriptionId) {
       const subscription = await stripe.subscriptions.retrieve(subscriptionId) as any;
@@ -76,6 +78,13 @@ export async function POST(req: Request) {
       );
 
       console.log(`[STRIPE_SUBSCRIPTION] Invoice paid: subscriptionId=${subscription.id}, customerId=${subscription.customer}, status=${subscription.status}`);
+
+      const stored = await prisma.subscription.findUnique({
+        where: { stripeSubscriptionId: subscription.id }, select: { userId: true },
+      });
+      const userId = stored?.userId || subscription.metadata?.userId;
+      if (!userId) return new NextResponse('Subscription owner not available yet', { status: 503 });
+      await recordPayment(userId, invoice, event.id);
 
       await prisma.auditLog.create({
         data: {

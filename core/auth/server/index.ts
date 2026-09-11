@@ -17,6 +17,12 @@ import { auth, signIn } from "@/lib/auth";
 import type { AuthSession, AuthResult } from "../types";
 import { authConfig } from "../config";
 
+// A local credential store cannot support YUI's relational data model. Opt in
+// explicitly when working on authentication alone instead of silently giving a
+// user a session that cannot save goals, memories, or settings.
+const allowDevAuthFallback =
+  process.env.NODE_ENV === "development" && process.env.YOHAKU_ALLOW_DEV_AUTH_FALLBACK === "true";
+
 // ---------------------------------------------------------------------------
 // Session Retrieval
 // ---------------------------------------------------------------------------
@@ -181,6 +187,7 @@ export async function signUpWithEmail(
   email: string,
   password: string,
   displayName?: string,
+  newsletterOptIn = false,
 ): Promise<AuthResult> {
   const normalizedEmail = email.trim().toLowerCase();
 
@@ -200,6 +207,9 @@ export async function signUpWithEmail(
     });
   } catch (dbCheckError) {
     console.error("[auth] DB check failed during sign-up (falling back to dev store):", dbCheckError);
+    if (!allowDevAuthFallback) {
+      return { success: false, error: "アカウントの保存先に接続できません。しばらくしてから再度お試しください。" };
+    }
     try {
       const { findUserByEmail } = await import("@/core/auth/server/dev-store");
       const devUser = await findUserByEmail(normalizedEmail);
@@ -223,16 +233,27 @@ export async function signUpWithEmail(
 
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
-    await prisma.user.create({
+    const createdUser = await prisma.user.create({
       data: {
         email: normalizedEmail,
         name: displayName?.trim() || normalizedEmail.split("@")[0],
         password: hashedPassword,
         role: UserRole.FREE_MEMBER,
+        newsletterOptIn,
+        newsletterOptInAt: newsletterOptIn ? new Date() : null,
       },
     });
+    try {
+      const { recordSignup } = await import('@/lib/analytics/funnel-server');
+      await recordSignup(createdUser.id, 'email');
+    } catch {
+      console.warn('[product-funnel] signup instrumentation unavailable');
+    }
   } catch (error) {
     console.error("[auth] Failed to create Prisma user (falling back to dev store):", error);
+    if (!allowDevAuthFallback) {
+      return { success: false, error: "アカウントの保存先に接続できません。しばらくしてから再度お試しください。" };
+    }
     try {
       const { createUser } = await import("@/core/auth/server/dev-store");
       await createUser(normalizedEmail, password, displayName);

@@ -61,7 +61,7 @@ export function YuiThreadInsightsCard({ threads, isLoading }: YuiThreadInsightsC
       <div className="flex items-center justify-between border-b border-border/40 pb-3">
         <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-primary">
           <Lightbulb className="h-4 w-4" />
-          Thread Intelligence
+          テーマの傾向
         </div>
         <span className="text-[11px] font-medium px-2.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
           文脈分析
@@ -127,7 +127,7 @@ export function YuiThreadInsightsCard({ threads, isLoading }: YuiThreadInsightsC
                 <ArrowRight className="h-3.5 w-3.5 mt-0.5 text-primary flex-shrink-0" />
                 <div>
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-primary mb-0.5">
-                    次の一歩
+                    次にすること
                   </p>
                   <p className="text-xs font-medium text-foreground leading-relaxed">
                     {insight.suggestedNextStep}

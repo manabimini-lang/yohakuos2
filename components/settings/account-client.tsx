@@ -19,10 +19,26 @@ export function AccountClient({
   const searchParams = useSearchParams();
   const success = searchParams.get("success") === "true";
   const [connecting, setConnecting] = useState(false);
+  const [disconnecting, setDisconnecting] = useState(false);
+  const [isConnected, setIsConnected] = useState(Boolean(discordId));
 
   const handleConnect = () => {
     setConnecting(true);
     window.location.href = "/api/auth/discord/connect";
+  };
+
+  const handleDisconnect = async () => {
+    if (!window.confirm("Discord連携を解除しますか？")) return;
+    setDisconnecting(true);
+    try {
+      const response = await fetch("/api/auth/discord/disconnect", { method: "POST" });
+      if (!response.ok) throw new Error("disconnect failed");
+      setIsConnected(false);
+    } catch {
+      window.alert("連携を解除できませんでした。もう一度お試しください。");
+    } finally {
+      setDisconnecting(false);
+    }
   };
 
   return (
@@ -44,7 +60,7 @@ export function AccountClient({
           外部サービス連携
         </h1>
         <p className="text-xs text-muted-foreground leading-relaxed">
-          YOHAKUと外部のコミュニケーションスペースをつなぐ設定を行います。
+          YOHAKUとDiscordをつなぐ設定です。連携しなくても、記録・AI機能は利用できます。
         </p>
         <p className="text-xs text-muted-foreground leading-relaxed">
           設定した連携は、Inbox にも案内として表示されます。
@@ -57,7 +73,7 @@ export function AccountClient({
           <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
           <div className="space-y-1 text-xs text-emerald-700">
             <p className="font-semibold">連携が完了しました</p>
-            <p className="text-[11px] text-emerald-600/90 leading-relaxed">Discordアカウントと正常に同期されました。同じ空間として知見を共有できます。</p>
+            <p className="text-[11px] text-emerald-600/90 leading-relaxed">Discordアカウントと連携しました。共有するときだけ、指定チャンネルへ投稿します。</p>
           </div>
         </div>
       )}
@@ -70,11 +86,11 @@ export function AccountClient({
           </div>
           <div>
             <h2 className="text-sm font-semibold text-foreground">Discord 連携</h2>
-            <p className="text-[11px] text-muted-foreground mt-0.5">知見をコミュニティと循環させるための接続</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">記録の一部を、指定チャンネルへ共有するための接続</p>
           </div>
         </div>
 
-        {discordId ? (
+        {isConnected ? (
           /* Connected State */
           <div className="flex items-center justify-between p-4 rounded-xl bg-slate-50 border border-slate-100/80">
             <div className="flex items-center space-x-3">
@@ -98,24 +114,28 @@ export function AccountClient({
               </div>
             </div>
             
-            <button
-              onClick={handleConnect}
-              className="text-xs text-muted-foreground hover:text-slate-650 transition-colors font-mono py-1.5 px-3 rounded-lg hover:bg-slate-100"
-            >
-              再連携
-            </button>
+            <div className="flex items-center gap-2">
+              <button onClick={handleConnect} className="text-xs text-muted-foreground hover:text-slate-650 transition-colors font-mono py-1.5 px-3 rounded-lg hover:bg-slate-100">再連携</button>
+              <button onClick={() => void handleDisconnect()} disabled={disconnecting} className="text-xs text-rose-600 hover:text-rose-700 transition-colors py-1.5 px-3 rounded-lg hover:bg-rose-50 disabled:opacity-50">
+                {disconnecting ? "解除中..." : "連携を解除"}
+              </button>
+            </div>
           </div>
         ) : (
           /* Disconnected State */
           <div className="space-y-5">
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Discordアカウントを連携すると、YOHAKU内の「小さな実践」で得た気づきを、Discord内の指定チャンネルへワンクリックで匿名共有することができます。
-            </p>
+            <div className="space-y-2 text-xs text-muted-foreground leading-relaxed">
+              <p>連携すると、YOHAKUで選んだ気づきだけをDiscordの指定チャンネルへ匿名共有できます。</p>
+              <ul className="list-disc space-y-1 pl-5">
+                <li>自動投稿はしません。共有ボタンを押したときだけ投稿します。</li>
+                <li>共有前に内容を確認できます。連携はいつでも解除できます。</li>
+              </ul>
+            </div>
             <div className="pt-2">
               <button
                 onClick={handleConnect}
                 disabled={connecting}
-                className="inline-flex items-center justify-center space-x-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-foreground font-medium px-6 py-2.5 transition-colors text-sm shadow-sm disabled:opacity-50"
+                className="inline-flex items-center justify-center space-x-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-medium px-6 py-2.5 transition-colors text-sm shadow-sm disabled:opacity-50"
               >
                 {connecting ? (
                   <>

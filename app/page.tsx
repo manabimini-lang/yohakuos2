@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -16,37 +17,37 @@ const journeySteps = [
     step: "01",
     icon: Feather,
     title: "今日：断片を置く",
-    description: "整理できなくても大丈夫。今の気持ち、拾った言葉を、そのままそっと置いておきます。",
+    description: "気持ち、思いつき、あとで読みたいものを、整えずそのまま記録します。",
     accent: "bg-slate-50 text-slate-400"
   },
   {
     step: "02",
     icon: Layers,
     title: "数週間後：層が生まれる",
-    description: "積もった断片が重なり、あなたの「人生の層」として静かに形を成していきます。",
+    description: "記録が増えると、よく出てくるテーマや関心が自動で見えてきます。",
     accent: "bg-stone-50 text-stone-400"
   },
   {
     step: "03",
     icon: History,
     title: "振り返り：意味に出会う",
-    description: "AIがあなたの軌跡を繋ぎます。それは保存ではなく、未来の自分との再会です。",
+    description: "過去の記録をAIがつなぎ、今の自分に役立つ気づきや次の一歩を提案します。",
     accent: "bg-zinc-900 text-white"
   },
 ];
 
 const principles = [
   {
-    title: "保存より再会",
-    description: "溜めるための場所ではなく、出会い直すための場所。蓄積が重荷にならない UI を。"
+    title: "あとで役立つ記録",
+    description: "書いた内容をためるだけでなく、必要なときに見つけられるようにします。"
   },
   {
-    title: "整理しない自由",
-    description: "完璧に整える必要はありません。散らかったままでも、AIがそっと文脈を紡ぎます。"
+    title: "整えずに始められる",
+    description: "文章の形にする必要はありません。短いメモや箇条書きでも記録できます。"
   },
   {
-    title: "静かな伴走",
-    description: "AIは主役ではありません。あなたの記憶の地層を、影のように支え、整える存在です。"
+    title: "提案は自分で選べる",
+    description: "AIは理由つきで提案します。採用・保留・不要を、あなたが決められます。"
   }
 ];
 
@@ -118,23 +119,37 @@ export default function LandingPage() {
 
           <div className="relative mx-auto w-full max-w-md lg:max-w-none">
             <div className="absolute -inset-8 rounded-full bg-violet-200/25 blur-3xl" />
-            <div className="relative border-l border-slate-300/80 pl-7 sm:pl-10 lg:ml-10">
-              <div className="flex items-center gap-3 text-xs font-medium tracking-[0.12em] text-slate-500">
-                <BrainCircuit className="h-4 w-4 text-violet-600" aria-hidden="true" />
-                TODAY&apos;S CONTEXT
+            <div className="relative grid items-center gap-6 sm:grid-cols-[0.76fr_1fr] lg:ml-4">
+              <div className="relative mx-auto w-full max-w-[15rem] sm:max-w-none">
+                <div className="absolute inset-[16%] rounded-full bg-sky-300/25 blur-3xl" aria-hidden="true" />
+                <Image
+                  src="/yohakuos-guide-mascot-v3.png"
+                  alt="YOHAKUOSの案内役キャラクター"
+                  width={1145}
+                  height={1374}
+                  priority
+                  className="relative h-auto w-full drop-shadow-[0_18px_28px_rgba(30,64,175,0.18)]"
+                />
               </div>
-              <p className="mt-8 text-2xl font-light leading-relaxed tracking-[-0.035em] text-slate-900 sm:text-3xl">
-                「忙しいのに、何も進んでいない気がする」
-              </p>
-              <div className="mt-8 border-t border-slate-300/70 pt-6">
-                <p className="text-xs font-semibold tracking-[0.14em] text-violet-700">YOHAKU AI</p>
-                <p className="mt-3 text-base font-light leading-8 text-slate-600">
-                  最近の記録には、人と話す時間がある日は満たされるという共通点があります。今日は15分、誰かに連絡してみませんか？
+
+              <div className="border-l border-slate-300/80 pl-7 sm:pl-8">
+                <div className="flex items-center gap-3 text-xs font-medium tracking-[0.12em] text-slate-500">
+                  <BrainCircuit className="h-4 w-4 text-violet-600" aria-hidden="true" />
+                  TODAY&apos;S CONTEXT
+                </div>
+                <p className="mt-6 text-xl font-light leading-relaxed tracking-[-0.035em] text-slate-900 sm:text-2xl">
+                  「忙しいのに、何も進んでいない気がする」
                 </p>
-              </div>
-              <div className="mt-8 flex items-center gap-3 text-sm text-slate-700">
-                <span className="h-px w-8 bg-violet-400" />
-                今日の一歩：友人に短いメッセージを送る
+                <div className="mt-6 border-t border-slate-300/70 pt-5">
+                  <p className="text-xs font-semibold tracking-[0.14em] text-violet-700">YOHAKU AI</p>
+                  <p className="mt-3 text-sm font-light leading-7 text-slate-600">
+                    最近の記録には、人と話す時間がある日は満たされるという共通点があります。今日は15分、誰かに連絡してみませんか？
+                  </p>
+                </div>
+                <div className="mt-6 flex items-center gap-3 text-sm text-slate-700">
+                  <span className="h-px w-8 bg-violet-400" />
+                  今日の一歩：友人に短いメッセージを送る
+                </div>
               </div>
             </div>
           </div>
@@ -183,7 +198,7 @@ export default function LandingPage() {
             残したものが、意味になるまで
           </h2>
           <p className="mt-4 text-slate-500 font-light">
-            整理できなくても大丈夫。断片が重なり、人生の層に変わる旅。
+            気になったことを記録すると、あとからテーマや変化を振り返れるようになります。
           </p>
 
           <div className="mt-20 grid gap-8 lg:grid-cols-3">
@@ -234,11 +249,11 @@ export default function LandingPage() {
         <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.2),transparent_50%)]" />
         <div className="relative mx-auto max-w-7xl px-6 lg:px-16 text-center">
           <h2 className="text-3xl font-light tracking-tight sm:text-4xl">
-            あなたの余白を、ここから始めましょう。
+            まずは、気になっていることを1つだけ記録してみましょう。
           </h2>
           <p className="mt-6 text-slate-400 font-light max-w-xl mx-auto">
-            溜めるためではなく、自分と出会うための場所。<br />
-            YOHAKU は、あなたと共に静かに呼吸します。
+            記録をためて、あとから自分の変化を確かめる場所。<br />
+            YOHAKUは、毎日の小さな気づきを次の行動につなげます。
           </p>
           <div className="mt-10">
             <Link

@@ -13,18 +13,21 @@ export async function POST(request: Request) {
     let email: string | undefined;
     let password: string | undefined;
     let displayName: string | undefined;
+    let newsletterOptIn = false;
 
     try {
       const body = await request.json();
       email = body.email;
       password = body.password;
       displayName = body.displayName;
+      newsletterOptIn = body.newsletterOptIn === true;
     } catch {
       // If JSON parsing fails, try formData
       const formData = await request.formData();
       email = formData.get("email") as string;
       password = formData.get("password") as string;
       displayName = formData.get("displayName") as string | undefined;
+      newsletterOptIn = formData.get("newsletterOptIn") === "on";
     }
 
     if (!email || !password) {
@@ -41,7 +44,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const result = await signUpWithEmail(email, password, displayName);
+    const result = await signUpWithEmail(email, password, displayName, newsletterOptIn);
 
     if (!result.success) {
       return NextResponse.json(

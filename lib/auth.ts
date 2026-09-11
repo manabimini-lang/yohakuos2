@@ -16,6 +16,9 @@ import {
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 
+const allowDevAuthFallback =
+  process.env.NODE_ENV === "development" && process.env.YOHAKU_ALLOW_DEV_AUTH_FALLBACK === "true";
+
 const googleProvider = process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
   ? [Google({
       clientId: process.env.GOOGLE_CLIENT_ID,
@@ -68,7 +71,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const secret = process.env.TURNSTILE_SECRET_KEY;
         const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
         const turnstileToken = credentials.turnstileToken as string | undefined;
-        const hasTurnstileConfig = !!(secret && siteKey);
+        // Preview deployments use a stable Vercel alias that cannot be added to
+        // the production Turnstile allow-list. Do not require a token there;
+        // production continues to enforce Turnstile whenever it is configured.
+        const hasTurnstileConfig =
+          process.env.NODE_ENV === "production" &&
+          process.env.VERCEL_ENV !== "preview" &&
+          !!(secret && siteKey);
         const hasValidToken = !!(turnstileToken && turnstileToken.length > 0);
 
         if (hasTurnstileConfig && hasValidToken) {
@@ -112,7 +121,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               error: e instanceof Error ? e.message : String(e),
               elapsed: tsElapsed(),
             });
-            if (process.env.NODE_ENV === "development") {
+            if (allowDevAuthFallback) {
               authLog("warn", { stage: "turnstile", requestId, result: "dev_bypass" });
             } else {
               return null;
@@ -126,7 +135,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             result: "rejected",
             code: TURNSTILE_CODE.MISSING,
           });
-          if (process.env.NODE_ENV === "development") {
+          if (allowDevAuthFallback) {
             authLog("warn", { stage: "turnstile", requestId, result: "dev_bypass" });
           } else {
             return null;
@@ -230,55 +239,22 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             elapsed: elapsed(),
           });
 
-          // Fallback to local dev store in development mode
-          if (process.env.NODE_ENV === "development") {
-            try {
-              const { findUserByEmail, comparePassword } = await import(
-                "@/core/auth/server/dev-store"
-              );
-              const normalizedEmail = ((credentials?.email as string) || "").trim().toLowerCase();
-              const devUser = await findUserByEmail(normalizedEmail);
-              if (!devUser) return null;
-
-              if (devUser.lockedUntil && new Date(devUser.lockedUntil) > new Date()) {
-                return null;
-              }
-
-              const isValid = await comparePassword(normalizedEmail, credentials.password as string);
-              if (!isValid) return null;
-
-              authLog("info", {
-                stage: "authorize",
-                requestId,
-                result: "success",
-                reason: "dev_store_fallback",
-              });
-
-              return {
-                id: devUser.id,
-                email: devUser.email,
-                name: devUser.name,
-                password: devUser.password,
-                lockedUntil: devUser.lockedUntil ? new Date(devUser.lockedUntil) : null,
-              } as any;
-            } catch (e) {
-              authLog("error", {
-                stage: "authorize",
-                requestId,
-                result: "error",
-                reason: "dev_store_failed",
-                elapsed: elapsed(),
-              });
-              return null;
-            }
-          }
-
           return null;
         }
       },
     }),
   ],
   events: {
+    async createUser({ user }) {
+      if (user.id) {
+        try {
+          const { recordSignup } = await import('@/lib/analytics/funnel-server');
+          await recordSignup(user.id, 'oauth');
+        } catch {
+          console.warn('[product-funnel] signup instrumentation unavailable');
+        }
+      }
+    },
     async signIn({ user, account }) {
       authLog("info", {
         stage: "event_signin",

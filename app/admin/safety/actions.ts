@@ -12,6 +12,7 @@ import {
 } from "@/core/safety";
 import { queue } from "@/services/queue";
 import type { SafetyState, RiskLevel, SignalType } from "@/core/safety/types";
+import { isAdminAccessEmail } from "@/lib/auth/admin-access";
 
 /**
  * Helper to verify that the caller is an admin or moderator.
@@ -26,7 +27,7 @@ async function verifyAdmin() {
   const roles = (session.user as any).roles || [];
   const oldRole = (session.user as any).role;
   
-  const isModerator = hasMinRoleLevel(roles, "moderator") || oldRole === "ADMIN" || oldRole === "SUPER_ADMIN";
+  const isModerator = isAdminAccessEmail(session.user.email) && (hasMinRoleLevel(roles, "moderator") || oldRole === "ADMIN" || oldRole === "SUPER_ADMIN");
   if (!isModerator) {
     throw new Error("Forbidden");
   }

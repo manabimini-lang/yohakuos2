@@ -122,7 +122,7 @@ ${dataForPrompt}
 0.0-1.0の範囲で。データ不足の場合はnull。
 gentleSuggestionsは「〜してみてもいいかもしれません」というトーンで。`;
 
-    const { text } = await generateText(prompt, BALANCE_SYSTEM_PROMPT);
+    const { text } = await generateText(prompt, BALANCE_SYSTEM_PROMPT, { userId, allowEnvFallback: true, taskClass: "standard" });
 
     try {
         const jsonMatch = text.match(/\{[\s\S]*\}/);

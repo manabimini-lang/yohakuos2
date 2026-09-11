@@ -6,6 +6,7 @@ import {
   listYuiReflections,
   listYuiEvents,
   listYuiCalendarEvents,
+  listYuiConversations,
   getYuiProfile,
 } from "./service";
 import type {
@@ -15,6 +16,8 @@ import type {
   YuiEvent,
   YuiCalendarEvent,
 } from "./models";
+import { getZonedDayWindow } from "./timezone";
+import { getGoalSchedulePreferenceAdjustment, isTestContent } from "@/lib/yui-ux";
 
 export type YuiContextSummary = {
   priority: string;
@@ -24,7 +27,10 @@ export type YuiContextSummary = {
   relatedGoalId?: string;
 };
 
-export async function computeYuiContext(userId: string): Promise<YuiContextSummary> {
+export async function computeYuiContext(
+  userId: string,
+  options: { timeZone?: string } = {},
+): Promise<YuiContextSummary> {
   const [
     goals,
     milestones,
@@ -34,6 +40,7 @@ export async function computeYuiContext(userId: string): Promise<YuiContextSumma
     events,
     calendarEvents,
     profile,
+    conversations,
   ] = await Promise.all([
     listYuiGoals(userId, 20),
     listYuiMilestones(userId, undefined, 50),
@@ -43,9 +50,10 @@ export async function computeYuiContext(userId: string): Promise<YuiContextSumma
     listYuiEvents(userId, 30),
     listYuiCalendarEvents(userId, { limit: 30 }),
     getYuiProfile(userId),
+    listYuiConversations(userId, 100),
   ]);
 
-  const activeGoals = goals.filter((g) => g.status === "active");
+  const activeGoals = goals.filter((goal) => goal.status === "active" && !isTestContent(`${goal.title} ${goal.description ?? ""}`));
 
   if (activeGoals.length === 0) {
     const focusArea = profile?.focus_area?.trim() || profile?.life_theme?.trim();
@@ -53,25 +61,48 @@ export async function computeYuiContext(userId: string): Promise<YuiContextSumma
       return {
         priority: focusArea,
         priorityScore: 50,
-        reason: "現在設定されているアクティブな Goal がないため、プロフィールに記載されたテーマを重視しています。",
-        nextAction: "具体的な Goal（目標）を設定し、ロードマップを明確にしましょう。",
+        reason: "現在進行中の目的がないため、プロフィールに記載されたテーマを重視しています。",
+        nextAction: "具体的な目的を一つ決め、次にすることを整理しましょう。",
       };
     }
 
     return {
-      priority: "目標の設定と方向性の整理",
+      priority: "目的と方向性の整理",
       priorityScore: 30,
-      reason: "現在アクティブな Goal が設定されていません。",
-      nextAction: "YUI との会話または目標一覧から、今最も注力したい Goal を登録しましょう。",
+      reason: "現在進行中の目的が設定されていません。",
+      nextAction: "YUIとの相談または目的一覧から、今いちばん進めたい目的を登録しましょう。",
     };
   }
 
   // Rank active goals by calculated priority score
   const now = Date.now();
   const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+  const mostRecentlyUpdatedGoalId = [...activeGoals]
+    .sort((left, right) => new Date(right.updated_at).getTime() - new Date(left.updated_at).getTime())[0]?.id;
+  const preferenceTexts = [
+    ...memories.flatMap(memory => [memory.title, memory.summary, memory.body]),
+    ...conversations.filter(conversation => conversation.role === "user").map(conversation => conversation.content),
+  ];
 
   const scoredGoals = activeGoals.map((goal) => {
     let score = 50;
+
+    // A recent goal update is the clearest explicit signal of the user's
+    // current focus. Keep the dashboard and the generated brief aligned with it.
+    const updatedAt = new Date(goal.updated_at).getTime();
+    const isRecentFocus = goal.id === mostRecentlyUpdatedGoalId
+      && Number.isFinite(updatedAt)
+      && now - updatedAt < ONE_WEEK_MS;
+    if (isRecentFocus) score += 35;
+
+    const schedulePreference = getGoalSchedulePreferenceAdjustment({
+      goalTitle: goal.title,
+      goalDescription: goal.description,
+      preferenceTexts,
+      now: new Date(now),
+      timeZone: options.timeZone || "Asia/Tokyo",
+    });
+    score += schedulePreference.scoreDelta;
 
     // 1. Lower progress = slightly higher score needed for boost
     if (goal.progress < 50) {
@@ -102,7 +133,7 @@ export async function computeYuiContext(userId: string): Promise<YuiContextSumma
       (e) =>
         e.title.includes(goal.title) ||
         e.content.includes(goal.title) ||
-        (now - new Date(e.occurred_at).getTime() < ONE_WEEK_MS),
+        e.metadata?.goal_id === goal.id,
     );
 
     const goalCalendarEvents = calendarEvents.filter(
@@ -136,6 +167,8 @@ export async function computeYuiContext(userId: string): Promise<YuiContextSumma
       hasRecentActivity,
       goalDecisions,
       pendingMilestones,
+      isRecentFocus,
+      schedulePreferenceReason: schedulePreference.reason,
     };
   });
 
@@ -146,21 +179,26 @@ export async function computeYuiContext(userId: string): Promise<YuiContextSumma
   const topGoal = top.goal;
 
   // Build Secretary response reason & next action
-  let reason = `${topGoal.title} が現在の最優先Goalです。`;
+  let reason = `${topGoal.title} が現在の優先候補です。`;
   let nextAction = "90分の集中・設計時間を確保しましょう。";
 
   // Check today's calendar busy state
-  const startOfDay = new Date();
-  startOfDay.setHours(0, 0, 0, 0);
-  const endOfDay = new Date();
-  endOfDay.setHours(23, 59, 59, 999);
+  const { start: startOfDay, end: endOfDay } = getZonedDayWindow(
+    new Date(),
+    options.timeZone || "Asia/Tokyo",
+  );
 
   const todayEventsCount = calendarEvents.filter((ce) => {
     const t = new Date(ce.start_at).getTime();
-    return t >= startOfDay.getTime() && t <= endOfDay.getTime();
+    return t >= startOfDay.getTime() && t < endOfDay.getTime();
   }).length;
 
-  if (top.hasRecentDecision && !top.hasRecentActivity) {
+  if (top.isRecentFocus) {
+    reason = `最近更新された目的「${topGoal.title}」を、現在の取り組みとして優先しています。`;
+    if (top.pendingMilestones.length > 0) {
+      nextAction = `次の一歩「${top.pendingMilestones[0].title}」に着手しましょう。`;
+    }
+  } else if (top.hasRecentDecision && !top.hasRecentActivity) {
     reason = `${topGoal.title} に関する意志決定が行われていますが、今週の進捗イベントや予定の確保がまだ確認できません。`;
     if (todayEventsCount >= 3) {
       reason += `（本日は既に${todayEventsCount}件の予定が入っています）`;
@@ -188,6 +226,13 @@ export async function computeYuiContext(userId: string): Promise<YuiContextSumma
     } else {
       nextAction = "今週の進捗を振り返り、次のタスクを定義しましょう。";
     }
+  }
+
+  const deferredByPreference = scoredGoals.filter(item => item.schedulePreferenceReason);
+  if (!top.schedulePreferenceReason && deferredByPreference.length > 0) {
+    reason += ` ${deferredByPreference[0].schedulePreferenceReason}`;
+  } else if (top.schedulePreferenceReason) {
+    reason += ` ${top.schedulePreferenceReason}`;
   }
 
   return {

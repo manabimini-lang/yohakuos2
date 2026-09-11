@@ -19,6 +19,7 @@ type AnalyticsState = {
   suggestionViewRate: number;
   reflectionRate: number;
   savesTrend: { date: string; count: number }[];
+  feedback: { helpful: number; dismissed: number; busy: number; notRelevant: number; later: number };
 };
 
 export default function AnalyticsPage() {
@@ -73,7 +74,7 @@ export default function AnalyticsPage() {
     <section className="space-y-8 max-w-5xl mx-auto">
       {/* Toast Notification */}
       {toast && (
-        <div className="fixed bottom-6 right-6 z-50 rounded-xl bg-slate-900 px-4 py-3 text-sm font-medium text-foreground shadow-lg animate-in slide-in-from-bottom-4 fade-in duration-300">
+        <div className="fixed bottom-6 right-6 z-50 rounded-xl bg-slate-900 px-4 py-3 text-sm font-medium text-white shadow-lg animate-in slide-in-from-bottom-4 fade-in duration-300">
           {toast}
         </div>
       )}
@@ -131,7 +132,7 @@ export default function AnalyticsPage() {
         <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
           <div className="flex items-center space-x-2.5">
             <BookOpen className="w-4 h-4 text-emerald-500" />
-            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">提案閲覧率</h3>
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">提案反応率</h3>
           </div>
           <div className="space-y-2 flex flex-col justify-center py-2">
             <div className="text-4xl font-semibold text-foreground tracking-tight">{data.suggestionViewRate}%</div>
@@ -143,7 +144,7 @@ export default function AnalyticsPage() {
             </div>
           </div>
           <p className="text-[10px] text-muted-foreground leading-normal">
-            AIまたはシステムが創出した学習やリフレクションのロード提案を、ユーザーが確認・完了した割合です。
+            学習コンテンツとYUIの提案のうち、ユーザーが承諾・見送り・完了で反応した割合です。
           </p>
         </div>
 
@@ -170,15 +171,40 @@ export default function AnalyticsPage() {
       </div>
 
       {/* Save Trend Chart */}
+      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-5">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">AI提案への反応</h3>
+            <p className="mt-1 text-xs text-slate-500">ユーザーが提案をどう受け止めたか（累計）</p>
+          </div>
+          <MessageSquare className="w-4 h-4 text-violet-500" />
+        </div>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+          {[
+            ["役に立った", data.feedback.helpful, "text-emerald-600"],
+            ["見送り", data.feedback.dismissed, "text-slate-700"],
+            ["今は忙しい", data.feedback.busy, "text-amber-600"],
+            ["合わない", data.feedback.notRelevant, "text-rose-600"],
+            ["後で見たい", data.feedback.later, "text-indigo-600"],
+          ].map(([label, value, color]) => (
+            <div key={String(label)} className="rounded-xl border border-slate-100 bg-slate-50/60 p-3">
+              <p className="text-[11px] text-slate-500">{label}</p>
+              <p className={`mt-1 text-2xl font-semibold ${color}`}>{value}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Save Trend Chart */}
       <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-6">
         <div className="flex items-center space-x-2">
           <TrendingUp className="w-4 h-4 text-muted-foreground" />
-          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">保存数推移（過去7日間）</h3>
+          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">保存メモリ数推移（過去7日間）</h3>
         </div>
 
         {data.savesTrend.every(item => item.count === 0) ? (
           <div className="p-8 text-center text-muted-foreground space-y-1">
-            <p className="text-xs font-medium text-muted-foreground">まだ保存された知見はありません。</p>
+            <p className="text-xs font-medium text-muted-foreground">まだ保存されたメモリはありません。</p>
             <p className="text-[10px] text-muted-foreground">これから少しずつ余白が育っていきます。</p>
           </div>
         ) : (

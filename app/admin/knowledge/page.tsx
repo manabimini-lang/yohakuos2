@@ -2,13 +2,14 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { Plus, Check, Loader2 } from "lucide-react";
+import { isAdminAccessEmail } from "@/lib/auth/admin-access";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminKnowledgePage() {
   const session = await auth();
   
-  if (!session?.user || (session.user.role !== "ADMIN" && session.user.role !== "SUPER_ADMIN")) {
+  if (!session?.user || !isAdminAccessEmail(session.user.email)) {
     redirect("/");
   }
 

@@ -120,7 +120,7 @@ ${dialogueSnippets}
   const systemInstruction = "あなたは静かな観察者です。ユーザーの断片的な記憶や言葉から、そこにある文脈をそっと掬い上げてください。目的は答えを出すことではなく、気づくためのReflectionを提供することです。";
 
   try {
-    const response = await generateText(prompt, systemInstruction, { userId });
+    const response = await generateText(prompt, systemInstruction, { userId, taskClass: "standard" });
     return {
       dominantThemes,
       dominantContexts,

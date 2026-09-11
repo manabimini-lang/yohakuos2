@@ -11,7 +11,7 @@ import {
   CheckCircle2,
   DollarSign
 } from "lucide-react";
-import { getAdminBillingList, getAdminStripePortalUrl } from "@/app/admin/actions";
+import { getAdminBillingList, getAdminStripeCustomers, getAdminStripePortalUrl } from "@/app/admin/actions";
 
 type BillingItem = {
   id: string;
@@ -23,11 +23,16 @@ type BillingItem = {
   status: string;
   stripePriceId: string | null;
   plan: string;
+  stripeVerified: boolean;
   currentPeriodEnd: Date | null;
 };
+type StripeCustomerItem = { id: string; name?: string | null; email: string | null; created: number; delinquent?: boolean | null };
 
 export default function BillingPage() {
   const [billingList, setBillingList] = useState<BillingItem[]>([]);
+  const [stripeCustomers, setStripeCustomers] = useState<StripeCustomerItem[]>([]);
+  const [stripeCustomersError, setStripeCustomersError] = useState(false);
+  const [stripeMode, setStripeMode] = useState("unknown");
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [redirectingId, setRedirectingId] = useState<string | null>(null);
@@ -40,8 +45,22 @@ export default function BillingPage() {
   const loadBilling = async () => {
     try {
       setLoading(true);
-      const data = await getAdminBillingList();
-      setBillingList(data as any);
+      try {
+        const data = await getAdminBillingList();
+        setBillingList(data as any);
+      } catch (e) {
+        console.error("Failed to load local billing records", e);
+        showToast("課金情報の取得に失敗しました");
+      }
+      try {
+        const result = await getAdminStripeCustomers();
+        setStripeMode(result.stripeMode);
+        setStripeCustomers(result.customers);
+        setStripeCustomersError(Boolean(result.error));
+      } catch (e) {
+        console.error("Failed to load Stripe customers", e);
+        setStripeCustomersError(true);
+      }
     } catch (e) {
       console.error(e);
       showToast("課金情報の取得に失敗しました");
@@ -95,6 +114,9 @@ export default function BillingPage() {
 
   const suspiciousList = filteredBilling.filter(isSuspicious);
   const normalList = filteredBilling.filter(item => !isSuspicious(item));
+  const hasMockStripeRecord = filteredBilling.some(item =>
+    [item.stripeCustomerId, item.stripeSubscriptionId, item.stripePriceId].some(value => value?.toLowerCase().includes("mock"))
+  );
 
   if (loading) {
     return (
@@ -109,7 +131,7 @@ export default function BillingPage() {
     <section className="space-y-6 max-w-5xl mx-auto">
       {/* Toast Notification */}
       {toast && (
-        <div className="fixed bottom-6 right-6 z-50 rounded-xl bg-slate-900 px-4 py-3 text-sm font-medium text-foreground shadow-lg animate-in slide-in-from-bottom-4 fade-in duration-300">
+        <div className="fixed bottom-6 right-6 z-50 rounded-xl bg-slate-900 px-4 py-3 text-sm font-medium text-white shadow-lg animate-in slide-in-from-bottom-4 fade-in duration-300">
           {toast}
         </div>
       )}
@@ -147,6 +169,24 @@ export default function BillingPage() {
         </div>
       </div>
 
+      {hasMockStripeRecord && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-start gap-3" role="alert">
+          <AlertTriangle className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
+          <div>
+            <h4 className="text-xs font-semibold text-amber-900">モック課金データを検出しました</h4>
+            <p className="mt-1 text-xs text-amber-800 leading-normal">Stripe IDに「mock」が含まれる契約はテスト用データです。ACTIVE表示だけでは実際の決済完了を意味しません。実StripeのCustomer ID・Subscription IDとWebhookの受信履歴を確認してください。</p>
+          </div>
+        </div>
+      )}
+
+      <section className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+        <div className="p-5 border-b border-slate-200">
+          <h3 className="text-sm font-semibold text-slate-800">Stripe本番顧客一覧</h3>
+          <p className="mt-1 text-xs text-slate-500">Stripe APIから取得した顧客情報です。決済情報は表示しません。接続モード：{stripeMode === "live" ? "Live" : stripeMode === "test" ? "Test" : "不明"}</p>
+        </div>
+        {stripeCustomersError ? <p className="p-6 text-xs text-amber-700">Stripe顧客一覧を取得できませんでした。キーの有効性、Live/Test mode、Vercelからの外部通信を確認してください。</p> : stripeCustomers.length === 0 ? <p className="p-6 text-xs text-slate-500">Stripe顧客はありません。</p> : <div className="overflow-x-auto"><table className="w-full text-left"><thead><tr className="bg-slate-50 border-b border-slate-200 text-xs text-slate-500"><th className="px-5 py-3">顧客</th><th className="px-5 py-3">メール</th><th className="px-5 py-3">Customer ID</th><th className="px-5 py-3">登録日</th></tr></thead><tbody className="divide-y divide-slate-100">{stripeCustomers.map((customer) => <tr key={customer.id} className="text-xs"><td className="px-5 py-3 text-slate-800">{customer.name || "未設定"}</td><td className="px-5 py-3 text-slate-600">{customer.email || "未設定"}</td><td className="px-5 py-3 font-mono text-[11px] text-slate-500">{customer.id}</td><td className="px-5 py-3 text-slate-500">{new Date(customer.created * 1000).toLocaleDateString("ja-JP")}</td></tr>)}</tbody></table></div>}
+      </section>
+
       {/* suspicious list (Attention Required) */}
       <div className="space-y-3">
         <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">要確認契約</h3>
@@ -170,7 +210,7 @@ export default function BillingPage() {
                 </thead>
                 <tbody className="divide-y divide-amber-100 text-slate-700 bg-amber-50/10">
                   {suspiciousList.map((item) => {
-                    const isPremium = item.plan === "premium" || item.status === "active";
+                    const isPremium = item.stripeVerified;
                     const isRedirecting = redirectingId === item.id;
 
                     return (
@@ -196,7 +236,7 @@ export default function BillingPage() {
                         </td>
                         <td className="px-6 py-4">
                           <span className={`inline-flex items-center text-xs font-medium text-muted-foreground`}>
-                            {isPremium ? "プレミアムプラン" : "フリープラン"}
+                            {isPremium ? "Stripe確認済み" : item.plan === "premium" ? "アプリ権限のみ" : "フリープラン"}
                           </span>
                         </td>
                         <td className="px-6 py-4 text-xs text-muted-foreground">
@@ -253,7 +293,7 @@ export default function BillingPage() {
                 </thead>
                 <tbody className="divide-y divide-slate-200 text-slate-700">
                   {normalList.map((item) => {
-                    const isPremium = item.plan === "premium" || item.status === "active";
+                    const isPremium = item.stripeVerified;
                     const isRedirecting = redirectingId === item.id;
 
                     return (
@@ -285,7 +325,7 @@ export default function BillingPage() {
                           <span className={`inline-flex items-center text-xs font-medium ${
                             isPremium ? "text-amber-600 font-semibold" : "text-muted-foreground"
                           }`}>
-                            {isPremium ? "プレミアムプラン" : "フリープラン"}
+                            {isPremium ? "Stripe確認済み" : item.plan === "premium" ? "アプリ権限のみ" : "フリープラン"}
                           </span>
                         </td>
                         <td className="px-6 py-4 text-xs text-muted-foreground">

@@ -1,10 +1,10 @@
 "use server";
 
 import { auth } from "@/lib/auth";
-import { encryptKey } from "@/lib/encryption";
 import { revalidatePath } from "next/cache";
 import { updateAiKeySchema } from "@/lib/validators/settings.validator";
 import { prisma } from "@/lib/prisma";
+import { saveUserApiKey } from "@/lib/ai/user-api-keys";
 
 export async function updateAiKeyAction(apiKey: string) {
   try {
@@ -22,14 +22,14 @@ export async function updateAiKeyAction(apiKey: string) {
 
     const validatedKey = parsed.data.apiKey;
 
-    // 2. Encrypt
-    const encryptedKey = encryptKey(validatedKey);
+    // 2. Save the Gemini credential independently from provider selection.
+    await saveUserApiKey(userId, "gemini", validatedKey);
 
-    // 3. Save to user_ai_settings (source of truth)
+    // 3. user_ai_settings stores selection and usage state only.
     await prisma.userAISettings.upsert({
       where: { userId },
-      update: { encryptedApiKey: encryptedKey, provider: "gemini", isEnabled: true },
-      create: { userId, encryptedApiKey: encryptedKey, provider: "gemini", isEnabled: true },
+      update: { encryptedApiKey: null, provider: "gemini", isEnabled: true },
+      create: { userId, encryptedApiKey: null, provider: "gemini", isEnabled: true },
     });
 
     revalidatePath("/member/settings");

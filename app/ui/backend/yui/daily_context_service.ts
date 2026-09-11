@@ -8,6 +8,7 @@ import {
   listYuiMemories,
 } from "./service";
 import { computeYuiContext } from "./context_service";
+import { getZonedDayWindow } from "./timezone";
 
 export interface YuiDailyContext {
   title: string;
@@ -16,18 +17,16 @@ export interface YuiDailyContext {
   memorySignals: string[];
 }
 
-export async function getDailyContext(userId: string): Promise<YuiDailyContext> {
+export async function getDailyContext(
+  userId: string,
+  options: { timeZone?: string } = {},
+): Promise<YuiDailyContext> {
   const now = new Date();
+  const timeZone = options.timeZone || "Asia/Tokyo";
 
   // Define 7 days window
   const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-  const startOfYesterday = new Date(now);
-  startOfYesterday.setDate(startOfYesterday.getDate() - 1);
-  startOfYesterday.setHours(0, 0, 0, 0);
-
-  const endOfYesterday = new Date(now);
-  endOfYesterday.setDate(endOfYesterday.getDate() - 1);
-  endOfYesterday.setHours(23, 59, 59, 999);
+  const { start: startOfYesterday, end: endOfYesterday } = getZonedDayWindow(now, timeZone, -1);
 
   const yesterdayStartMs = startOfYesterday.getTime();
   const yesterdayEndMs = endOfYesterday.getTime();
@@ -41,7 +40,7 @@ export async function getDailyContext(userId: string): Promise<YuiDailyContext> 
       listYuiCalendarEvents(userId, { limit: 50 }),
       listYuiGoals(userId, 10),
       listYuiMemories(userId, 30),
-      computeYuiContext(userId),
+      computeYuiContext(userId, { timeZone }),
     ]);
 
   // Extract yesterday items based on priority rules:
@@ -57,16 +56,16 @@ export async function getDailyContext(userId: string): Promise<YuiDailyContext> 
   // Check 1: Yesterday Reflection
   const yesterdayReflections = reflections.filter((r) => {
     const t = new Date(r.created_at).getTime();
-    return t >= yesterdayStartMs && t <= yesterdayEndMs;
+    return t >= yesterdayStartMs && t < yesterdayEndMs;
   });
 
   // Check 2: Uncompleted Goals / Priority
-  const activeGoals = goals.filter((g) => g.status === "in_progress");
+  const activeGoals = goals.filter((g) => g.status === "active");
 
   // Check 3: Yesterday Calendar
   const yesterdayCalendar = calendarEvents.filter((ce) => {
     const t = new Date(ce.start_at).getTime();
-    return t >= yesterdayStartMs && t <= yesterdayEndMs;
+    return t >= yesterdayStartMs && t < yesterdayEndMs;
   });
 
   if (context.priority && context.priority !== "本日のテーマを設定") {
@@ -82,8 +81,8 @@ export async function getDailyContext(userId: string): Promise<YuiDailyContext> 
   } else if (activeGoals.length > 0) {
     const goal = activeGoals[0];
     sourceType = "goal";
-    title = `進行中の目標: ${goal.title}`;
-    summary = `目標「${goal.title}」に向けた取り組みが続いています。一歩ずつ前進しましょう。`;
+    title = `進行中の目的: ${goal.title}`;
+    summary = `目的「${goal.title}」に向けた取り組みが続いています。一歩ずつ前進しましょう。`;
   } else if (yesterdayCalendar.length > 0) {
     const event = yesterdayCalendar[0];
     sourceType = "calendar";

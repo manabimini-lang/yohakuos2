@@ -103,17 +103,6 @@ export default async function LifePage() {
               人生の層
             </p>
           </Link>
-          <Link
-            href="/legacy"
-            className="flex-1 px-6 py-3 rounded-lg border border-black/10 dark:border-border bg-black/[0.02] dark:bg-card hover:bg-black/[0.04] dark:hover:bg-white/[0.04] text-center"
-          >
-            <p className="text-xs font-light tracking-widest text-black/50 dark:text-foreground/50 uppercase">
-              遺産
-            </p>
-            <p className="text-xs font-light text-black/70 dark:text-foreground/70 mt-0.5">
-              軌跡を見る
-            </p>
-          </Link>
         </nav>
 
         {!aiSettings?.isEnabled ? (
@@ -122,7 +111,7 @@ export default async function LifePage() {
               AI接続がまだ行われていません。
             </p>
             <p className="text-xs text-black/50 dark:text-foreground/50 leading-relaxed font-light">
-              Gemini APIキーを設定すると、保存した記録が静かに整えられ、パーソナルAIとの対話や、内面の風景の描画が始まります。
+              AIを接続すると、保存した記録が静かに整えられ、パーソナルAIとの対話や、内面の風景の描画が始まります。PremiumはAPIキー不要です。
             </p>
             <Link 
               href="/yui/settings"
@@ -208,10 +197,10 @@ export default async function LifePage() {
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center pt-8">
               <Link
-                href="/log"
+                href="/yui"
                 className="px-6 py-3 rounded-lg border border-black/10 dark:border-border bg-black/[0.02] dark:bg-card hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition-colors text-sm font-light text-black/70 dark:text-foreground/70"
               >
-                記録を始める
+                YUIに記録する
               </Link>
               <Link
                 href="/memory"

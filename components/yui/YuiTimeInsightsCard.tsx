@@ -42,7 +42,7 @@ export function YuiTimeInsightsCard({ data, isLoading }: YuiTimeInsightsCardProp
       <div className="flex items-center justify-between border-b border-border/40 pb-3">
         <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-primary">
           <Clock className="h-4 w-4" />
-          Time Insights
+          時間の傾向
         </div>
         <span className="text-[11px] font-medium px-2.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
           過去14日

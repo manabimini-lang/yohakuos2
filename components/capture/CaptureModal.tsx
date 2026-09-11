@@ -5,11 +5,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useCaptureStore } from "@/store/capture-store";
 import { UrlCaptureForm } from "./UrlCaptureForm";
 import { PdfUploadForm } from "./PdfUploadForm";
+import { PhotoCaptureForm } from "./PhotoCaptureForm";
 import { X } from "lucide-react";
 
 export function CaptureModal() {
   const { isOpen, closeCapture } = useCaptureStore();
-  const [activeTab, setActiveTab] = useState<"url" | "pdf">("url");
+  const [activeTab, setActiveTab] = useState<"photo" | "url" | "pdf">("photo");
 
   return (
     <AnimatePresence>
@@ -42,6 +43,14 @@ export function CaptureModal() {
               </div>
 
               <div className="px-6 pt-2 pb-4 flex gap-4 border-b border-notion-border dark:border-border">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("photo")}
+                  className={`text-sm font-medium pb-2 transition-colors relative ${activeTab === "photo" ? "text-brand" : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"}`}
+                >
+                  写真
+                  {activeTab === "photo" && <motion.div layoutId="activeTabIndicator" className="absolute bottom-0 left-0 right-0 h-0.5 rounded-t-full bg-brand" />}
+                </button>
                 <button
                   onClick={() => setActiveTab("url")}
                   className={`text-sm font-medium pb-2 transition-colors relative ${
@@ -78,7 +87,11 @@ export function CaptureModal() {
 
               <div className="p-6">
                 <AnimatePresence mode="wait">
-                  {activeTab === "url" ? (
+                  {activeTab === "photo" ? (
+                    <motion.div key="photo" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} transition={{ duration: 0.2 }}>
+                      <PhotoCaptureForm onSuccess={closeCapture} />
+                    </motion.div>
+                  ) : activeTab === "url" ? (
                     <motion.div
                       key="url"
                       initial={{ opacity: 0, x: -10 }}

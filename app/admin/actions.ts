@@ -3,14 +3,15 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { isAdminAccessEmail } from "@/lib/auth/admin-access";
+import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 async function verifyAdmin() {
   const session = await auth();
   if (!session?.user) {
     throw new Error("Unauthorized");
   }
-  const role = (session.user as any).role;
-  if (role !== "ADMIN" && role !== "SUPER_ADMIN") {
+  if (!isAdminAccessEmail(session.user.email)) {
     throw new Error("Forbidden");
   }
   return session;
@@ -30,10 +31,10 @@ export async function getAdminStats() {
     prisma.user.count(),
     prisma.user.count({
       where: {
-        OR: [
-          { role: "PAID_MEMBER" },
-          { plan: "premium" }
-        ]
+        AND: [
+          { role: { notIn: ["ADMIN", "SUPER_ADMIN"] } },
+          { OR: [{ role: "PAID_MEMBER" }, { plan: "premium" }] },
+        ],
       }
     }),
     prisma.sharedKnowledge.count(),
@@ -45,14 +46,6 @@ export async function getAdminStats() {
   ]);
 
   const geminiRatio = totalUsers > 0 ? Math.round((geminiUsersCount / totalUsers) * 100) : 0;
-
-  // Count roads distribution from sharedKnowledge or suggestedContent or logs
-  // Since we want current active roads list, let's query the count of logs per road (or static road list)
-  const roadStats = [
-    { id: "beginner", title: "初任者ロード", icon: "🌱", key: "beginner" },
-    { id: "side-hustle", title: "副業ロード", icon: "💻", key: "side-hustle" },
-    { id: "resignation", title: "退職ロード", icon: "🚪", key: "resignation" }
-  ];
 
   // Discord status
   const discordWebhookStatus = !!process.env.DISCORD_WEBHOOK_URL;
@@ -67,7 +60,6 @@ export async function getAdminStats() {
       externalCount,
       geminiRatio,
     },
-    roads: roadStats,
     discord: {
       webhook: discordWebhookStatus,
       bot: discordBotStatus,
@@ -164,7 +156,7 @@ export async function saveRoadPrompt(roadId: string, systemPrompt: string) {
 // ===================================================
 
 import { UserRole } from "@prisma/client";
-import { getStripe } from "@/lib/stripe";
+import { getStripe, getStripeSecretKey } from "@/lib/stripe";
 
 export async function getDashboardStatsAndRecentEvents() {
   await verifyAdmin();
@@ -191,10 +183,10 @@ export async function getDashboardStatsAndRecentEvents() {
     prisma.user.count(),
     prisma.user.count({
       where: {
-        OR: [
-          { role: "PAID_MEMBER" },
-          { plan: "premium" }
-        ]
+        AND: [
+          { role: { notIn: ["ADMIN", "SUPER_ADMIN"] } },
+          { OR: [{ role: "PAID_MEMBER" }, { plan: "premium" }] },
+        ],
       }
     }),
     prisma.user.count({
@@ -349,12 +341,33 @@ export async function getAdminMembersList() {
         take: 1,
         select: { createdAt: true }
       },
+      yuiConversations: {
+        orderBy: { createdAt: "desc" },
+        take: 1,
+        select: { createdAt: true }
+      },
+      yuiReflections: {
+        orderBy: { createdAt: "desc" },
+        take: 1,
+        select: { createdAt: true }
+      },
+      yuiEvents: {
+        orderBy: { occurredAt: "desc" },
+        take: 1,
+        select: { occurredAt: true }
+      },
       _count: {
         select: {
           dailyLogs: true,
           reflections: true,
           userMemories: true,
-          progress: true
+          progress: true,
+          yuiConversations: true,
+          yuiReflections: true,
+          yuiEvents: true,
+          yuiMemories: true,
+          yuiGoals: true,
+          yuiMilestones: true
         }
       },
       progress: {
@@ -381,6 +394,15 @@ export async function getAdminMembersList() {
       ? new Date(Math.max(dailyLogTime.getTime(), reflectionTime.getTime()))
       : dailyLogTime || reflectionTime || null;
 
+    const yuiConversationTime = user.yuiConversations[0]?.createdAt ?? null;
+    const yuiReflectionTime = user.yuiReflections[0]?.createdAt ?? null;
+    const yuiEventTime = user.yuiEvents[0]?.occurredAt ?? null;
+    const yuiActivityTimes = [yuiConversationTime, yuiReflectionTime, yuiEventTime].filter(Boolean) as Date[];
+    const lastYuiActivityAt = yuiActivityTimes.length > 0
+      ? new Date(Math.max(...yuiActivityTimes.map((time) => time.getTime())))
+      : null;
+    const yuiActivityCount = user._count.yuiConversations + user._count.yuiReflections + user._count.yuiEvents;
+
     const completedProgresses = user.progress.filter(p => p.completed && p.completedAt);
     const lastSuggestionViewedAt = completedProgresses.length > 0
       ? new Date(Math.max(...completedProgresses.map(p => p.completedAt!.getTime())))
@@ -388,7 +410,7 @@ export async function getAdminMembersList() {
 
     const lastSuggestionTitle = user.progress[0]?.content?.title ?? null;
 
-    const times = [user.createdAt, lastLogRecordedAt, lastSuggestionViewedAt].filter(Boolean) as Date[];
+    const times = [user.createdAt, lastLogRecordedAt, lastSuggestionViewedAt, lastYuiActivityAt].filter(Boolean) as Date[];
     const lastActiveAt = new Date(Math.max(...times.map(t => t.getTime())));
 
     const totalProgress = user._count.progress;
@@ -397,7 +419,10 @@ export async function getAdminMembersList() {
 
     const isSuspended = user.lockedUntil && new Date(user.lockedUntil) > new Date();
     
-    const noLog14d = !isSuspended && (!lastLogRecordedAt || lastLogRecordedAt < fourteenDaysAgo);
+    // YUI conversations, reflections, and events are first-class usage. A
+    // member who uses YUI without legacy daily logs must not be flagged idle.
+    const lastMeaningfulActivityAt = [lastLogRecordedAt, lastYuiActivityAt].filter(Boolean) as Date[];
+    const noLog14d = !isSuspended && (!lastMeaningfulActivityAt.length || Math.max(...lastMeaningfulActivityAt.map((time) => time.getTime())) < fourteenDaysAgo.getTime());
     const noView14d = !isSuspended && (!lastSuggestionViewedAt || lastSuggestionViewedAt < fourteenDaysAgo);
     
     const isTrial = user.subscription?.status === "trialing";
@@ -420,6 +445,12 @@ export async function getAdminMembersList() {
         lastSuggestionViewedAt,
         lastSuggestionTitle,
         lastLogRecordedAt
+      },
+      yuiUsage: {
+        count: yuiActivityCount,
+        lastActiveAt: lastYuiActivityAt,
+        goalsCount: user._count.yuiGoals,
+        milestonesCount: user._count.yuiMilestones,
       },
       risks: {
         noLog14d,
@@ -534,8 +565,30 @@ export async function getAdminBillingList() {
     status: sub.status,
     stripePriceId: sub.stripePriceId,
     plan: sub.user?.plan ?? "free",
+    stripeVerified: Boolean(
+      sub.stripeSubscriptionId &&
+      ["active", "trialing"].includes(sub.status) &&
+      ![sub.stripeCustomerId, sub.stripeSubscriptionId, sub.stripePriceId].some((value) => value?.toLowerCase().includes("mock"))
+    ),
     currentPeriodEnd: sub.currentPeriodEnd
   }));
+}
+
+/** Live Stripe customer list. Payment details are intentionally not returned. */
+export async function getAdminStripeCustomers() {
+  await verifyAdmin();
+  const key = getStripeSecretKey() ?? "";
+  const stripeMode = key.startsWith("sk_live_") ? "live" : key.startsWith("sk_test_") ? "test" : "unknown";
+  try {
+    const stripe = getStripe();
+    const customers = await stripe.customers.list({ limit: 100 });
+    return { stripeMode, customers: customers.data.map((customer) => ({ id: customer.id, name: customer.name, email: customer.email, created: customer.created, delinquent: customer.delinquent })), error: null };
+  } catch (error) {
+    console.error("[STRIPE_CUSTOMERS] list failed", error);
+    const message = error instanceof Error ? error.message.toLowerCase() : "";
+    const errorCode = message.includes("api key") || message.includes("authentication") ? "invalid_key" : message.includes("network") || message.includes("fetch") ? "network" : "api_error";
+    return { stripeMode, customers: [], error: errorCode };
+  }
 }
 
 export async function getAdminStripePortalUrl(customerId: string) {
@@ -669,6 +722,17 @@ export async function getAnalyticsData() {
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(now.getDate() - 30);
 
+  // A member can now use YUI without creating a legacy DailyLog or
+  // Reflection. Include the current product's member-authored activity.
+  const activeWithin = (since: Date) => ({
+    OR: [
+      { dailyLogs: { some: { createdAt: { gte: since } } } },
+      { reflections: { some: { createdAt: { gte: since } } } },
+      { yuiConversations: { some: { createdAt: { gte: since }, role: "user" } } },
+      { yuiReflections: { some: { createdAt: { gte: since } } } },
+    ],
+  });
+
   // 1. Retention rate calculation
   const [
     usersRegistered7d,
@@ -677,6 +741,8 @@ export async function getAnalyticsData() {
     active30dUsers,
     totalProgress,
     completedProgress,
+    totalYuiRecommendations,
+    respondedYuiRecommendations,
     totalUsers,
     activeUsersPast7d
   ] = await Promise.all([
@@ -688,45 +754,40 @@ export async function getAnalyticsData() {
     prisma.user.count({
       where: {
         createdAt: { lte: sevenDaysAgo },
-        OR: [
-          { dailyLogs: { some: { createdAt: { gte: sevenDaysAgo } } } },
-          { reflections: { some: { createdAt: { gte: sevenDaysAgo } } } }
-        ]
+        ...activeWithin(sevenDaysAgo),
       }
     }),
     // Users registered >= 30 days ago who are active in last 30 days
     prisma.user.count({
       where: {
         createdAt: { lte: thirtyDaysAgo },
-        OR: [
-          { dailyLogs: { some: { createdAt: { gte: thirtyDaysAgo } } } },
-          { reflections: { some: { createdAt: { gte: thirtyDaysAgo } } } }
-        ]
+        ...activeWithin(thirtyDaysAgo),
       }
     }),
     // Total UserProgress
     prisma.userProgress.count(),
     // Completed UserProgress
     prisma.userProgress.count({ where: { completed: true } }),
+    // YUI recommendations are the current proposal flow. A non-pending
+    // status is an explicit member response (accept, reject, or complete).
+    prisma.yuiRecommendation.count(),
+    prisma.yuiRecommendation.count({ where: { status: { not: "pending" } } }),
     // Total users count
     prisma.user.count(),
-    // Active users in past 7 days (created at least 1 log)
-    prisma.user.count({
-      where: {
-        OR: [
-          { dailyLogs: { some: { createdAt: { gte: sevenDaysAgo } } } },
-          { reflections: { some: { createdAt: { gte: sevenDaysAgo } } } }
-        ]
-      }
-    })
+    // Active users in past 7 days
+    prisma.user.count({ where: activeWithin(sevenDaysAgo) })
   ]);
 
   // Calculates retention
   const retention7d = usersRegistered7d > 0 ? Math.round((active7dUsers / usersRegistered7d) * 100) : 0;
   const retention30d = usersRegistered30d > 0 ? Math.round((active30dUsers / usersRegistered30d) * 100) : 0;
 
-  // Calculates suggestion view rate
-  const suggestionViewRate = totalProgress > 0 ? Math.round((completedProgress / totalProgress) * 100) : 0;
+  // Calculates proposal response rate across legacy content and YUI.
+  const totalSuggestions = totalProgress + totalYuiRecommendations;
+  const respondedSuggestions = completedProgress + respondedYuiRecommendations;
+  const suggestionViewRate = totalSuggestions > 0
+    ? Math.round((respondedSuggestions / totalSuggestions) * 100)
+    : 0;
 
   // Calculates reflection rate (active past 7 days / total)
   const reflectionRate = totalUsers > 0 ? Math.round((activeUsersPast7d / totalUsers) * 100) : 0;
@@ -744,14 +805,15 @@ export async function getAnalyticsData() {
       const nextDay = new Date(date);
       nextDay.setDate(date.getDate() + 1);
 
-      const count = await prisma.userMemory.count({
-        where: {
-          createdAt: {
-            gte: date,
-            lt: nextDay
-          }
-        }
-      });
+      const [legacyMemoryCount, yuiMemoryCount] = await Promise.all([
+        prisma.userMemory.count({
+          where: { createdAt: { gte: date, lt: nextDay } }
+        }),
+        prisma.yuiMemory.count({
+          where: { createdAt: { gte: date, lt: nextDay } }
+        }),
+      ]);
+      const count = legacyMemoryCount + yuiMemoryCount;
 
       return {
         date: date.toLocaleDateString("ja-JP", { month: "short", day: "numeric" }),
@@ -760,11 +822,32 @@ export async function getAnalyticsData() {
     })
   );
 
+  // Optional feedback table: keep the rest of analytics available before migration.
+  let feedback = { helpful: 0, dismissed: 0, busy: 0, notRelevant: 0, later: 0 };
+  try {
+    const { data: rows, error } = await getSupabaseAdmin()
+      .from("yui_unified_action_feedback")
+      .select("feedback, dismiss_reason");
+    if (!error && rows) {
+      feedback = rows.reduce((summary, row) => {
+        if (row.feedback === "helpful") summary.helpful += 1;
+        if (row.feedback === "dismissed") summary.dismissed += 1;
+        if (row.dismiss_reason === "busy") summary.busy += 1;
+        if (row.dismiss_reason === "not_relevant") summary.notRelevant += 1;
+        if (row.dismiss_reason === "later") summary.later += 1;
+        return summary;
+      }, feedback);
+    }
+  } catch {
+    // The table is introduced by a separate migration.
+  }
+
   return {
     retention7d,
     retention30d,
     suggestionViewRate,
     reflectionRate,
-    savesTrend
+    savesTrend,
+    feedback,
   };
 }

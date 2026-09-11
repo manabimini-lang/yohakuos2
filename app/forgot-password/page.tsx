@@ -71,7 +71,7 @@ export default function ForgotPasswordPage({
 
               <button
                 type="submit"
-                className="w-full rounded-xl bg-slate-900 px-4 py-3 text-sm font-medium text-foreground transition-opacity hover:opacity-90 shadow-sm"
+                className="w-full rounded-xl bg-slate-900 px-4 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90 shadow-sm"
               >
                 送信する
               </button>

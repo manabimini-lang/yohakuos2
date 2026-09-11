@@ -106,7 +106,7 @@ export async function computeYuiMemoryLayer(userId: string): Promise<YuiMemoryLa
   goals.forEach((g) => {
     rawTimelineItems.push({
       id: `goal-${g.id}`,
-      title: `目標: ${g.title}`,
+      title: `目的: ${g.title}`,
       description: g.description || "進行中のプロジェクト",
       dateMs: new Date(g.created_at).getTime(),
       dateStr: g.created_at,

@@ -202,7 +202,7 @@ export function ContentShareClient() {
                 onClick={() => setSelectedType(t.id)}
                 className={`px-3 py-1.5 rounded-xl border text-xs transition-all duration-300 ${
                   selectedType === t.id
-                    ? "border-slate-850 bg-slate-900 text-foreground font-medium shadow-sm"
+                    ? "border-slate-850 bg-slate-900 text-white font-medium shadow-sm"
                     : "border-slate-150 bg-white text-slate-600 hover:border-slate-200"
                 }`}
                 disabled={saving}
@@ -226,7 +226,7 @@ export function ContentShareClient() {
                 onClick={() => setSelectedRoad(r.slug)}
                 className={`px-3 py-1.5 rounded-xl border text-xs transition-all duration-300 ${
                   selectedRoad === r.slug
-                    ? "border-slate-850 bg-slate-900 text-foreground font-medium shadow-sm"
+                    ? "border-slate-850 bg-slate-900 text-white font-medium shadow-sm"
                     : "border-slate-150 bg-white text-slate-600 hover:border-slate-200"
                 }`}
                 disabled={saving}
@@ -257,7 +257,7 @@ export function ContentShareClient() {
           <button
             type="submit"
             disabled={saving || !url.trim() || !title.trim()}
-            className="rounded-xl bg-slate-900 hover:bg-slate-800 text-foreground font-medium px-6 py-2.5 text-sm shadow-sm transition-colors disabled:opacity-50"
+            className="rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-medium px-6 py-2.5 text-sm shadow-sm transition-colors disabled:opacity-50"
           >
             {saving ? "共有中..." : "共有する"}
           </button>

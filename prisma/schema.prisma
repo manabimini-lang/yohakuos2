@@ -160,6 +160,9 @@ model User {
   name          String?
   image         String?
   emailVerified DateTime? @map("email_verified")
+  newsletterOptIn Boolean @default(false) @map("newsletter_opt_in")
+  newsletterOptInAt DateTime? @map("newsletter_opt_in_at")
+  newsletterOptOutAt DateTime? @map("newsletter_opt_out_at")
   role          UserRole  @default(FREE_MEMBER)
   planType      String?   @map("plan_type")
   plan          String    @default("free") @map("plan")
@@ -245,7 +248,8 @@ model User {
   @@map("users")
 }
 
-// @deprecated - Phase P3: Migrate to UserAISettings
+// Provider-specific encrypted BYOK credentials. UserAISettings stores only the
+// active provider and usage policy; keys remain independently switchable here.
 model UserApiKey {
   id           String   @id @default(cuid())
   userId       String   @map("user_id")
@@ -1729,11 +1733,16 @@ model YuiMemory {
   importance Int      @default(0)
   tags       String[] @default([])
   sourceType String   @default("manual") @map("source_type")
+  goalId     String?  @map("goal_id") @db.Uuid
+  goalAssociationSource String @default("none") @map("goal_association_source")
+  goalAssociationConfidence Int @default(0) @map("goal_association_confidence")
   createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  goal YuiGoal? @relation("YuiGoalMemories", fields: [goalId], references: [id], onDelete: SetNull)
 
   @@index([userId, createdAt])
+  @@index([userId, goalId, createdAt])
   @@map("memories")
 }
 
@@ -1742,12 +1751,17 @@ model YuiConversation {
   userId    String   @map("user_id")
   role      String
   content   String
+  goalId    String?  @map("goal_id") @db.Uuid
+  goalAssociationSource String @default("none") @map("goal_association_source")
+  goalAssociationConfidence Int @default(0) @map("goal_association_confidence")
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   user             User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   memoryCandidates YuiMemoryCandidate[]
+  goal YuiGoal? @relation("YuiGoalConversations", fields: [goalId], references: [id], onDelete: SetNull)
 
   @@index([userId, createdAt])
+  @@index([userId, goalId, createdAt])
   @@map("conversations")
 }
 
@@ -1757,11 +1771,16 @@ model YuiReflection {
   summary     String
   insights    String[] @default([])
   nextActions String[] @default([]) @map("next_actions")
+  goalId String? @map("goal_id") @db.Uuid
+  goalAssociationSource String @default("none") @map("goal_association_source")
+  goalAssociationConfidence Int @default(0) @map("goal_association_confidence")
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  goal YuiGoal? @relation("YuiGoalReflections", fields: [goalId], references: [id], onDelete: SetNull)
 
   @@index([userId, createdAt])
+  @@index([userId, goalId, createdAt])
   @@map("yui_reflections")
 }
 
@@ -1774,13 +1793,18 @@ model YuiMemoryCandidate {
   reason         String
   importance     Int      @default(0)
   status         String   @default("pending")
+  goalId         String?  @map("goal_id") @db.Uuid
+  goalAssociationSource String @default("none") @map("goal_association_source")
+  goalAssociationConfidence Int @default(0) @map("goal_association_confidence")
   createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   conversation YuiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  goal         YuiGoal? @relation("YuiGoalMemoryCandidates", fields: [goalId], references: [id], onDelete: SetNull)
 
   @@index([userId, status, createdAt])
   @@index([conversationId])
+  @@index([userId, goalId, createdAt])
   @@map("memory_candidates")
 }
 
@@ -1850,6 +1874,10 @@ model YuiGoal {
   suggestedTimeBlocks YuiSuggestedTimeBlock[]
   recommendations     YuiRecommendation[]
   milestones          YuiMilestone[]
+  conversations       YuiConversation[] @relation("YuiGoalConversations")
+  reflections         YuiReflection[] @relation("YuiGoalReflections")
+  memoryCandidates    YuiMemoryCandidate[] @relation("YuiGoalMemoryCandidates")
+  memories            YuiMemory[] @relation("YuiGoalMemories")
 
   @@index([userId, createdAt])
   @@index([userId, status])
@@ -1988,4 +2016,97 @@ model YuiMemoryProfile {
   @@unique([userId, memoryKey])
   @@index([userId, updatedAt])
   @@map("yui_memory_profiles")
+}
+
+// ===================================================
+// YOHAKU Activity OS — Knowledge circulation
+// ===================================================
+
+model AdminInsight {
+  id                   String   @id @default(cuid())
+  title                String
+  summary              String   @db.Text
+  theme                String?
+  sourceType           String   @map("source_type")
+  sourceId             String?  @map("source_id")
+  audience             String?
+  usagePurposes        Json     @default("[]") @map("usage_purposes") @db.JsonB
+  consentStatus        String   @default("aggregate_only") @map("consent_status")
+  anonymizationStatus  String   @default("pending") @map("anonymization_status")
+  minimumGroupSize     Int      @default(5) @map("minimum_group_size")
+  observedCount        Int      @default(0) @map("observed_count")
+  status               String   @default("draft")
+  reviewNotes          String?  @map("review_notes") @db.Text
+  reviewedBy           String?  @map("reviewed_by")
+  reviewedAt           DateTime? @map("reviewed_at")
+  publishedAt          DateTime? @map("published_at")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  @@index([status, createdAt])
+  @@index([sourceType, sourceId])
+  @@index([anonymizationStatus])
+  @@map("admin_insights")
+}
+
+model NewsletterCampaign {
+  id               String   @id @default(cuid())
+  title            String
+  purpose          String?
+  segment          String   @default("all")
+  subject          String?
+  body             String?  @db.Text
+  status           String   @default("draft")
+  scheduledAt      DateTime? @map("scheduled_at")
+  sentAt           DateTime? @map("sent_at")
+  openRate         Float?   @map("open_rate")
+  clickRate        Float?   @map("click_rate")
+  returnRate       Float?   @map("return_rate")
+  unsubscribeRate  Float?   @map("unsubscribe_rate")
+  learnings        String?  @db.Text
+  createdBy        String   @map("created_by")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  @@index([status, scheduledAt])
+  @@index([segment])
+  @@map("newsletter_campaigns")
+}
+
+model ProductHypothesis {
+  id             String   @id @default(cuid())
+  title          String
+  problem        String   @db.Text
+  hypothesis     String   @db.Text
+  evidence       String?  @db.Text
+  targetSegment  String?  @map("target_segment")
+  successMetric  String?  @map("success_metric")
+  status         String   @default("backlog")
+  result         String?  @db.Text
+  ownerId        String?  @map("owner_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@index([status, updatedAt])
+  @@index([ownerId])
+  @@map("product_hypotheses")
+}
+
+model ActivityReport {
+  id             String   @id @default(cuid())
+  title          String
+  periodStart    DateTime @map("period_start")
+  periodEnd      DateTime @map("period_end")
+  summary        String   @db.Text
+  metrics        Json     @default("{}") @db.JsonB
+  insightIds     Json     @default("[]") @map("insight_ids") @db.JsonB
+  status         String   @default("draft")
+  reviewNotes    String?  @map("review_notes") @db.Text
+  publishedAt    DateTime? @map("published_at")
+  createdBy      String   @map("created_by")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@index([status, periodEnd])
+  @@map("activity_reports")
 }

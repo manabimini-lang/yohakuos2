@@ -5,7 +5,6 @@ import {
   Users, 
   Sparkles, 
   BookOpen, 
-  Plus, 
   ArrowRight,
   Check,
   X,
@@ -14,8 +13,7 @@ import {
   Cpu,
   Activity,
   AlertTriangle,
-  Clock,
-  ArrowUpRight
+  Clock
 } from "lucide-react";
 import Link from "next/link";
 import { 
@@ -233,12 +231,12 @@ export function AdminDashboardView() {
         {/* Left column: Suggested contents & Recent Events */}
         <div className="lg:col-span-2 space-y-8">
           
-          {/* ③ 未承認のコンテンツ提案 */}
+          {/* ③ ユーザーから届いた共有提案 */}
           <section className="bg-white border border-slate-200/60 rounded-2xl shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <BookOpen className="w-4 h-4 text-muted-foreground" />
-                <h2 className="text-sm font-medium text-foreground">未承認のコンテンツ提案</h2>
+                <h2 className="text-sm font-medium text-foreground">ユーザーから届いた共有提案</h2>
               </div>
               <span className="text-[10px] font-medium text-muted-foreground bg-slate-50 border border-slate-100 px-2 py-0.5 rounded-full">
                 {suggestions.length} 件
@@ -249,7 +247,7 @@ export function AdminDashboardView() {
               <div className="p-8 text-center text-muted-foreground space-y-1.5">
                 <Check className="w-6 h-6 mx-auto text-foreground stroke-[1.5]" />
                 <p className="text-xs font-medium text-muted-foreground">確認すべき提案はありません</p>
-                <p className="text-[10px] text-muted-foreground">ユーザーが共有したおすすめコンテンツはここに表示されます。</p>
+                <p className="text-[10px] text-muted-foreground">採用すると外部コンテンツとして公開できます。</p>
               </div>
             ) : (
               <div className="divide-y divide-slate-100">
@@ -382,27 +380,8 @@ export function AdminDashboardView() {
           </section>
         </div>
 
-        {/* Right column: Road list, Discord Status, AI Stats */}
+        {/* Right column: Discord Status, AI Stats */}
         <div className="space-y-8">
-          
-          {/* ロード管理 */}
-          <section className="bg-white border border-slate-200/60 rounded-2xl p-6 shadow-sm space-y-4">
-            <h2 className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">ロード管理</h2>
-            <div className="space-y-3">
-              {stats.roads.map((road: any) => (
-                <div key={road.id} className="flex items-center justify-between p-3 bg-slate-50/50 border border-slate-100 rounded-xl">
-                  <div className="flex items-center space-x-2.5">
-                    <span className="text-base">{road.icon}</span>
-                    <span className="text-xs font-medium text-slate-700">{road.title}</span>
-                  </div>
-                  <span className="text-[10px] font-medium text-muted-foreground bg-white border border-slate-100 px-2 py-0.5 rounded-full">
-                    Active
-                  </span>
-                </div>
-              ))}
-            </div>
-          </section>
-
           {/* Discord状態 */}
           <section className="bg-white border border-slate-200/60 rounded-2xl p-6 shadow-sm space-y-4">
             <h2 className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Discord 状態</h2>
@@ -431,15 +410,15 @@ export function AdminDashboardView() {
             </div>
           </section>
 
-          {/* AI接続状況 */}
+          {/* AI設定有効率 */}
           <section className="bg-white border border-slate-200/60 rounded-2xl p-6 shadow-sm space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">AI 接続状況</h2>
+              <h2 className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">AI設定有効率</h2>
               <Cpu className="w-4 h-4 text-muted-foreground" />
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">Gemini利用率</span>
+                <span className="text-muted-foreground">AI設定を有効にしている割合</span>
                 <span className="font-semibold text-slate-700">{stats.stats.geminiRatio}%</span>
               </div>
               <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
@@ -449,7 +428,7 @@ export function AdminDashboardView() {
                 />
               </div>
               <p className="text-[10px] text-muted-foreground leading-normal pt-1">
-                APIキーを設定し、AI整理（状態整理・気づき抽出）を実行可能なメンバーの割合です。
+                APIキーを登録し、AI整理（状態整理・気づき抽出）を実行できる設定のメンバー割合です。APIの疎通確認や実利用回数ではありません。
               </p>
             </div>
           </section>

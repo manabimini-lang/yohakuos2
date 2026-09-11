@@ -8,9 +8,10 @@ import {
   Sparkles, Layers,
   Download, Database, Trash2,
   Info, FileText, ShieldCheck,
-  ChevronRight, MessageSquare
+  ChevronRight, MessageSquare, ArrowLeft
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { NewsletterPreference } from "@/components/settings/newsletter-preference";
 
 function Section({ title, children }: { title: string, children: React.ReactNode }) {
   return (
@@ -62,7 +63,12 @@ export default function SettingsPage() {
       <div className="mx-auto max-w-[720px] px-4 py-12 pb-32 space-y-10">
         
         <header className="px-2">
-          <h1 className="text-3xl font-semibold text-slate-900 tracking-tight">設定</h1>
+          <div className="flex items-center justify-between gap-3">
+            <h1 className="text-3xl font-semibold text-slate-900 tracking-tight">設定</h1>
+            <Link href="/yui" className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm transition hover:bg-slate-50">
+              <ArrowLeft className="h-4 w-4" /> ホーム
+            </Link>
+          </div>
         </header>
 
         <Section title="あなた">
@@ -83,6 +89,8 @@ export default function SettingsPage() {
             label="外部サービス連携" 
             href="/settings/account" 
           />
+          <Divider />
+          <NewsletterPreference />
           <Divider />
           <Item 
             icon={LogOut} 
@@ -117,7 +125,7 @@ export default function SettingsPage() {
           <Item 
             icon={Sparkles} 
             label="AI応答設定" 
-            href="/settings/ai" 
+            href="/yui/settings#ai"
           />
           <Divider />
           <Item 

@@ -122,7 +122,7 @@ export function LogClient() {
     <div className="mx-auto max-w-2xl px-4 py-12 md:py-24">
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 rounded-xl bg-slate-900 px-4 py-3 text-sm font-medium text-foreground shadow-lg animate-in slide-in-from-bottom-4 fade-in duration-300">
+        <div className="fixed bottom-6 right-6 z-50 rounded-xl bg-slate-900 px-4 py-3 text-sm font-medium text-white shadow-lg animate-in slide-in-from-bottom-4 fade-in duration-300">
           {toastMessage}
         </div>
       )}
@@ -188,7 +188,7 @@ export function LogClient() {
           <button
             onClick={handleSave}
             disabled={isSaving || !content.trim()}
-            className="shrink-0 rounded-full bg-slate-900 px-6 py-2.5 text-sm font-medium text-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+            className="shrink-0 rounded-full bg-slate-900 px-6 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
           >
             {isSaving ? "保存中..." : "ログを残す"}
           </button>

@@ -88,7 +88,7 @@ export default function ResetPasswordPage() {
             </div>
             <Link
               href="/login"
-              className="inline-flex w-full justify-center rounded-xl bg-slate-900 px-4 py-3 text-sm font-medium text-foreground transition-opacity hover:opacity-90 shadow-sm"
+              className="inline-flex w-full justify-center rounded-xl bg-slate-900 px-4 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90 shadow-sm"
             >
               ログインへ戻る
             </Link>
@@ -135,7 +135,7 @@ export default function ResetPasswordPage() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full rounded-xl bg-slate-900 px-4 py-3 text-sm font-medium text-foreground transition-opacity hover:opacity-90 shadow-sm disabled:opacity-50 flex justify-center items-center gap-2"
+                className="w-full rounded-xl bg-slate-900 px-4 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90 shadow-sm disabled:opacity-50 flex justify-center items-center gap-2"
               >
                 {isSubmitting ? "更新中..." : "パスワードを更新"}
               </button>

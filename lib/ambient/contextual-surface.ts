@@ -114,7 +114,7 @@ ${dataForPrompt}
 - 「〜かもしれません」というトーン
 - 最大3つまで`;
 
-    const { text } = await generateText(prompt, CONTEXTUAL_SURFACE_PROMPT);
+    const { text } = await generateText(prompt, CONTEXTUAL_SURFACE_PROMPT, { userId, allowEnvFallback: true, taskClass: "standard" });
 
     try {
         const jsonMatch = text.match(/\{[\s\S]*\}/);

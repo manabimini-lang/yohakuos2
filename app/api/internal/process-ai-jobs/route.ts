@@ -4,6 +4,7 @@ import crypto from "crypto";
 import { processAIAnalysis } from "@/app/actions/ai-processing";
 import { generateReflectionScript } from "@/lib/audio/generate-reflection-script";
 import { generateQuietAudio } from "@/lib/audio/gemini-tts";
+import { storedAudioReference } from "@/lib/audio/audio-history";
 import {
   detectReturningFragments,
   detectTemporalEchoes,
@@ -22,6 +23,7 @@ import "@/lib/companion/queue";
 import { registerLifeOSJobHandlers } from "@/lib/lifeos/queue";
 import { registerAmbientJobHandlers } from "@/lib/ambient/queue";
 import { processQueueBatch } from "@/lib/memory/queue";
+import { hasPremiumAccess } from "@/lib/constants/plan";
 
 export const dynamic = "force-dynamic";
 
@@ -199,6 +201,25 @@ export async function GET(request: Request) {
         continue;
       }
 
+      // Defense in depth for jobs queued before managed audio became Premium-only.
+      const audioUser = await prisma.user.findUnique({
+        where: { id: job.userId },
+        select: { plan: true, role: true },
+      });
+      if (!hasPremiumAccess(audioUser?.plan, audioUser?.role)) {
+        await Promise.all([
+          prisma.aIJob.update({
+            where: { id: job.id },
+            data: { status: "failed", lastError: "Premium plan required for managed audio generation" },
+          }),
+          prisma.audioReflection.updateMany({
+            where: { id: reflectionId, userId: job.userId },
+            data: { status: "failed" },
+          }),
+        ]);
+        continue;
+      }
+
       // Check if user already has processing reflection
       const existingProcessing = await prisma.audioReflection.count({
         where: {
@@ -241,9 +262,9 @@ export async function GET(request: Request) {
           throw new Error("Reflection not found");
         }
 
-        const audioUrl = await generateQuietAudio(reflection.script, job.userId);
+        const audio = await generateQuietAudio(reflection.script, job.userId);
         
-        if (!audioUrl) {
+        if (!audio) {
           throw new Error("Failed to generate audio");
         }
 
@@ -251,7 +272,7 @@ export async function GET(request: Request) {
         await prisma.audioReflection.update({
           where: { id: reflectionId },
           data: {
-            audioUrl,
+            audioUrl: storedAudioReference(audio.path),
             status: "completed",
           },
         });

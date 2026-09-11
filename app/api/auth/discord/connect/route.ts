@@ -30,6 +30,8 @@ export async function GET(req: NextRequest) {
       : req.nextUrl.origin;
 
     const redirectUri = `${baseUrl}/api/auth/discord/callback`;
+    const requestedReturnTo = req.nextUrl.searchParams.get("return_to");
+    const returnTo = requestedReturnTo === "/yui/settings" ? requestedReturnTo : "/settings/account";
     const discordAuthUrl = `https://discord.com/api/oauth2/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=identify%20email&state=${state}`;
 
     const response = NextResponse.redirect(discordAuthUrl);
@@ -40,6 +42,13 @@ export async function GET(req: NextRequest) {
       secure: baseUrl.startsWith("https://"),
       sameSite: "lax",
       maxAge: 600, // 10 minutes
+      path: "/",
+    });
+    response.cookies.set("discord_oauth_return_to", returnTo, {
+      httpOnly: true,
+      secure: baseUrl.startsWith("https://"),
+      sameSite: "lax",
+      maxAge: 600,
       path: "/",
     });
 

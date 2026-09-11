@@ -5,6 +5,14 @@ import { subscriptionRepository } from "@/lib/repositories/subscription.reposito
 
 export const dynamic = "force-dynamic";
 
+function getApplicationUrl(request: Request): string {
+  const configuredUrl = process.env.NEXTAUTH_URL?.trim();
+  if (configuredUrl) return configuredUrl.replace(/\/$/, "");
+
+  const origin = new URL(request.url).origin;
+  return origin.replace(/\/$/, "");
+}
+
 export async function POST(req: Request) {
   try {
     const session = await auth();
@@ -24,7 +32,7 @@ export async function POST(req: Request) {
     
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: subscription.stripeCustomerId,
-      return_url: `${process.env.NEXTAUTH_URL}/yui/settings`,
+      return_url: `${getApplicationUrl(req)}/yui/settings`,
     });
 
     console.log(`[STRIPE_PORTAL] Portal session created for user ${userId}, customer ${subscription.stripeCustomerId}, subscription ${subscription.stripeSubscriptionId}, status ${subscription.status}`);

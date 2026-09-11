@@ -118,7 +118,7 @@ export function FilterBar({ basePath, params, tags = [], showAdminOnly = false }
       <div className="flex items-end gap-2 lg:col-span-6">
         <button
           type="submit"
-          className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-foreground"
+          className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white"
         >
           Filter
         </button>

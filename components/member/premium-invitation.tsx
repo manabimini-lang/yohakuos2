@@ -48,7 +48,7 @@ export function PremiumInvitation() {
       <div className="pt-2">
         <button
           onClick={() => router.push("/pricing")}
-          className="inline-flex items-center justify-center space-x-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-foreground font-medium px-6 py-2.5 transition-colors text-sm shadow-sm group"
+          className="inline-flex items-center justify-center space-x-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-medium px-6 py-2.5 transition-colors text-sm shadow-sm group"
         >
           <span>Premiumへ参加</span>
           <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />

@@ -165,7 +165,7 @@ function generateNextStep(
 ): string {
   // Rule 1: Active goal exists → focus on goal progress
   if (hasActiveGoal) {
-    return `「${thread}」の目標進捗を確認する`;
+    return `「${thread}」の目的の進捗を確認する`;
   }
 
   // Rule 2: Has related calendar events → check schedule

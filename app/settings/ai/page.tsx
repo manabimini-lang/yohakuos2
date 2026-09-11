@@ -1,16 +1,12 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { prisma } from "@/lib/prisma";
-import { AiSettingsClient } from "@/components/settings/ai-settings-client";
 import { Metadata } from "next";
-
-import { checkAIAvailability } from "@/lib/ai/gemini";
 
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "YOHAKU - AI接続設定",
-  description: "AI（Gemini API）の接続設定を行います",
+  description: "AI（Gemini / Groq API）の接続設定を行います",
 };
 
 export default async function AiSettingsPage() {
@@ -19,29 +15,5 @@ export default async function AiSettingsPage() {
     redirect("/login");
   }
 
-  const [settings, aiResult] = await Promise.all([
-    prisma.userAISettings.findUnique({
-      where: { userId: session.user.id },
-    }),
-    checkAIAvailability(session.user.id),
-  ]);
-
-  return (
-    <div className="min-h-screen bg-slate-50/20 selection:bg-slate-100 flex items-center justify-center">
-      <AiSettingsClient
-        initialSettings={
-          settings
-            ? {
-                provider: settings.provider,
-                hasKey: !!settings.encryptedApiKey,
-                model: settings.model || "",
-                isEnabled: settings.isEnabled,
-              }
-            : null
-        }
-        aiAvailable={aiResult.available}
-        aiSource={aiResult.source}
-      />
-    </div>
-  );
+  redirect("/yui/settings#ai");
 }

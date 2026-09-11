@@ -96,7 +96,7 @@ export function YohakuHomeClient({
               <button
                 type="submit"
                 disabled={!input.trim()}
-                className="inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-5 py-3 text-sm font-medium text-foreground transition-all hover:bg-slate-800 disabled:opacity-30 disabled:hover:bg-slate-900"
+                className="inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-5 py-3 text-sm font-medium text-white transition-all hover:bg-slate-800 disabled:opacity-30 disabled:hover:bg-slate-900"
               >
                 整理してみる
                 <ArrowRight className="w-4 h-4" />

@@ -128,7 +128,7 @@ ${dataForPrompt}
   ]
 }`;
 
-    const { text } = await generateText(prompt, RESONANCE_PROMPT);
+    const { text } = await generateText(prompt, RESONANCE_PROMPT, { userId, allowEnvFallback: true, taskClass: "standard" });
 
     try {
         const jsonMatch = text.match(/\{[\s\S]*\}/);

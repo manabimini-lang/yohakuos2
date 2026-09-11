@@ -1,3 +1,5 @@
+import { findBestGap, normalizeTimeZone } from "./timezone";
+import { isFutureInterval } from "@/lib/yui-ux";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -9,7 +11,7 @@ const supabaseAdmin = new Proxy({} as SupabaseClient, {
   },
 });
 import { createYuiEvent, createYuiSuggestedTimeBlock, ensureYuiCalendarActionFromTimeBlock, listYuiCalendarEvents, listYuiDecisionsSince, listYuiGoals, listYuiMemoriesSince, listYuiSuggestedTimeBlocks, listYuiConversationsSince, listYuiEvents, getYuiProfile } from "./service";
-import { generateJSON, getUserOwnedApiCredentials } from "@/lib/ai/gemini";
+import { checkAIAvailability, generateJSON } from "@/lib/ai/gemini";
 import type {
   CreateYuiRecommendationInput,
   YuiCalendarEvent,
@@ -57,10 +59,24 @@ function ensureText(value?: string | null) {
 
 function normalizeRecommendationType(value?: string) {
   const type = ensureText(value).toLowerCase().replace(/\s+/g, "_");
-  if (type === "time_block" || type === "decision" || type === "task" || type === "reflection") {
+  if (type === "time_block" || type === "decision" || type === "task" || type === "reflection" || type === "action") {
     return type;
   }
   return "time_block";
+}
+
+function isActionRecommendationContent(content: string) {
+  try {
+    const parsed = JSON.parse(content) as { type?: unknown; params?: unknown } | null;
+    return Boolean(
+      parsed
+      && typeof parsed.type === "string"
+      && parsed.params
+      && typeof parsed.params === "object",
+    );
+  } catch {
+    return false;
+  }
 }
 
 function normalizeRecommendationStatus(value?: string) {
@@ -114,100 +130,6 @@ function getWindowEnd(reference = new Date(), days = 14) {
   end.setDate(end.getDate() + days);
   end.setHours(23, 59, 59, 999);
   return end;
-}
-
-function getWorkDayWindow(date: Date) {
-  const start = new Date(date);
-  start.setHours(9, 0, 0, 0);
-  const end = new Date(date);
-  end.setHours(18, 0, 0, 0);
-  return { start, end };
-}
-
-function clampToRange(value: Date, min: Date, max: Date) {
-  return new Date(Math.min(Math.max(value.getTime(), min.getTime()), max.getTime()));
-}
-
-function mergeCalendarEvents(events: YuiCalendarEvent[]) {
-  const sorted = [...events].sort((a, b) => new Date(a.start_at).getTime() - new Date(b.start_at).getTime());
-  const merged: Array<{ start: Date; end: Date }> = [];
-
-  for (const event of sorted) {
-    const start = new Date(event.start_at);
-    const end = new Date(event.end_at);
-    const last = merged[merged.length - 1];
-
-    if (!last || start.getTime() > last.end.getTime()) {
-      merged.push({ start, end });
-      continue;
-    }
-
-    if (end.getTime() > last.end.getTime()) {
-      last.end = end;
-    }
-  }
-
-  return merged;
-}
-
-function findBestGap(calendarEvents: YuiCalendarEvent[], reference = new Date()) {
-  const searchStart = getWindowStart(reference);
-  const searchEnd = getWindowEnd(reference, 14);
-  const days: Array<{ start: Date; end: Date }> = [];
-  const current = new Date(searchStart);
-
-  while (current.getTime() <= searchEnd.getTime()) {
-    const dayWindow = getWorkDayWindow(current);
-    days.push(dayWindow);
-    current.setDate(current.getDate() + 1);
-  }
-
-  const merged = mergeCalendarEvents(calendarEvents);
-  const gaps: Array<{ start: Date; end: Date; minutes: number }> = [];
-
-  for (const day of days) {
-    const occupied = merged
-      .map((range) => ({
-        start: clampToRange(range.start, day.start, day.end),
-        end: clampToRange(range.end, day.start, day.end),
-      }))
-      .filter((range) => range.end.getTime() > range.start.getTime());
-
-    let cursor = new Date(day.start);
-    for (const range of occupied) {
-      if (range.start.getTime() > cursor.getTime()) {
-        const minutes = Math.floor((range.start.getTime() - cursor.getTime()) / 60000);
-        if (minutes >= 60) {
-          gaps.push({ start: new Date(cursor), end: new Date(range.start), minutes });
-        }
-      }
-
-      if (range.end.getTime() > cursor.getTime()) {
-        cursor = new Date(range.end);
-      }
-    }
-
-    if (cursor.getTime() < day.end.getTime()) {
-      const minutes = Math.floor((day.end.getTime() - cursor.getTime()) / 60000);
-      if (minutes >= 60) {
-        gaps.push({ start: new Date(cursor), end: new Date(day.end), minutes });
-      }
-    }
-  }
-
-  return gaps.sort((a, b) => {
-    if (b.minutes !== a.minutes) return b.minutes - a.minutes;
-    return a.start.getTime() - b.start.getTime();
-  })[0] ?? null;
-}
-
-function buildFallbackGap(reference = new Date()) {
-  const start = new Date(reference);
-  start.setDate(start.getDate() + 1);
-  start.setHours(15, 0, 0, 0);
-  const end = new Date(start);
-  end.setMinutes(end.getMinutes() + 90);
-  return { start, end, minutes: 90 };
 }
 
 function buildTopic(context: RecommendationContext) {
@@ -284,9 +206,9 @@ function buildReason(params: {
   contextText: string;
 }) {
   const pieces = [
-    params.currentGoal ? `現在のGoal「${params.currentGoal.title}」に沿っています。` : "今の文脈に合うテーマです。",
-    params.relatedDecisions.length > 0 ? "最近のDecisionとつながっています。" : null,
-    params.relatedMemories.length > 0 ? "関連するMemoryが見つかっています。" : null,
+    params.currentGoal ? `現在の目的「${params.currentGoal.title}」に沿っています。` : "今の文脈に合うテーマです。",
+    params.relatedDecisions.length > 0 ? "最近の判断とつながっています。" : null,
+    params.relatedMemories.length > 0 ? "関連する記憶が見つかっています。" : null,
     params.gap ? `空き時間は ${params.gap.minutes} 分あります。` : "まだはっきりした空き時間は見つかっていません。",
     params.contextText ? `相談内容: ${params.contextText}` : null,
   ].filter((value): value is string => Boolean(value));
@@ -315,6 +237,7 @@ function computeScore(params: {
 }
 
 function buildContent(params: {
+  timeZone?: string;
   topic: string;
   gap: { start: Date; end: Date; minutes: number } | null;
   currentGoal: YuiGoal | null;
@@ -323,7 +246,7 @@ function buildContent(params: {
   const proposed_start_at = params.gap?.start.toISOString() ?? "";
   const proposed_end_at = params.gap?.end.toISOString() ?? "";
   const proposed_label = params.gap
-    ? `${params.gap.start.toLocaleDateString("ja-JP", { weekday: "short", month: "numeric", day: "numeric" })} ${params.gap.start.toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit", hour12: false })}〜${params.gap.end.toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit", hour12: false })}`
+    ? `${params.gap.start.toLocaleDateString("ja-JP", { timeZone: params.timeZone ?? "Asia/Tokyo", weekday: "short", month: "numeric", day: "numeric" })} ${params.gap.start.toLocaleTimeString("ja-JP", { timeZone: params.timeZone ?? "Asia/Tokyo", hour: "2-digit", minute: "2-digit", hour12: false })}〜${params.gap.end.toLocaleTimeString("ja-JP", { timeZone: params.timeZone ?? "Asia/Tokyo", hour: "2-digit", minute: "2-digit", hour12: false })}`
     : "候補時間なし";
 
   const summary = params.gap
@@ -384,15 +307,16 @@ async function tryGenerateRecommendationWithAi(
   content: string;
   score: number;
 } | null> {
-  const credentials = await getUserOwnedApiCredentials(user.id);
-  if (!credentials) {
+  const availability = await checkAIAvailability(user.id);
+  if (!availability.available) {
     return null;
   }
 
   console.log("[YUI Recommendation] AI provider attempt", {
     userId: user.id,
     provider: "gemini",
-    model: credentials.modelName,
+    model: "gemini-2.5-flash",
+    credentialSource: availability.source,
   });
 
   const prompt = [
@@ -401,9 +325,9 @@ async function tryGenerateRecommendationWithAi(
     "必要なキーは title, reason, content, score です。",
     "不要な説明や箇条書きは入れないでください。",
     `ユーザーの相談内容: ${focusText || "なし"}`,
-    `現在のGoal: ${context.currentGoal?.title ?? "なし"}`,
-    `関連Memory: ${(context.memories?.slice(0, 3).map((memory) => memory.title).join(" / ") || "なし")}`,
-    `最近のDecision: ${(context.decisions?.slice(0, 3).map((decision) => decision.question).join(" / ") || "なし")}`,
+    `現在の目的: ${context.currentGoal?.title ?? "なし"}`,
+    `関連する記憶: ${(context.memories?.slice(0, 3).map((memory) => memory.title).join(" / ") || "なし")}`,
+    `最近の判断: ${(context.decisions?.slice(0, 3).map((decision) => decision.question).join(" / ") || "なし")}`,
     `予定: ${(context.calendarEvents?.slice(0, 3).map((event) => `${event.title}:${event.start_at}`).join(" / ") || "なし")}`,
   ].join("\n");
 
@@ -415,6 +339,7 @@ async function tryGenerateRecommendationWithAi(
       score?: number;
     }>(prompt, "You produce concise JSON only.", {
       userId: user.id,
+      taskClass: "standard",
     });
 
     const payload = parseAiRecommendationPayload(JSON.stringify(aiResponse.data));
@@ -422,7 +347,7 @@ async function tryGenerateRecommendationWithAi(
       console.warn("[YUI Recommendation] AI returned unparsable JSON, falling back to rule engine", {
         userId: user.id,
         provider: "gemini",
-        model: credentials.modelName,
+        model: "gemini-2.5-flash",
       });
       return null;
     }
@@ -430,7 +355,7 @@ async function tryGenerateRecommendationWithAi(
     console.log("[YUI Recommendation] AI provider success", {
       userId: user.id,
       provider: "gemini",
-      model: credentials.modelName,
+      model: "gemini-2.5-flash",
       score: payload.score,
     });
 
@@ -439,7 +364,7 @@ async function tryGenerateRecommendationWithAi(
     console.error("[YUI Recommendation] AI provider failure, falling back to rule engine", {
       userId: user.id,
       provider: "gemini",
-      model: credentials.modelName,
+      model: "gemini-2.5-flash",
       error: error instanceof Error ? error.message : error,
     });
     return null;
@@ -492,6 +417,10 @@ async function ensureSuggestedTimeBlockFromRecommendation(
   const parsed = parseRecommendationContent(recommendation.content);
   if (!parsed?.proposed_start_at || !parsed?.proposed_end_at) {
     return null;
+  }
+
+  if (!isFutureInterval(parsed.proposed_start_at, parsed.proposed_end_at)) {
+    throw new Error("この時間提案は期限切れです。新しい提案を作成してください。");
   }
 
   const existing = await listYuiSuggestedTimeBlocks(user.id, {
@@ -603,7 +532,15 @@ export async function listYuiRecommendations(
 
   const { data, error } = await query;
   if (error) throw error;
-  return (data ?? []) as YuiRecommendation[];
+  return ((data ?? []) as YuiRecommendation[]).map((item) => (
+    item.type === "time_block" && isActionRecommendationContent(item.content)
+      ? { ...item, type: "action" }
+      : item
+  )).filter(item => {
+    if (item.type !== "time_block" || item.status !== "pending") return true;
+    const interval = parseRecommendationContent(item.content);
+    return interval && isFutureInterval(interval.proposed_start_at, interval.proposed_end_at);
+  });
 }
 
 export async function createYuiRecommendation(
@@ -634,7 +571,11 @@ export async function generateYuiRecommendation(
   const focusText = input?.content || input?.title || input?.reason || input?.context || "";
   const context = await getRecommendationContext(user.id, focusText);
   const topic = buildTopic(context);
-  const gap = findBestGap(context.calendarEvents) ?? buildFallbackGap();
+  const availableMinutes = Math.max(1, Math.min(540, Number(focusText.match(/(\d+)\s*分/)?.[1] ?? 30)));
+  const timeZone = normalizeTimeZone((context.profile?.preferences as { timezone?: string } | undefined)?.timezone);
+  const candidateGap = findBestGap(context.calendarEvents, new Date(), availableMinutes, timeZone);
+  if (!candidateGap) throw new Error("今後14日間に条件に合う空き時間がありません。使える時間を短くしてお試しください。");
+  const gap = { ...candidateGap, end: new Date(candidateGap.start.getTime() + Math.min(availableMinutes, candidateGap.minutes) * 60000), minutes: Math.min(availableMinutes, candidateGap.minutes) };
   const relatedDecisionIds = extractRelatedDecisions(context);
   const relatedMemoryIds = extractRelatedMemories(context);
   const ruleScore = computeScore({
@@ -654,6 +595,7 @@ export async function generateYuiRecommendation(
     contextText: focusText,
   });
   const ruleContent = buildContent({
+    timeZone,
     topic,
     gap,
     currentGoal: context.currentGoal,
@@ -663,7 +605,12 @@ export async function generateYuiRecommendation(
   const aiResult = await tryGenerateRecommendationWithAi(user, focusText, context);
   const title = aiResult?.title ?? ruleTitle;
   const reason = aiResult?.reason ?? ruleReason;
-  const content = aiResult?.content ?? ruleContent;
+  const aiInterval = aiResult ? parseRecommendationContent(aiResult.content) : null;
+  const validAiInterval = aiInterval && isFutureInterval(aiInterval.proposed_start_at, aiInterval.proposed_end_at)
+    && Date.parse(aiInterval.proposed_end_at) - Date.parse(aiInterval.proposed_start_at) <= availableMinutes * 60000
+    && Date.parse(aiInterval.proposed_start_at) >= candidateGap.start.getTime()
+    && Date.parse(aiInterval.proposed_end_at) <= candidateGap.end.getTime();
+  const content = validAiInterval ? aiResult!.content : ruleContent;
   const score = aiResult?.score ?? ruleScore;
 
   const duplicate = (await listYuiRecommendations(user.id, { status: "pending", limit: 20 })).find(
@@ -729,7 +676,13 @@ export async function updateYuiRecommendationStatus(
   }
 
   if (normalizedStatus === "accepted") {
-    await ensureSuggestedTimeBlockFromRecommendation(user, data as YuiRecommendation);
+    const block = await ensureSuggestedTimeBlockFromRecommendation(user, data as YuiRecommendation);
+    // Accepting a time recommendation creates an in-app registration candidate.
+    // The separate calendar action is the explicit final approval for any
+    // external Google Calendar write.
+    if (block) {
+      await ensureYuiCalendarActionFromTimeBlock(user, block);
+    }
   }
 
   if (normalizedStatus === "accepted" || normalizedStatus === "rejected" || normalizedStatus === "completed") {

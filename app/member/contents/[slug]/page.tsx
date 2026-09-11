@@ -80,7 +80,7 @@ export default async function MemberContentDetailPage({ params }: PageProps) {
         <div className="mt-3 flex flex-wrap gap-2">
           <button
             type="button"
-            className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-foreground"
+            className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white"
           >
             完了として記録
           </button>

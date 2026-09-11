@@ -2,15 +2,21 @@
   "name": "yohaku-os",
   "private": true,
   "version": "0.0.0",
+  "files": [
+    "README.md"
+  ],
   "scripts": {
     "dev": "next dev",
     "build": "rm -rf node_modules/.prisma && prisma generate && next build",
     "start": "next start",
+    "test": "node --experimental-strip-types --test __tests__/security/*.test.ts __tests__/ux/*.test.ts",
+    "check": "npm run typecheck && npm test && git diff --check",
+    "env:check": "node scripts/validate-production-env.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "next lint",
     "db:seed-admin": "node scripts/seed-admin-user.js",
     "postinstall": "prisma generate",
-    "vercel-build": "rm -rf node_modules/.prisma && prisma generate && next build"
+    "vercel-build": "npm run env:check && rm -rf node_modules/.prisma && prisma generate && next build"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.7.4",

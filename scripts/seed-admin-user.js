@@ -38,6 +38,10 @@ async function main() {
     );
   }
 
+  if (email.trim().toLowerCase() !== "manabi.mini@gmail.com") {
+    throw new Error("Only manabi.mini@gmail.com may be seeded as an admin account.");
+  }
+
   const hashedPassword = await bcrypt.hash(password, 12);
 
   const user = await prisma.user.upsert({

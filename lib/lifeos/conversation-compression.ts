@@ -27,6 +27,11 @@ export async function compressConversation(
     summaryTypes: SummaryType[] = ["rolling", "thematic", "meaning"]
 ): Promise<ConversationSummaryInfo[]> {
     const results: ConversationSummaryInfo[] = [];
+    const conversation = await prisma.companionConversation.findUnique({
+        where: { id: conversationId },
+        select: { userId: true },
+    });
+    if (!conversation) return [];
 
     // Get all messages in conversation
     const messages = await prisma.companionMessage.findMany({
@@ -44,7 +49,7 @@ export async function compressConversation(
         .join("\n");
 
     for (const type of summaryTypes) {
-        const summary = await generateSummary(type, conversationText, messages.length);
+        const summary = await generateSummary(conversation.userId, type, conversationText, messages.length);
 
         const saved = await prisma.conversationSummary.create({
             data: {
@@ -66,12 +71,13 @@ export async function compressConversation(
     }
 
     // Also extract themes
-    await extractConversationThemes(conversationId, messages);
+    await extractConversationThemes(conversation.userId, conversationId, messages);
 
     return results;
 }
 
 async function generateSummary(
+    userId: string,
     type: SummaryType,
     conversationText: string,
     messageCount: number
@@ -104,11 +110,12 @@ ${conversationText}
     };
 
     const prompt = prompts[type];
-    const { text } = await generateText(prompt);
+    const { text } = await generateText(prompt, undefined, { userId, allowEnvFallback: true });
     return text;
 }
 
 async function extractConversationThemes(
+    userId: string,
     conversationId: string,
     messages: Array<{ role: string; content: string }>
 ): Promise<void> {
@@ -129,7 +136,7 @@ ${conversationText}
   ]
 }`;
 
-    const { text } = await generateText(prompt);
+    const { text } = await generateText(prompt, undefined, { userId, allowEnvFallback: true });
 
     try {
         const jsonMatch = text.match(/\{[\s\S]*\}/);
@@ -156,6 +163,11 @@ ${conversationText}
 export async function extractConversationInsights(
     conversationId: string
 ): Promise<ConversationInsightInfo[]> {
+    const conversation = await prisma.companionConversation.findUnique({
+        where: { id: conversationId },
+        select: { userId: true },
+    });
+    if (!conversation) return [];
     const messages = await prisma.companionMessage.findMany({
         where: { conversationId, role: { in: ["user", "assistant"] } },
         orderBy: { createdAt: "asc" },
@@ -182,7 +194,10 @@ ${conversationText}
   ]
 }`;
 
-    const { text } = await generateText(prompt);
+    const { text } = await generateText(prompt, undefined, {
+        userId: conversation.userId,
+        allowEnvFallback: true,
+    });
 
     try {
         const jsonMatch = text.match(/\{[\s\S]*\}/);

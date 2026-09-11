@@ -28,9 +28,9 @@ type NavEntry = {
 
 const MEMBER_NAV_ITEMS: NavEntry[] = [
   { href: "/member", label: "ホーム", icon: Home },
-  { href: "/member/ai", label: "整理する", icon: PenLine },
+  { href: "/yui", label: "整理する", icon: PenLine },
   { href: "/member/ai/history", label: "記録", icon: BookMarked },
-  { href: "/life/timeline", label: "人生の流れ", icon: Activity },
+  { href: "/life", label: "人生の流れ", icon: Activity },
   { href: "/profile", label: "自分をみる", icon: User },
   { href: "/yui/settings", label: "設定", icon: Settings },
 ];
@@ -124,7 +124,7 @@ export function MemberSidebarNav() {
           </div>
           <Link
             href="/pricing"
-            className="block w-full text-center rounded-xl bg-slate-900 hover:bg-slate-800 text-foreground text-xs font-medium py-2 transition-colors shadow-sm cursor-pointer"
+            className="block w-full text-center rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-medium py-2 transition-colors shadow-sm cursor-pointer"
           >
             Premiumに参加
           </Link>

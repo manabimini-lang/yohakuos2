@@ -33,7 +33,7 @@ export function PWAInstallCTA() {
   }
 
   return (
-    <div className="fixed bottom-20 right-4 z-50 flex max-w-[calc(100vw-2rem)] items-center gap-2 rounded-full border border-slate-200 bg-white/95 px-3 py-2 text-slate-700 shadow-lg backdrop-blur sm:right-6">
+    <div className="fixed bottom-24 right-4 z-50 flex max-w-[calc(100vw-2rem)] items-center gap-2 rounded-full border border-slate-200 bg-white/95 px-3 py-2 text-slate-700 shadow-lg backdrop-blur sm:bottom-20 sm:right-6">
       <span className="hidden text-xs font-medium sm:inline">アプリを追加</span>
       <Button
         variant="secondary"

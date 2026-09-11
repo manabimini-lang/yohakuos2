@@ -6,6 +6,7 @@ import type {
   CreateYuiCalendarActionInput,
   CreateYuiEventInput,
   CreateYuiMemoryInput,
+  CreateYuiReflectionInput,
   CreateYuiMilestoneInput,
   CreateYuiRecommendationInput,
   CreateYuiSuggestedTimeBlockInput,
@@ -24,6 +25,7 @@ import {
   createYuiCalendarAction,
   createYuiSuggestedTimeBlock,
   createYuiReflectionFromRecentWindow,
+  createYuiReflection,
   createYuiMemory,
   getLatestYuiReflection,
   listYuiCalendarEvents,
@@ -47,8 +49,10 @@ import {
   listYuiEvents,
   updateYuiConnectionStatus,
   updateYuiCalendarActionStatus,
+  cancelYuiCalendarAction,
   deleteYuiGoal,
   deleteYuiMilestone,
+  updateYuiConversationGoal,
 } from "./service";
 import {
   generateYuiRecommendation,
@@ -56,6 +60,7 @@ import {
   updateYuiRecommendationStatus,
 } from "./recommendation_service";
 import type { YuiDecisionInput, YuiProfileSettings } from "./models";
+import { hasPremiumAccess } from "@/lib/constants/plan";
 
 export async function requireYuiSession() {
   const session = await auth();
@@ -85,6 +90,11 @@ export async function getYuiConversations(limit = 50) {
 export async function postYuiConversation(input: CreateYuiConversationInput) {
   const session = await requireYuiSession();
   return createYuiConversation(session.user, input);
+}
+
+export async function patchYuiConversationGoal(conversationId: string, goalId: string | null) {
+  const session = await requireYuiSession();
+  return updateYuiConversationGoal(session.user, conversationId, goalId);
 }
 
 export async function getLatestYuiReflectionForCurrentUser() {
@@ -145,6 +155,11 @@ export async function postYuiDecision(input: YuiDecisionInput) {
 export async function postYuiReflect() {
   const session = await requireYuiSession();
   return createYuiReflectionFromRecentWindow(session.user);
+}
+
+export async function postYuiReflection(input: CreateYuiReflectionInput) {
+  const session = await requireYuiSession();
+  return createYuiReflection(session.user, input);
 }
 
 export async function getYuiEvents(limit = 50) {
@@ -282,6 +297,11 @@ export async function scheduleYuiCalendarAction(actionId: string) {
   return scheduleAction(session.user, actionId);
 }
 
+export async function cancelYuiCalendarActionForCurrentUser(actionId: string) {
+  const session = await requireYuiSession();
+  return cancelYuiCalendarAction(session.user, actionId);
+}
+
 export async function getYuiContext() {
   const session = await requireYuiSession();
   const { computeYuiContext } = await import("./context_service");
@@ -291,7 +311,14 @@ export async function getYuiContext() {
 export async function getYuiMorningBrief() {
   const session = await requireYuiSession();
   const { getMorningBrief } = await import("./brief_service");
-  return getMorningBrief(session.user.id);
+  const { getNotificationSettings } = await import("./notification_service");
+  const settings = await getNotificationSettings(session.user.id);
+  return getMorningBrief(session.user.id, {
+    // Opening or refreshing the dashboard must not consume an AI request.
+    // Premium AI synthesis happens once in the scheduled/manual notification flow.
+    useAi: false,
+    timeZone: settings.timezone,
+  });
 }
 
 export async function getYuiNotificationSettings() {
@@ -303,13 +330,29 @@ export async function getYuiNotificationSettings() {
 export async function postYuiNotificationSettings(input: Record<string, unknown>) {
   const session = await requireYuiSession();
   const { saveNotificationSettings } = await import("./notification_service");
-  return saveNotificationSettings(session.user.id, input);
+  const automaticBriefsAvailable = hasPremiumAccess(session.user.plan, session.user.role);
+  const supportedSchedule = {
+    ...input,
+    morningTime: "07:00",
+    eveningTime: "20:00",
+    timezone: "Asia/Tokyo",
+  };
+  return saveNotificationSettings(session.user.id, automaticBriefsAvailable
+    ? supportedSchedule
+    : {
+        ...supportedSchedule,
+        enabled: false,
+        morningEnabled: false,
+        eveningEnabled: false,
+      });
 }
 
 export async function getYuiNotificationPreviews() {
   const session = await requireYuiSession();
   const { generateNotificationPreviews } = await import("./notification_delivery_service");
-  return generateNotificationPreviews(session.user.id);
+  const { getNotificationSettings } = await import("./notification_service");
+  const settings = await getNotificationSettings(session.user.id);
+  return generateNotificationPreviews(session.user.id, { timeZone: settings.timezone });
 }
 
 export async function getGoogleCalendarStatusForUser() {
@@ -345,7 +388,5 @@ export async function getNotificationDeliveryStatusForUser() {
 export async function triggerNotificationDeliveryForUser(type: "morning" | "evening") {
   const session = await requireYuiSession();
   const { deliverNotification } = await import("./notification_scheduler");
-  return deliverNotification(session.user.id, type);
+  return deliverNotification(session.user.id, type, undefined, { manual: true });
 }
-
-

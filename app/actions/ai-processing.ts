@@ -5,12 +5,9 @@ import { summarizeContent } from "@/lib/ai/summarize";
 import { generateContentTags } from "@/lib/ai/tagger";
 import { classifyContentItem } from "@/lib/ai/classifier";
 import { generateEmbedding } from "@/lib/ai/embeddings";
-import { shouldGenerateReflection } from "@/lib/ai/should-generate-reflection";
-import { isStarterJourneyUsingSharedKey } from "@/lib/ai/starter-journey";
 import { maybeEnqueueLifeOSJobs } from "@/lib/life/queue-life-jobs";
 import { maybeEnqueueReturnJobs } from "@/lib/memory/queue-return-jobs";
 import { CONTENT_ITEM_SAFE_SELECT } from "@/lib/content-item-safe-select";
-import { getExpiresAt } from "@/lib/services/retention.service";
 
 // Current AI version — bump when prompts or models change (enables re-analysis)
 const AI_VERSION = "1.0";
@@ -158,57 +155,6 @@ export async function processAIAnalysis(
       data: updateData,
     });
 
-    async function enqueueAudioReflectionIfEligible(contentItemId: string, userId: string) {
-      const contentItem = await prisma.contentItem.findUnique({
-        where: { id: contentItemId },
-        select: CONTENT_ITEM_SAFE_SELECT,
-      });
-      if (!contentItem) return;
-
-      const hasReflection = Boolean(contentItem.reflection?.trim());
-      const shouldGenerate = await shouldGenerateReflection({
-        contentItemId,
-        userId,
-        hasReflection,
-      });
-      if (!shouldGenerate) {
-        return;
-      }
-
-      const { resolveProvider } = await import("@/lib/ai/provider-resolver");
-      const provider = await resolveProvider(userId);
-      if (!provider) {
-        return;
-      }
-
-      const isStarter = await isStarterJourneyUsingSharedKey(userId);
-      const expiresAt = await getExpiresAt(userId);
-
-      const reflection = await prisma.audioReflection.create({
-        data: {
-          userId,
-          contentItemId,
-          script: contentItem.reflection?.trim() || "今夜の思考を、静かに見つめ直す時間です。",
-          status: "pending",
-          expiresAt,
-        },
-      });
-
-      await prisma.aIJob.create({
-        data: {
-          userId,
-          jobType: "generate_audio_reflection",
-          status: "pending",
-          priority: isStarter ? 4 : 2,
-          input: {
-            reflectionId: reflection.id,
-            contentItemId,
-          },
-          maxRetries: 3,
-        },
-      });
-    }
-
     // 7. Mark corresponding AIJob as completed
     await prisma.aIJob.updateMany({
       where: {
@@ -221,7 +167,8 @@ export async function processAIAnalysis(
     });
 
     // 8. Maybe enqueue audio reflection after AI summary is complete
-    await enqueueAudioReflectionIfEligible(contentItemId, userId);
+    // Audio briefs are now generated explicitly from the home summary.
+    // Saving a record must not enqueue an unsolicited legacy audio reflection.
 
     // 9. Generate Memory Resurfacing if applicable
     if (resolvedEmbedding && resolvedEmbedding.length > 0) {

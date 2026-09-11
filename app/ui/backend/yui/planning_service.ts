@@ -110,8 +110,8 @@ function applyRules(
   // Rule 1: STALLED + 未完了Goal → 再開候補
   if (prog?.progressStatus === "stalled" && hasActiveGoal) {
     return {
-      reason: "14日以上更新なし・未完了Goalあり",
-      suggestedAction: `「${thread}」を再開し、Goal進捗を確認する`,
+      reason: "14日以上更新なし・未完了の目的あり",
+      suggestedAction: `「${thread}」を再開し、目的の進捗を確認する`,
     };
   }
 
@@ -143,15 +143,15 @@ function applyRules(
   if (prog?.progressStatus === "new") {
     return {
       reason: "新しく始まったテーマ",
-      suggestedAction: `「${thread}」の目標を明確にする`,
+      suggestedAction: `「${thread}」の目的を明確にする`,
     };
   }
 
   // Rule 5: Active with goal
   if (hasActiveGoal) {
     return {
-      reason: "未完了Goalあり",
-      suggestedAction: `「${thread}」の目標進捗を確認する`,
+      reason: "未完了の目的あり",
+      suggestedAction: `「${thread}」の目的の進捗を確認する`,
     };
   }
 

@@ -1,0 +1,3 @@
+# Keep workstation credentials and stale local URLs out of Vercel deployments.
+.env
+.env.*

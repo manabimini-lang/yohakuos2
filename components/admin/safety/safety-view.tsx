@@ -366,7 +366,7 @@ export function SafetyAdminView({ initialData }: SafetyAdminViewProps) {
                             setSelectedReview(review);
                             setDecision(review.riskLevel === "critical" ? "rejected" : "approved");
                           }}
-                          className="rounded bg-slate-900 px-2.5 py-1 text-[11px] font-semibold text-foreground shadow hover:bg-slate-800 transition"
+                          className="rounded bg-slate-900 px-2.5 py-1 text-[11px] font-semibold text-white shadow hover:bg-slate-800 transition"
                         >
                           審査する
                         </button>
@@ -499,7 +499,7 @@ export function SafetyAdminView({ initialData }: SafetyAdminViewProps) {
               <button
                 type="submit"
                 disabled={isPending}
-                className="w-full flex items-center justify-center gap-1.5 rounded-lg bg-slate-900 px-4 py-2 text-xs font-semibold text-foreground shadow hover:bg-slate-800 disabled:opacity-50 transition"
+                className="w-full flex items-center justify-center gap-1.5 rounded-lg bg-slate-900 px-4 py-2 text-xs font-semibold text-white shadow hover:bg-slate-800 disabled:opacity-50 transition"
               >
                 <Send className="h-3 w-3" />
                 シグナル注入 & 解析ジョブ起動
@@ -663,7 +663,7 @@ export function SafetyAdminView({ initialData }: SafetyAdminViewProps) {
                   <button
                     type="submit"
                     disabled={isPending}
-                    className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-semibold text-foreground shadow hover:bg-slate-800 disabled:opacity-50"
+                    className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-semibold text-white shadow hover:bg-slate-800 disabled:opacity-50"
                   >
                     決定を保存
                   </button>

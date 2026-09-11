@@ -14,7 +14,11 @@ export type Permission =
   | "manage_ai"
   | "manage_roles"
   | "view_analytics"
-  | "manage_system";
+  | "manage_system"
+  | "manage_content"
+  | "manage_comms"
+  | "manage_product_learning"
+  | "publish_reports";
 
 /**
  * System role identifiers.
@@ -41,6 +45,9 @@ export type PermissionCategory =
   | "billing"
   | "ai"
   | "analytics"
+  | "content"
+  | "communications"
+  | "product"
   | "system";
 
 /**

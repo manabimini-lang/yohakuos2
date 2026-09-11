@@ -10,13 +10,13 @@ interface Props {
 function getActionTypeBadge(type: YuiActionSuggestion["actionType"]) {
   switch (type) {
     case "goal":
-      return <Badge className="bg-green-500/10 text-green-700 border-green-500/20">Goal</Badge>;
+      return <Badge className="bg-green-500/10 text-green-700 border-green-500/20">目的</Badge>;
     case "reflection":
-      return <Badge className="bg-yellow-500/10 text-yellow-700 border-yellow-500/20">Reflection</Badge>;
+      return <Badge className="bg-yellow-500/10 text-yellow-700 border-yellow-500/20">振り返り</Badge>;
     case "calendar":
-      return <Badge className="bg-blue-500/10 text-blue-700 border-blue-500/20">Calendar</Badge>;
+      return <Badge className="bg-blue-500/10 text-blue-700 border-blue-500/20">予定</Badge>;
     case "timeblock":
-      return <Badge className="bg-purple-500/10 text-purple-700 border-purple-500/20">Timeblock</Badge>;
+      return <Badge className="bg-purple-500/10 text-purple-700 border-purple-500/20">確保する時間</Badge>;
     default:
       return null;
   }
@@ -34,7 +34,7 @@ export function YuiActionCard({ actions }: Props) {
     <Card className="p-6 md:p-7 space-y-5 border-primary/20 bg-background/95 shadow-sm">
       <div className="flex items-center justify-between border-b border-border/40 pb-3">
         <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-primary">
-          <span>Action Suggestions</span>
+          <span>YUIからの提案</span>
         </div>
         <span className="text-[11px] font-medium px-2.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
           今週の提案

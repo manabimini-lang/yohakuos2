@@ -168,7 +168,7 @@ ${dataForPrompt}
   "confidence": 0.5
 }`;
 
-    const { text } = await generateText(extractionPrompt, MEANING_SYSTEM_PROMPT);
+    const { text } = await generateText(extractionPrompt, MEANING_SYSTEM_PROMPT, { userId, allowEnvFallback: true });
 
     // 4. JSONをパース
     try {

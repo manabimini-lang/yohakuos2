@@ -185,19 +185,17 @@ export async function generateCompanionResponse(
         throw new Error("AI is unavailable for this account.");
     }
 
-    // 1. Check if user has AI access (OAuth / Legacy / user_ai_settings 統一判定)
+    // 1. Check plan-aware AI access (Premium managed key or free BYOK).
     const aiResult = await checkAIAvailability(userId);
-    const { recordStarterJourneyCompanionMessage } = await import("@/lib/ai/starter-journey");
-    const canSendMessage = await recordStarterJourneyCompanionMessage(userId);
 
     console.log("[AI_AVAILABILITY]", {
         userId,
-        available: aiResult.available || canSendMessage,
-        source: aiResult.available ? aiResult.source : canSendMessage ? "starter" : null,
+        available: aiResult.available,
+        source: aiResult.source,
     });
 
-    if (!aiResult.available && !canSendMessage) {
-        throw new Error("Companion message limit reached for starter journey.");
+    if (!aiResult.available) {
+        throw new Error("AI is unavailable for this account.");
     }
 
     // 2. Save user message
@@ -292,7 +290,8 @@ export async function generateCompanionResponse(
     // 10. Generate AI response
     const { text, tokenUsed } = await generateText(
         fullPrompt,
-        COMPANION_SYSTEM_PROMPT
+        COMPANION_SYSTEM_PROMPT,
+        { userId, allowEnvFallback: true, taskClass: "standard" },
     );
 
     // 11. Ethical validation
@@ -369,7 +368,8 @@ export async function generateWeeklyReflection(
     // Generate weekly reflection
     const { text, tokenUsed } = await generateText(
         prompt,
-        WEEKLY_REFLECTION_SYSTEM_PROMPT
+        WEEKLY_REFLECTION_SYSTEM_PROMPT,
+        { userId, allowEnvFallback: true, taskClass: "standard" },
     );
 
     const validatedResponse = validateCompanionResponse(text);

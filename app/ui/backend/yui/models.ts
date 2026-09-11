@@ -37,6 +37,9 @@ export type YuiMemory = {
   importance: number;
   tags: string[];
   source_type: string;
+  goal_id: string | null;
+  goal_association_source: YuiGoalAssociationSource;
+  goal_association_confidence: number;
   created_at: string;
 };
 
@@ -47,6 +50,9 @@ export type YuiConversation = {
   user_id: string;
   role: string;
   content: string;
+  goal_id: string | null;
+  goal_association_source: YuiGoalAssociationSource;
+  goal_association_confidence: number;
   created_at: string;
 };
 
@@ -61,6 +67,9 @@ export type YuiMemoryCandidate = {
   reason: string;
   importance: number;
   status: YuiMemoryCandidateStatus;
+  goal_id: string | null;
+  goal_association_source: YuiGoalAssociationSource;
+  goal_association_confidence: number;
   created_at: string;
 };
 
@@ -77,6 +86,9 @@ export type YuiReflection = {
   summary: string;
   insights: string[];
   next_actions: string[];
+  goal_id: string | null;
+  goal_association_source: YuiGoalAssociationSource;
+  goal_association_confidence: number;
   created_at: string;
 };
 
@@ -364,19 +376,27 @@ export type CreateYuiMemoryInput = {
 export type CreateYuiConversationInput = {
   role: string;
   content: string;
+  goal_id?: string | null;
+  goal_association_source?: YuiGoalAssociationSource;
+  goal_association_confidence?: number;
 };
 
 export type CreateYuiReflectionInput = {
   summary: string;
   insights?: string[];
   next_actions?: string[];
+  goal_id?: string | null;
+  goal_association_source?: YuiGoalAssociationSource;
+  goal_association_confidence?: number;
 };
+
+export type YuiGoalAssociationSource = "auto" | "confirmed" | "manual" | "none" | string;
 
 export type CreateYuiEventInput = YuiEventInput;
 
 export type CreateYuiGoalInput = {
   title: string;
-  description: string;
+  description?: string;
   status?: string;
   progress?: number;
 };
@@ -407,6 +427,7 @@ export interface YuiNotificationPreferences {
   morningTime: string;
   eveningEnabled: boolean;
   eveningTime: string;
+  notificationLevel: "light" | "standard";
   timezone: string;
   createdAt: string;
   updatedAt: string;
@@ -446,6 +467,9 @@ export type YuiNotificationDeliveryStatus = {
   nextDeliveryTime: string | null;
   isTodayMorningDelivered: boolean;
   isTodayEveningDelivered: boolean;
+  todayMorningNotification: YuiNotificationPreview | null;
+  todayEveningNotification: YuiNotificationPreview | null;
+  automaticBriefsAvailable: boolean;
 };
 
 export type YuiMemoryProfile = {
@@ -457,6 +481,3 @@ export type YuiMemoryProfile = {
   last_observed_at: string;
   updated_at: string;
 };
-
-
-

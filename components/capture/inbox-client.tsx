@@ -17,6 +17,26 @@ export function InboxClient({ recentItems, contextItems }: InboxClientProps) {
 
   return (
     <div className="space-y-8">
+      {recentItems.length < 20 && (
+        <div className="rounded-2xl border border-primary/15 bg-primary/[0.04] px-5 py-4">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-medium text-foreground">AIの整理を使えるようにする</p>
+              <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                まずは20件を目安に記録してください。5件で最近のテーマ、20件でより詳しい振り返りが表示されます。
+              </p>
+            </div>
+            <span className="shrink-0 text-sm font-semibold text-primary">{recentItems.length}/20</span>
+          </div>
+          <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-primary/10">
+            <div
+              className="h-full rounded-full bg-primary transition-all"
+              style={{ width: `${Math.min(100, (recentItems.length / 20) * 100)}%` }}
+            />
+          </div>
+        </div>
+      )}
+
       {/* Tabs */}
       <div className="flex items-center gap-6 border-b border-border">
         <button

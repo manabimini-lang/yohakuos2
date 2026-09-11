@@ -8,18 +8,15 @@ import {
 } from "./service";
 import { computeYuiContext } from "./context_service";
 import type { YuiContinuitySummary } from "./models";
+import { getZonedDayWindow } from "./timezone";
 
-export async function computeYuiContinuity(userId: string): Promise<YuiContinuitySummary> {
+export async function computeYuiContinuity(
+  userId: string,
+  options: { timeZone?: string } = {},
+): Promise<YuiContinuitySummary> {
   const now = new Date();
-
-  // Define yesterday window in JST (00:00:00 to 23:59:59 of yesterday)
-  const startOfYesterday = new Date(now);
-  startOfYesterday.setDate(startOfYesterday.getDate() - 1);
-  startOfYesterday.setHours(0, 0, 0, 0);
-
-  const endOfYesterday = new Date(now);
-  endOfYesterday.setDate(endOfYesterday.getDate() - 1);
-  endOfYesterday.setHours(23, 59, 59, 999);
+  const timeZone = options.timeZone || "Asia/Tokyo";
+  const { start: startOfYesterday, end: endOfYesterday } = getZonedDayWindow(now, timeZone, -1);
 
   const yesterdayStartMs = startOfYesterday.getTime();
   const yesterdayEndMs = endOfYesterday.getTime();
@@ -32,36 +29,36 @@ export async function computeYuiContinuity(userId: string): Promise<YuiContinuit
       listYuiEvents(userId, 50),
       listYuiCalendarEvents(userId, { limit: 50 }),
       listYuiGoals(userId, 10),
-      computeYuiContext(userId),
+      computeYuiContext(userId, { timeZone }),
     ]);
 
   // 1. Check yesterday's Reflection
   const yesterdayReflections = reflections.filter((r) => {
     const t = new Date(r.created_at).getTime();
-    return t >= yesterdayStartMs && t <= yesterdayEndMs;
+    return t >= yesterdayStartMs && t < yesterdayEndMs;
   });
 
   // 2. Check yesterday's Decisions
   const yesterdayDecisions = decisions.filter((d) => {
     const t = new Date(d.created_at).getTime();
-    return t >= yesterdayStartMs && t <= yesterdayEndMs;
+    return t >= yesterdayStartMs && t < yesterdayEndMs;
   });
 
   // 3. Check yesterday's Conversations
   const yesterdayConversations = conversations.filter((c) => {
     const t = new Date(c.created_at).getTime();
-    return t >= yesterdayStartMs && t <= yesterdayEndMs;
+    return t >= yesterdayStartMs && t < yesterdayEndMs;
   });
 
   // 4. Check yesterday's Events / Calendar Events
   const yesterdayEvents = events.filter((e) => {
     const t = new Date(e.occurred_at || e.created_at).getTime();
-    return t >= yesterdayStartMs && t <= yesterdayEndMs;
+    return t >= yesterdayStartMs && t < yesterdayEndMs;
   });
 
   const yesterdayCalendarEvents = calendarEvents.filter((ce) => {
     const t = new Date(ce.start_at).getTime();
-    return t >= yesterdayStartMs && t <= yesterdayEndMs;
+    return t >= yesterdayStartMs && t < yesterdayEndMs;
   });
 
   // Build yesterday's summary
@@ -80,7 +77,7 @@ export async function computeYuiContinuity(userId: string): Promise<YuiContinuit
   } else if (yesterdayConversations.length > 0) {
     yesterdaySummary = `昨日はチャットを通じてたくさん思考や対話を整理しましたね。`;
   } else if (goals.some((g) => new Date(g.updated_at).getTime() >= yesterdayStartMs)) {
-    yesterdaySummary = `昨日は目標に向かって一歩前進しました。`;
+    yesterdaySummary = `昨日は目的に向かって一歩前進しました。`;
   }
 
   // Build continuity message (Yesterday -> Today -> Next Action)
