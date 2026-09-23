@@ -7,7 +7,7 @@ import {
   Moon, Bell, Monitor,
   Sparkles, Layers,
   Download, Database, Trash2,
-  Info, FileText, ShieldCheck,
+  Info, FileText, ShieldCheck, MonitorSmartphone,
   ChevronRight, MessageSquare, ArrowLeft
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -88,6 +88,12 @@ export default function SettingsPage() {
             icon={MessageSquare} 
             label="外部サービス連携" 
             href="/settings/account" 
+          />
+          <Divider />
+          <Item
+            icon={MonitorSmartphone}
+            label="HAKOと接続"
+            href="/settings/hako"
           />
           <Divider />
           <NewsletterPreference />
