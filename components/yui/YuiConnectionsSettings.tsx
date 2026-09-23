@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
+import { MonitorSmartphone } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import type { YuiConnection } from "@/app/ui/backend/yui/models";
 
@@ -152,6 +154,25 @@ export function YuiConnectionsSettings() {
       )}
 
       <div className="grid gap-4 md:grid-cols-2">
+        <Card className="space-y-4 border-emerald-200 bg-emerald-50/50 p-5">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <MonitorSmartphone className="h-5 w-5 text-emerald-700" />
+                <h3 className="text-base font-semibold">HAKO</h3>
+              </div>
+              <span className="rounded-full border border-emerald-200 bg-white px-3 py-1 text-xs font-medium text-emerald-800">
+                端末連携
+              </span>
+            </div>
+            <p className="text-sm leading-6 text-muted-foreground">
+              自分のHAKOを登録し、YUIの予定や今日のタスクを表示する準備をします。
+            </p>
+          </div>
+          <Link href="/settings/hako" className="yohaku-btn inline-flex w-fit">
+            HAKOと接続
+          </Link>
+        </Card>
         {CONNECTION_PROVIDERS.map((provider) => {
           const isGoogleCalendar = provider.provider === "google_calendar";
           const isGoogleProvider = provider.provider === "google_calendar" || provider.provider === "gmail";
