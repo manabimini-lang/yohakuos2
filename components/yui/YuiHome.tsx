@@ -1570,6 +1570,13 @@ export function YuiHome({ displayName }: YuiHomeProps) {
               }
               setTimeout(openGoalForm, 80);
             }}
+            onStartWithMemo={() => {
+              if (profile) {
+                setProfile({ ...profile, has_completed_onboarding: true });
+              }
+              setShowFabMenu(false);
+              setQuickPanel("memo");
+            }}
           />
         ) : (
           <>
