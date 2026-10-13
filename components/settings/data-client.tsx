@@ -58,6 +58,7 @@ export function DataSettingsClient() {
       setSuccess(true);
     } catch (error) {
       console.error("Failed to export logs:", error);
+      showToast("ログの書き出しに失敗しました", "error");
     } finally {
       setExporting(false);
     }
@@ -149,7 +150,7 @@ export function DataSettingsClient() {
           <span>データ管理</span>
         </h1>
         <p className="text-xs text-muted-foreground leading-relaxed">
-          YOHAKUのログは、あなたの端末内に保存されています
+          この画面では、端末内に保存された個人ログを管理できます
         </p>
       </div>
 
@@ -157,8 +158,7 @@ export function DataSettingsClient() {
       <div className="bg-white border border-slate-150 rounded-2xl p-6 md:p-8 space-y-6 shadow-sm">
         <div className="space-y-3">
           <p className="text-xs text-muted-foreground leading-relaxed">
-            書かれた日々の記録はサーバーには送信されず、ブラウザのローカルデータベース（IndexedDB）に安全に暗号化および保存されています。
-            所有権は完全にあなたにあります。
+            ここで書き出せるのは、このブラウザのIndexedDBに保存された個人ログです。アカウント上のメモ、タスク、目標などのサーバー保存データは含まれません。
           </p>
           <p className="text-xs text-muted-foreground leading-relaxed">
             端末の変更時のバックアップのために、ローカル形式（JSON）でログデータを書き出し、または復元（インポート）することができます。
@@ -172,7 +172,7 @@ export function DataSettingsClient() {
             <div className="space-y-1 text-xs text-emerald-700">
               <p className="font-semibold">エクスポート完了</p>
               <p className="text-[11px] text-emerald-600/90 leading-relaxed">
-                {logsCount} 件 of ログを含むバックアップファイルをダウンロードしました。
+                {logsCount} 件のログを含むバックアップファイルをダウンロードしました。
               </p>
             </div>
           </div>
@@ -223,7 +223,7 @@ export function DataSettingsClient() {
       <div className="flex items-start space-x-2.5 max-w-sm mx-auto text-[10px] text-slate-450 leading-relaxed">
         <AlertCircle className="w-3.5 h-3.5 text-slate-350 shrink-0 mt-0.5" />
         <p>
-          YOHAKUは外部とのやり取りを一切行いません。インポートされたデータもブラウザ内でローカルにマージされ、既存のログが消去されることはありません。
+          この画面の書き出しと読み込みはブラウザ内で行われます。読み込んだログは同じIDの既存ログを更新する場合があります。バックアップファイルはご自身で安全に保管してください。
         </p>
       </div>
     </div>

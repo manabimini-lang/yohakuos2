@@ -1,6 +1,5 @@
-import { redirect } from "next/navigation";
+import { DataSettingsClient } from "@/components/settings/data-client";
 
-export default function DataSettingsPlaceholder() {
-  // 将来的にデータエクスポート機能を実装
-  redirect("/settings");
+export default function DataSettingsPage() {
+  return <DataSettingsClient />;
 }

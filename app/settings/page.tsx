@@ -138,13 +138,13 @@ export default function SettingsPage() {
         <Section title="記録">
           <Item 
             icon={Download} 
-            label="エクスポート" 
-            onClick={() => alert("エクスポート機能は準備中です")}
+            label="端末内ログをエクスポート"
+            href="/settings/data"
           />
           <Divider />
           <Item 
             icon={Database} 
-            label="バックアップ" 
+            label="端末内ログのバックアップ・復元"
             href="/settings/data" 
           />
           <Divider />
