@@ -5,7 +5,7 @@
 ## 記録先と集計
 
 既存Prisma AuditLog（audit_logs）のcategory=product_funnelに保存。DBスキーマ変更は不要。
-管理者限定の /admin/acquisition で過去30日間のイベント件数を記事別に集計する。
+管理者限定の /admin/acquisition で過去30日間のイベント件数を記事別に集計する。同画面から日本時間で最大31日間の期間を指定し、個人情報を含まない集計JSONを保存できる。
 売上は正のamount_paidがあるpaid請求書だけを対象とし、通貨別の最小単位で表示する。返金・手数料控除前で、利益やMRRではない。
 
 ## 正確な定義
@@ -13,10 +13,11 @@
 - signup_completed: メール登録でDBにユーザーが作成された後、またはNextAuth createUserイベント。ログイン成功や開発用の仮アカウントは数えない。
 - first_value_completed: /api/yui/actions/execute のrecommendationId分岐で、create_goalまたはcreate_milestoneの実保存と採用ステータス更新が成功した後の最初の1回。単なるAI応答、手動のメモ保存、仮実装のexecuteAction成功は対象外。すべての利用価値を網羅する指標ではない。
 - payment_succeeded: 署名検証済みinvoice.payment_succeeded。初回・継続・その他をbilling_reasonで区別。0円・失敗・未決済は除外。
+- subscription_canceled: 署名検証済みcustomer.subscription.deleted。解約予約ではなく契約終了を数える。既知の契約所有者だけを記録する。
 
 登録・初回利用はユーザーごとの固定ID、決済は請求書ごとの固定IDでupsertし、DBの一意性制約で並行処理・再送を重複排除する。
 登録・利用時の計測失敗は警告ログを残し、本来の操作を妨げない。この場合は欠測となり自動復旧しない。
-決済時の計測失敗はWebhookエラーとしてStripeの再送対象にする。既存の課金監査ログは今回の集計対象外。
+決済・解約時の計測失敗はWebhookエラーとしてStripeの再送対象にする。解約はStripeイベントIDで重複排除する。既存の課金監査ログは今回の集計対象外。
 
 ## 記事情報とプライバシー
 
@@ -30,9 +31,9 @@ HttpOnly・SameSite=Lax・本番Secure・30分期限のCookieでOAuth遷移に�
 
 コード検証では外部DBへの書き込み、実アカウント作成、決済を行っていない。
 テスト環境でメール登録・Google新規登録・採用保存・Stripeテスト請求書と同一通知再送を確認する。
-本番Webhookがinvoice.payment_succeededを受け取る設定を確認する。新旧Stripe invoice.subscriptionとinvoice.parent.subscription_details.subscriptionに対応。
+本番Webhookがinvoice.payment_succeededとcustomer.subscription.deletedを受け取る設定を確認する。新旧Stripe invoice.subscriptionとinvoice.parent.subscription_details.subscriptionに対応。
 管理画面はイベント発生期間での集計であり、同一登録コホートの転換率ではない。最大10,000件で超過時は明示する。
-メディア側のVercel Analyticsから得る閲覧・クリック数と記事slugで比較する。両集計の自動取り込みは未実装。
+メディア側のVercel Analyticsから得る閲覧・クリック数と記事slugで比較する。週次レポートは管理者画面から保存した同期間のOS集計JSONを入力に使う。両集計の自動取り込みは未実装。
 
 ## 本番確認記録（2026-09-07）
 

@@ -38,3 +38,12 @@ test('payment storage failures are visible to the webhook retry mechanism', asyn
   const store = { async upsert() { throw new Error('database unavailable'); } };
   await assert.rejects(writeEvent(store, 'payment_succeeded', 'in_test', 'u', 'unattributed'), /database unavailable/);
 });
+
+test('cancellation uses the Stripe event id and ignores webhook retries', async () => {
+  const records = new Map<string, unknown>();
+  const store = { async upsert(args: any) { if (!records.has(args.where.id)) records.set(args.where.id, args.create); } };
+  await writeEvent(store, 'subscription_canceled', 'evt_deleted_1', 'user_test', 'article-123');
+  await writeEvent(store, 'subscription_canceled', 'evt_deleted_1', 'user_test', 'article-123');
+  assert.equal(records.size, 1);
+  assert.equal((records.get(eventId('subscription_canceled', 'evt_deleted_1')) as any).metadata.source_article, 'article-123');
+});

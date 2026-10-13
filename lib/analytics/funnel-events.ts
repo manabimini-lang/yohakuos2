@@ -1,4 +1,4 @@
-export type FunnelEvent = 'signup_completed' | 'first_value_completed' | 'payment_succeeded';
+export type FunnelEvent = 'signup_completed' | 'first_value_completed' | 'payment_succeeded' | 'subscription_canceled';
 export const eventId = (event: FunnelEvent, key: string) =>
   `funnel_${event}_${key}`;
 

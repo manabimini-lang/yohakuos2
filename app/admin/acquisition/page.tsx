@@ -16,13 +16,14 @@ export default async function AcquisitionPage() {
     select: { action: true, metadata: true }, take: 10001,
     orderBy: { createdAt: 'desc' },
   });
-  const totals = new Map<string, { signups: number; firstValues: number; initial: number; renewals: number; other: number; money: Map<string, number> }>();
+  const totals = new Map<string, { signups: number; firstValues: number; initial: number; renewals: number; other: number; cancellations: number; money: Map<string, number> }>();
   for (const record of records.slice(0, 10000)) {
     const meta = record.metadata as Record<string, unknown> | null;
     const source = typeof meta?.source_article === 'string' ? meta.source_article : 'unattributed';
-    const row = totals.get(source) || { signups: 0, firstValues: 0, initial: 0, renewals: 0, other: 0, money: new Map<string, number>() };
+    const row = totals.get(source) || { signups: 0, firstValues: 0, initial: 0, renewals: 0, other: 0, cancellations: 0, money: new Map<string, number>() };
     if (record.action === 'signup_completed') row.signups++;
     if (record.action === 'first_value_completed') row.firstValues++;
+    if (record.action === 'subscription_canceled') row.cancellations++;
     if (record.action === 'payment_succeeded') {
       if (meta?.payment_kind === 'initial') row.initial++;
       else if (meta?.payment_kind === 'renewal') row.renewals++;
@@ -37,12 +38,17 @@ export default async function AcquisitionPage() {
     <h1 className="text-2xl font-semibold">記事からの登録・利用・決済</h1>
     <p className="text-sm text-slate-600">過去30日間に発生した確定イベントです。登録者の同一集団を追う転換率ではありません。移動元は登録時の記事で固定されます。</p>
     <p className="text-sm text-slate-600">初回利用は、計測開始後に提案を採用して目標またはマイルストーンを実際に保存した最初の1回。仮実装の成功表示、ページ閲覧、操作失敗は数えません。</p>
+    <form action="/api/admin/acquisition/export" method="get" className="flex flex-wrap items-end gap-3 rounded-xl border border-slate-200 p-4">
+      <label className="text-sm">開始日（日本時間）<input type="date" name="start" required className="mt-1 block rounded border border-slate-300 p-2" /></label>
+      <label className="text-sm">終了日（日本時間）<input type="date" name="end" required className="mt-1 block rounded border border-slate-300 p-2" /></label>
+      <button type="submit" className="rounded bg-slate-900 px-4 py-2 text-sm text-white">確定イベントをJSONで保存</button>
+    </form>
     {records.length > 10000 && <p className="text-amber-700">件数が多いため直近10,000件のみを表示しています。全件集計ではありません。</p>}
     {!totals.size ? <p>まだ計測データがありません。公開後に発生した成功イベントから記録します。</p> : <div className="overflow-x-auto"><table className="w-full text-left text-sm">
-      <thead><tr>{['登録時の記事', '登録完了', '初回利用', '初回決済', '継続決済', 'その他決済', '入金額（通貨の最小単位）'].map(label => <th key={label} className="border-b p-3">{label}</th>)}</tr></thead>
+      <thead><tr>{['登録時の記事', '登録完了', '初回利用', '初回決済', '継続決済', 'その他決済', '解約完了', '入金額（通貨の最小単位）'].map(label => <th key={label} className="border-b p-3">{label}</th>)}</tr></thead>
       <tbody>{[...totals.entries()].map(([source, row]) => <tr key={source}>
         <td className="border-b p-3 break-all">{source === 'unattributed' ? '移動元不明・直接登録' : source}</td>
-        {[row.signups, row.firstValues, row.initial, row.renewals, row.other].map((value, index) => <td className="border-b p-3" key={index}>{value}</td>)}
+        {[row.signups, row.firstValues, row.initial, row.renewals, row.other, row.cancellations].map((value, index) => <td className="border-b p-3" key={index}>{value}</td>)}
         <td className="border-b p-3">{[...row.money].map(([currency, amount]) => `${currency.toUpperCase()} ${amount.toLocaleString()}`).join(' / ') || '—'}</td>
       </tr>)}</tbody>
     </table></div>}

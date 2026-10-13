@@ -6,7 +6,7 @@ import { subscriptionService } from "@/lib/services/subscription.service";
 import { subscriptionRepository } from "@/lib/repositories/subscription.repository";
 import { prisma } from "@/lib/prisma";
 import { invoiceSubscriptionId } from '@/lib/analytics/funnel-events';
-import { recordPayment } from '@/lib/analytics/funnel-server';
+import { recordCancellation, recordPayment } from '@/lib/analytics/funnel-server';
 export async function POST(req: Request) {
   const stripe = getStripe();
   const body = await req.text();
@@ -157,7 +157,9 @@ export async function POST(req: Request) {
   
   if (event.type === "customer.subscription.deleted") {
     const subscription = eventObject as Stripe.Subscription;
+    const stored = await subscriptionRepository.findByStripeSubscriptionId(subscription.id);
     await subscriptionService.handleSubscriptionDeleted(subscription.id);
+    if (stored?.userId) await recordCancellation(stored.userId, event.id);
     console.log(`[STRIPE_SUBSCRIPTION] Subscription deleted: subscriptionId=${subscription.id}, customerId=${subscription.customer}, status=${subscription.status}`);
 
     await prisma.auditLog.create({

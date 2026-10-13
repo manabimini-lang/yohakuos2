@@ -35,3 +35,8 @@ export async function recordPayment(userId: string, invoice: any, stripeEventId:
   // Deliberately propagate DB failure: Stripe retries the signed webhook.
   await writeEvent(prisma.auditLog, 'payment_succeeded', invoice.id, userId, source, { ...payment, stripe_event_id: stripeEventId });
 }
+
+export async function recordCancellation(userId: string, stripeEventId: string) {
+  const source = await signupSource(userId);
+  await writeEvent(prisma.auditLog, 'subscription_canceled', stripeEventId, userId, source);
+}
