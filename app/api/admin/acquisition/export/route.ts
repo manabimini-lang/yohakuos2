@@ -3,6 +3,7 @@ import { isAdminAccessEmail } from '@/lib/auth/admin-access';
 import { extractPermissionsFromSession, hasMinRoleLevel } from '@/lib/permissions/helpers';
 import { prisma } from '@/lib/prisma';
 import { validArticle } from '@/lib/analytics/attribution';
+import { hasAcquisitionExportToken } from '@/lib/analytics/export-auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,10 +17,12 @@ function jstStart(value: string | null): Date | null {
 }
 
 export async function GET(request: Request) {
-  const session = await auth();
-  const permissions = session ? extractPermissionsFromSession(session) : null;
-  if (!session?.user || !isAdminAccessEmail(session.user.email) || !permissions || !hasMinRoleLevel(permissions.roles, 'admin')) {
-    return Response.json({ error: 'Forbidden' }, { status: 403 });
+  if (!hasAcquisitionExportToken(request)) {
+    const session = await auth();
+    const permissions = session ? extractPermissionsFromSession(session) : null;
+    if (!session?.user || !isAdminAccessEmail(session.user.email) || !permissions || !hasMinRoleLevel(permissions.roles, 'admin')) {
+      return Response.json({ error: 'Forbidden' }, { status: 403 });
+    }
   }
 
   const url = new URL(request.url);

@@ -6,6 +6,7 @@ const required = [
   "NEXTAUTH_URL",
   "NEXTAUTH_SECRET",
   "CRON_SECRET",
+  "ACQUISITION_EXPORT_TOKEN",
 ];
 
 const placeholderPattern = /(^|[-_])(your|replace|change[-_]?me|example)([-_]|$)|\.\.\.$/i;
@@ -36,7 +37,7 @@ for (const name of ["DATABASE_URL", "NEXT_PUBLIC_SUPABASE_URL", "NEXTAUTH_URL"])
   }
 }
 
-for (const name of ["NEXTAUTH_SECRET", "CRON_SECRET"]) {
+for (const name of ["NEXTAUTH_SECRET", "CRON_SECRET", "ACQUISITION_EXPORT_TOKEN"]) {
   const value = process.env[name]?.trim();
   if (value && value.length < 32) errors.push(`${name} must be at least 32 characters`);
 }
